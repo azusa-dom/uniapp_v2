@@ -191,6 +191,13 @@ struct StudentTabView: View {
                     Label(loc.tr("tab_ai"), systemImage: "sparkles")
                 }
                 .tag(3)
+
+            // 5+. 健康
+            StudentHealthView()
+                .tabItem {
+                    Label("健康", systemImage: "heart.text.square")
+                }
+                .tag(6)
             
             // 5. 邮箱
             StudentEmailView()
@@ -237,6 +244,13 @@ struct ParentTabView: View {
                     Label(loc.tr("tab_ai"), systemImage: "sparkles")
                 }
                 .tag(3)
+
+            // 5. 健康
+            ParentHealthView()
+                .tabItem {
+                    Label("健康", systemImage: "heart.text.square")
+                }
+                .tag(5)
             
             // 5. 邮箱
             ParentEmailView()

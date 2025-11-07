@@ -44,12 +44,12 @@ struct ParentCalendarView: View {
                 // 背景渐变
                 LinearGradient(
                     colors: [
-                        Color(hex: "FFF8F0"),
-                        Color(hex: "FFF1E6"),
-                        Color(hex: "FFE8D6")
+                        Color(hex: "F8FAFC"),
+                        Color(hex: "EEF2FF"),
+                        Color(hex: "E0E7FF").opacity(0.3)
                     ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+                    startPoint: .top,
+                    endPoint: .bottom
                 )
                 .ignoresSafeArea()
                 
