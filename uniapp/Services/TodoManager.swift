@@ -64,18 +64,52 @@ enum TodoPriority: String, Codable, CaseIterable {
 class TodoManager: ObservableObject {
     @Published var todos: [TodoItem] = [
         TodoItem(
-            title: "CS Assignment",
+            title: "完成 Python 数据分析作业",
             dueDate: Calendar.current.date(byAdding: .day, value: 2, to: Date()),
             priority: .high,
             category: "作业",
-            notes: "完成第三章编程作业"
+            notes: "使用 pandas 完成数据清洗和可视化，提交 Jupyter Notebook",
+            source: "CHME0007"
         ),
         TodoItem(
-            title: "Math Problem Set",
-            dueDate: Calendar.current.date(byAdding: .day, value: 5, to: Date()),
+            title: "准备 Research Methods 演讲",
+            dueDate: Calendar.current.date(byAdding: .day, value: 4, to: Date()),
             priority: .medium,
             category: "作业",
-            notes: "解答1-20题"
+            notes: "10分钟演讲，需要准备 PPT 和演讲稿",
+            source: "CHME0008"
+        ),
+        TodoItem(
+            title: "提交文献综述初稿",
+            dueDate: Calendar.current.date(byAdding: .day, value: 7, to: Date()),
+            priority: .medium,
+            category: "论文",
+            notes: "至少15篇文献，3000字，APA格式",
+            source: "毕业项目"
+        ),
+        TodoItem(
+            title: "完成 Machine Learning 练习题",
+            dueDate: Calendar.current.date(byAdding: .day, value: 3, to: Date()),
+            priority: .high,
+            category: "作业",
+            notes: "第5章习题 1-20 题，需要提交代码和结果截图",
+            source: "CHME0009"
+        ),
+        TodoItem(
+            title: "阅读指定论文并写摘要",
+            dueDate: Calendar.current.date(byAdding: .day, value: 5, to: Date()),
+            priority: .low,
+            category: "阅读",
+            notes: "阅读 'Deep Learning in Healthcare' 并写500字摘要",
+            source: "CHME0007"
+        ),
+        TodoItem(
+            title: "小组项目进度汇报",
+            dueDate: Calendar.current.date(byAdding: .day, value: 1, to: Date()),
+            priority: .urgent,
+            category: "项目",
+            notes: "准备本周进度PPT，展示数据收集成果",
+            source: "小组项目"
         )
     ]
 

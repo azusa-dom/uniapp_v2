@@ -248,7 +248,7 @@ struct StudentCalendarView: View {
                 title: "活动",
                 count: todayActivities.count,
                 icon: "sparkles",
-                color: "F59E0B"
+                color: "8B5CF6"
             )
             
             OverviewStatCard(
@@ -303,7 +303,7 @@ struct StudentCalendarView: View {
                 HStack {
                     Image(systemName: "sparkles")
                         .font(.system(size: 16))
-                        .foregroundColor(Color(hex: "F59E0B"))
+                        .foregroundColor(Color(hex: "8B5CF6"))
                     
                     Text("UCL 校园活动")
                         .font(.system(size: 20, weight: .bold))
@@ -320,7 +320,7 @@ struct StudentCalendarView: View {
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 12))
                         }
-                        .foregroundColor(Color(hex: "F59E0B"))
+                        .foregroundColor(Color(hex: "8B5CF6"))
                     }
                 }
                 
@@ -544,9 +544,9 @@ struct ModernEventCard: View {
                         .foregroundColor(.secondary)
                 }
                 
-                // 类型标签
+                // 类型标签 - 课程和日程不显示"加入日历"按钮
                 HStack(spacing: 8) {
-                    Text(event.type == .api ? "邮件日程" : "手动添加")
+                    Text(event.type == .api ? "课程" : "手动添加")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(event.type == .api ? Color(hex: "6366F1") : Color(hex: "8B5CF6"))
                         .padding(.horizontal, 8)
@@ -556,26 +556,7 @@ struct ModernEventCard: View {
                                 .fill((event.type == .api ? Color(hex: "6366F1") : Color(hex: "8B5CF6")).opacity(0.15))
                         )
                     
-                    if event.type == .api {
-                        Button(action: {
-                            viewModel.addEventToCalendar(event: event)
-                            showingAddSuccess = true
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "calendar.badge.plus")
-                                    .font(.system(size: 10))
-                                Text("加入日历")
-                                    .font(.system(size: 11, weight: .medium))
-                            }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                Capsule()
-                                    .fill(Color(hex: "6366F1"))
-                            )
-                        }
-                    }
+                    // 课程不需要"加入日历"按钮，因为已经在日历中
                 }
             }
             
@@ -604,49 +585,50 @@ struct ModernActivityCard: View {
     let activity: UCLActivity
     let service: UCLActivitiesService
     let onTap: () -> Void
+    @State private var showingAddSuccess = false
     
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 16) {
-                // 时间指示器
-                VStack(spacing: 4) {
-                    Text(service.formatTime(activity.startTime))
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(Color(hex: "F59E0B"))
+        HStack(spacing: 16) {
+            // 时间指示器
+            VStack(spacing: 4) {
+                Text(service.formatTime(activity.startTime))
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(Color(hex: "8B5CF6"))
+                
+                if !activity.endTime.isEmpty {
+                    Rectangle()
+                        .fill(Color(hex: "8B5CF6").opacity(0.3))
+                        .frame(width: 2, height: 20)
                     
-                    if !activity.endTime.isEmpty {
-                        Rectangle()
-                            .fill(Color(hex: "F59E0B").opacity(0.3))
-                            .frame(width: 2, height: 20)
+                    Text(service.formatTime(activity.endTime))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+            }
+            .frame(width: 60)
+            
+            // 内容区域
+            VStack(alignment: .leading, spacing: 8) {
+                Text(activity.title)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                
+                if let location = activity.location {
+                    HStack(spacing: 6) {
+                        Image(systemName: "mappin.circle.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "8B5CF6"))
                         
-                        Text(service.formatTime(activity.endTime))
-                            .font(.system(size: 12, weight: .medium))
+                        Text(location)
+                            .font(.system(size: 14))
                             .foregroundColor(.secondary)
+                            .lineLimit(1)
                     }
                 }
-                .frame(width: 60)
                 
-                // 内容区域
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(activity.title)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .lineLimit(2)
-                    
-                    if let location = activity.location {
-                        HStack(spacing: 6) {
-                            Image(systemName: "mappin.circle.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(Color(hex: "F59E0B"))
-                            
-                            Text(location)
-                                .font(.system(size: 14))
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    
-                    // 类型标签
+                // 类型标签 + 加入日历按钮（校园活动可以选择是否加入）
+                HStack(spacing: 8) {
                     Text(service.getTypeLabel(activity.type))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.white)
@@ -656,26 +638,55 @@ struct ModernActivityCard: View {
                             Capsule()
                                 .fill(service.getTypeColor(activity.type))
                         )
+                    
+                    Button(action: {
+                        addActivityToCalendar()
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "calendar.badge.plus")
+                                .font(.system(size: 10))
+                            Text("加入日历")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule()
+                                .fill(Color(hex: "10B981"))
+                        )
+                    }
                 }
-                
-                Spacer()
-                
+            }
+            
+            Spacer()
+            
+            Button(action: onTap) {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
             }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(service.getTypeColor(activity.type).opacity(0.3), lineWidth: 1)
-            )
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(service.getTypeColor(activity.type).opacity(0.3), lineWidth: 1)
+        )
+        .alert("已添加", isPresented: $showingAddSuccess) {
+            Button("确定", role: .cancel) { }
+        } message: {
+            Text("活动已成功添加到您的日历")
+        }
+    }
+    
+    private func addActivityToCalendar() {
+        // TODO: 实现添加到系统日历的逻辑
+        showingAddSuccess = true
     }
 }
 
@@ -704,7 +715,7 @@ struct WeeklyRecommendationCard: View {
                     
                     Image(systemName: "star.fill")
                         .font(.system(size: 14))
-                        .foregroundColor(Color(hex: "F59E0B"))
+                        .foregroundColor(Color(hex: "8B5CF6"))
                 }
                 
                 // 标题
@@ -750,7 +761,7 @@ struct WeeklyRecommendationCard: View {
                 RoundedRectangle(cornerRadius: 20)
                     .stroke(
                         LinearGradient(
-                            colors: [Color(hex: "8B5CF6").opacity(0.3), Color(hex: "F59E0B").opacity(0.3)],
+                            colors: [Color(hex: "8B5CF6").opacity(0.3), Color(hex: "8B5CF6").opacity(0.3)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
@@ -1103,7 +1114,7 @@ struct ActivityDetailSheet: View {
                                 icon: "mappin.circle.fill",
                                 title: "地点",
                                 content: location,
-                                color: "F59E0B"
+                                color: "8B5CF6"
                             )
                         }
                         

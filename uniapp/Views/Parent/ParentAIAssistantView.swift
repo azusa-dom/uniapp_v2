@@ -357,13 +357,21 @@ struct ParentAIAssistantView: View {
     @EnvironmentObject var loc: LocalizationService
     @StateObject private var viewModel = ParentAIAssistantViewModel()
     
-    // 精选的演示问题（中文）
-    let quickQuestions = [
-        ("📊 Zoya 最近的学习状况怎么样？", "learning"),
-        ("📋 她的出勤率为什么不是100%？", "attendance"),
-        ("🎯 她最近有参加什么活动吗？", "activities"),
-        ("👥 她和同学相处得怎么样？", "social"),
-        ("🏆 这学期整体目标完成得怎么样？", "goals")
+    // 功能分类（不直接显示具体问题）
+    let categories = [
+        ("📊", "学业情况", "查看孩子的成绩、作业和课堂表现"),
+        ("📅", "出勤与活动", "了解出勤记录和参加的校园活动"),
+        ("👥", "社交与生活", "了解与同学相处和校园生活情况"),
+        ("🏆", "目标与规划", "查看学期目标完成情况和未来规划")
+    ]
+    
+    // 隐藏的演示问题（用于内部逻辑）
+    private let demoQuestions = [
+        "Zoya 最近的学习状况怎么样？",
+        "她的出勤率为什么不是100%？",
+        "她最近有参加什么活动吗？",
+        "她和同学相处得怎么样？",
+        "这学期整体目标完成得怎么样？"
     ]
     
     var body: some View {
@@ -421,17 +429,21 @@ struct ParentAIAssistantView: View {
                                 }
                                 .padding(.top, 60)
                                 
-                                // 快速问题卡片
+                                // 功能分类卡片（不显示具体问题）
                                 VStack(spacing: 16) {
-                                    Text("常见问题")
+                                    Text("我能为您提供什么帮助？")
                                         .font(.headline)
                                         .foregroundColor(.primary)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .padding(.horizontal)
                                     
-                                    ForEach(quickQuestions, id: \.0) { question in
-                                        ParentQuickQuestionButton(question: question.0) {
-                                            viewModel.sendMessage(question.0)
+                                    ForEach(categories, id: \.0) { category in
+                                        ParentCategoryButton(
+                                            icon: category.0,
+                                            title: category.1,
+                                            description: category.2
+                                        ) {
+                                            handleCategoryTap(category.1)
                                         }
                                     }
                                 }
@@ -489,6 +501,72 @@ struct ParentAIAssistantView: View {
             .navigationTitle(loc.tr("ai_title"))
             .navigationBarTitleDisplayMode(.inline)
         }
+    }
+    
+    // 根据分类触发对应的演示对话
+    private func handleCategoryTap(_ category: String) {
+        switch category {
+        case "学业情况":
+            viewModel.sendMessage(demoQuestions[0])
+        case "出勤与活动":
+            viewModel.sendMessage(demoQuestions[2])
+        case "社交与生活":
+            viewModel.sendMessage(demoQuestions[3])
+        case "目标与规划":
+            viewModel.sendMessage(demoQuestions[4])
+        default:
+            viewModel.sendMessage(demoQuestions[0])
+        }
+    }
+}
+
+// MARK: - 家长端分类按钮
+struct ParentCategoryButton: View {
+    let icon: String
+    let title: String
+    let description: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                // 图标
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: "6366F1").opacity(0.15))
+                        .frame(width: 50, height: 50)
+                    
+                    Text(icon)
+                        .font(.title2)
+                }
+                
+                // 文本内容
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Text(description)
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                }
+                
+                Spacer()
+                
+                // 箭头
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

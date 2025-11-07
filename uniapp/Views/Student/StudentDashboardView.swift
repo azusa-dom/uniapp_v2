@@ -24,6 +24,8 @@ struct StudentDashboardView: View {
         case todo(TodoItem)
         case profile
         case avatar
+        case settings
+        case addTodo
 
         var id: String {
             switch self {
@@ -33,6 +35,10 @@ struct StudentDashboardView: View {
                 return "profile"
             case .avatar:
                 return "avatar"
+            case .settings:
+                return "settings"
+            case .addTodo:
+                return "addTodo"
             }
         }
     }
@@ -101,6 +107,14 @@ struct StudentDashboardView: View {
                     case .avatar:
                         AvatarPickerView(selectedIcon: $appState.avatarIcon)
                             .environmentObject(loc)
+                    case .settings:
+                        StudentSettingsView()
+                            .environmentObject(appState)
+                            .environmentObject(loc)
+                    case .addTodo:
+                        AddTodoView()
+                            .environmentObject(appState)
+                            .environmentObject(loc)
                     }
                 }
             }
@@ -108,50 +122,60 @@ struct StudentDashboardView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
+                    HStack(spacing: 16) {
                         Button {
-                            activeModal = .profile
+                            activeModal = .settings
                         } label: {
-                            Label(loc.tr("profile_title"), systemImage: "person.crop.circle")
-                        }
-
-                        Button {
-                            activeModal = .avatar
-                        } label: {
-                            Label(loc.tr("profile_select_avatar"), systemImage: "paintbrush.pointed")
-                        }
-
-                        Divider()
-
-                        if appState.userRole == .student {
-                            Button {
-                                withAnimation(.spring(response: 0.4)) {
-                                    appState.userRole = .parent
-                                }
-                            } label: {
-                                Label(loc.tr("profile_switch_parent"), systemImage: "arrow.left.arrow.right.circle")
-                            }
-                        }
-
-                        Button(role: .destructive) {
-                            showingLogoutAlert = true
-                        } label: {
-                            Label(loc.tr("profile_logout"), systemImage: "rectangle.portrait.and.arrow.right")
-                        }
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color.white.opacity(0.9))
-                                .frame(width: 38, height: 38)
-                                .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
-
-                            Circle()
-                                .stroke(Color(hex: "6366F1").opacity(0.3), lineWidth: 1)
-                                .frame(width: 38, height: 38)
-
-                            Image(systemName: appState.avatarIcon)
+                            Image(systemName: "gearshape.fill")
                                 .font(.system(size: 18, weight: .semibold))
                                 .foregroundColor(Color(hex: "6366F1"))
+                        }
+                        
+                        Menu {
+                            Button {
+                                activeModal = .profile
+                            } label: {
+                                Label(loc.tr("profile_title"), systemImage: "person.crop.circle")
+                            }
+
+                            Button {
+                                activeModal = .avatar
+                            } label: {
+                                Label(loc.tr("profile_select_avatar"), systemImage: "paintbrush.pointed")
+                            }
+
+                            Divider()
+
+                            if appState.userRole == .student {
+                                Button {
+                                    withAnimation(.spring(response: 0.4)) {
+                                        appState.userRole = .parent
+                                    }
+                                } label: {
+                                    Label(loc.tr("profile_switch_parent"), systemImage: "arrow.left.arrow.right.circle")
+                                }
+                            }
+
+                            Button(role: .destructive) {
+                                showingLogoutAlert = true
+                            } label: {
+                                Label(loc.tr("profile_logout"), systemImage: "rectangle.portrait.and.arrow.right")
+                            }
+                        } label: {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.white.opacity(0.9))
+                                    .frame(width: 38, height: 38)
+                                    .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
+
+                                Circle()
+                                    .stroke(Color(hex: "6366F1").opacity(0.3), lineWidth: 1)
+                                    .frame(width: 38, height: 38)
+
+                                Image(systemName: appState.avatarIcon)
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(Color(hex: "6366F1"))
+                            }
                         }
                     }
                 }
@@ -272,6 +296,18 @@ struct StudentDashboardView: View {
                 
                 Spacer()
                 
+                Button(action: {
+                    activeModal = .addTodo
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 14))
+                        Text("添加")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(Color(hex: "6366F1"))
+                }
+                
                 if !appState.todoManager.upcomingDeadlines.isEmpty {
                     Button(action: {
                         // 跳转到学业界面的作业tab
@@ -285,11 +321,37 @@ struct StudentDashboardView: View {
             }
 
             if appState.todoManager.upcomingDeadlines.isEmpty {
-                StudentEmptyStateCard(
-                    icon: "checkmark.circle.fill",
-                    message: "暂无待办事项，所有任务都已完成！",
-                    color: "10B981"
-                )
+                VStack(spacing: 16) {
+                    StudentEmptyStateCard(
+                        icon: "checkmark.circle.fill",
+                        message: "暂无待办事项，所有任务都已完成！",
+                        color: "10B981"
+                    )
+                    
+                    Button {
+                        activeModal = .addTodo
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 16))
+                            
+                            Text("快速添加待办")
+                                .font(.system(size: 15, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .shadow(color: Color(hex: "6366F1").opacity(0.3), radius: 8, x: 0, y: 4)
+                    }
+                }
             } else {
                 VStack(spacing: 12) {
                     ForEach(appState.todoManager.upcomingDeadlines.prefix(3)) { todo in

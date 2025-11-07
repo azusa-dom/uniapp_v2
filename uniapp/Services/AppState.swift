@@ -13,6 +13,15 @@ class AppState: ObservableObject {
     @Published var avatarIcon = "person.fill"
     @Published var todoManager = TodoManager()
     @Published var calendarEvents: [CalendarEvent]? = []
+    
+    // 学生个人信息
+    @Published var studentName = "Zoya Huo"
+    @Published var studentEmail = "zoya@ucl.ac.uk"
+    @Published var studentId = "3012345"
+    @Published var studentProgram = "MSc Health Data Science"
+    @Published var studentYear = "Year 1"
+    @Published var studentPhone = ""
+    @Published var studentBio = "这里可以自己自定义"
 }
 
 enum CalendarEventType: String, Codable {

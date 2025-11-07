@@ -401,9 +401,9 @@ struct StudentAIAssistantView: View {
                                 }
                                 .padding(.top, 60)
                                 
-                                // 功能类别卡片
+                                // 功能类别卡片（不显示具体问题，只显示功能分类）
                                 VStack(spacing: 16) {
-                                    Text(loc.tr("ai_quick_start"))
+                                    Text("我能帮您做什么？")
                                         .font(.headline)
                                         .foregroundColor(.primary)
                                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -506,12 +506,47 @@ struct ChatMessage: Identifiable {
 struct MessageBubble: View {
     let message: ChatMessage
     
+    // 清理Markdown格式符号
+    private var cleanedText: String {
+        var text = message.text
+        
+        // 移除 Markdown 粗体/斜体: **, *, __, _
+        text = text.replacingOccurrences(of: "**", with: "")
+        text = text.replacingOccurrences(of: "*", with: "")
+        text = text.replacingOccurrences(of: "__", with: "")
+        text = text.replacingOccurrences(of: "_", with: "")
+        
+        // 移除 Markdown 标题: #, ##, ###
+        text = text.replacingOccurrences(of: #"^#+\s+"#, with: "", options: .regularExpression)
+        
+        // 移除 Markdown 链接: [text](url) -> text
+        text = text.replacingOccurrences(of: #"\[([^\]]+)\]\([^\)]+\)"#, with: "$1", options: .regularExpression)
+        
+        // 移除 Markdown 分隔线: ---, ===, ***
+        text = text.replacingOccurrences(of: "\n---\n", with: "\n", options: .regularExpression)
+        text = text.replacingOccurrences(of: "\n===\n", with: "\n", options: .regularExpression)
+        text = text.replacingOccurrences(of: "\n***\n", with: "\n", options: .regularExpression)
+        
+        // 移除列表标记: •, 🔴, 🟡, 🟢, 🔹, 1., 2., etc.
+        text = text.replacingOccurrences(of: #"[\•\🔴\🟡\🟢\🔹]\s?"#, with: "· ", options: .regularExpression)
+        text = text.replacingOccurrences(of: #"^\s*\d+\.\s+"#, with: "", options: .regularExpression)
+        
+        // 移除一些装饰性表情符号
+        let emojisToRemove: [Character] = ["📋", "💡", "✅", "📌", "🔔", "📅", "📝", "⚠️", "📊", "📎", "📈", "🎯", "💪", "📚", "✨"]
+        text.removeAll(where: { emojisToRemove.contains($0) })
+
+        // 移除多余的空行
+        text = text.replacingOccurrences(of: "\n{3,}", with: "\n\n", options: .regularExpression)
+        
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
     var body: some View {
         HStack {
             if message.isUser { Spacer() }
             
             VStack(alignment: message.isUser ? .trailing : .leading, spacing: 4) {
-                Text(message.text)
+                Text(cleanedText)
                     .font(.subheadline)
                     .foregroundColor(message.isUser ? .white : .primary)
                     .padding()
@@ -609,10 +644,12 @@ struct ChatInputBar: View {
     var body: some View {
         HStack(spacing: 12) {
             TextField(placeholder, text: $text)
-                .textFieldStyle(PlainTextFieldStyle())
-                .padding()
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .padding(.vertical, 12)
+                .padding(.horizontal, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(.ultraThinMaterial)
+                )
             
             Button(action: onSend) {
                 Image(systemName: "arrow.up.circle.fill")
