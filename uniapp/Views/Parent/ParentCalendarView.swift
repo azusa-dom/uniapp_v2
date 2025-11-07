@@ -402,8 +402,10 @@ struct ParentCalendarView: View {
     
     private func getWeeklyStats() -> (courses: Int, activities: Int, todos: Int) {
         let calendar = Calendar.current
-        let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: selectedDate))!
-        let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfWeek)!
+        guard let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: selectedDate)),
+              let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfWeek) else {
+            return (0, 0, 0)
+        }
         
         let courses = viewModel.events.filter { $0.startTime >= startOfWeek && $0.startTime < endOfWeek }.count
         let activities = activitiesService.activities.filter { activity in
@@ -735,7 +737,10 @@ struct ParentWeekView: View {
         var currentDate = weekInterval.start
         while currentDate < weekInterval.end {
             dates.append(currentDate)
-            currentDate = Calendar.current.date(byAdding: .day, value: 1, to: currentDate)!
+            guard let nextDate = Calendar.current.date(byAdding: .day, value: 1, to: currentDate) else {
+                break
+            }
+            currentDate = nextDate
         }
         return dates
     }
@@ -803,8 +808,10 @@ struct ParentDayView: View {
         VStack(spacing: 16) {
             HStack {
                 Button(action: {
-                    withAnimation(.spring(response: 0.3)) {
-                        selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate)!
+                    if let previousDay = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) {
+                        withAnimation(.spring(response: 0.3)) {
+                            selectedDate = previousDay
+                        }
                     }
                 }) {
                     Image(systemName: "chevron.left")
@@ -832,8 +839,10 @@ struct ParentDayView: View {
                 Spacer()
                 
                 Button(action: {
-                    withAnimation(.spring(response: 0.3)) {
-                        selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate)!
+                    if let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) {
+                        withAnimation(.spring(response: 0.3)) {
+                            selectedDate = nextDay
+                        }
                     }
                 }) {
                     Image(systemName: "chevron.right")
