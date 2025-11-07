@@ -109,8 +109,8 @@ struct PrescriptionCard: View {
             
             // 规格和用法
             VStack(alignment: .leading, spacing: 6) {
-                InfoRow(icon: "info.circle", text: prescription.specification, color: "6366F1")
-                InfoRow(icon: "clock", text: prescription.dosage, color: "F59E0B")
+                PrescriptionInfoRow(icon: "info.circle", text: prescription.specification, color: "6366F1")
+                PrescriptionInfoRow(icon: "clock", text: prescription.dosage, color: "F59E0B")
             }
             
             // 剩余数量进度条
@@ -202,8 +202,8 @@ struct PrescriptionCard: View {
     }
 }
 
-// MARK: - 信息行组件
-struct InfoRow: View {
+// MARK: - 处方信息行组件
+struct PrescriptionInfoRow: View {
     let icon: String
     let text: String
     let color: String
@@ -441,11 +441,11 @@ struct PrescriptionDetailView: View {
             }
             
             VStack(spacing: 10) {
-                InfoDetailRow(label: "开具医生", value: prescription.prescribedBy)
+                PrescriptionDetailRow(label: "开具医生", value: prescription.prescribedBy)
                 Divider()
-                InfoDetailRow(label: "处方日期", value: formatDate(prescription.prescriptionDate))
+                PrescriptionDetailRow(label: "处方日期", value: formatDate(prescription.prescriptionDate))
                 Divider()
-                InfoDetailRow(label: "有效期至", value: formatDate(prescription.validUntil))
+                PrescriptionDetailRow(label: "有效期至", value: formatDate(prescription.validUntil))
             }
         }
         .padding(16)
@@ -470,7 +470,7 @@ struct PrescriptionDetailView: View {
 }
 
 // MARK: - 信息详情行
-struct InfoDetailRow: View {
+struct PrescriptionDetailRow: View {
     let label: String
     let value: String
     
