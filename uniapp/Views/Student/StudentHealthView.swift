@@ -46,6 +46,7 @@ struct StudentHealthView: View {
     @State private var showingMedicalRecords = false
     @State private var showingPrescriptions = false
     @State private var showingAppointments = false
+    @State private var showingAppointmentBooking = false
     
     enum RangeFilter: String, CaseIterable, Identifiable { 
         case day = "今日"
@@ -123,8 +124,9 @@ struct StudentHealthView: View {
                 PrescriptionsView()
                     .environmentObject(loc)
             }
-            .sheet(isPresented: $showingAppointments) {
-                Text("预约面诊")
+            .sheet(isPresented: $showingAppointmentBooking) {
+                AppointmentBookingView()
+                    .environmentObject(loc)
             }
         }
     }
@@ -163,7 +165,7 @@ struct StudentHealthView: View {
                     count: healthData.appointments.filter { $0.status == .scheduled }.count,
                     color: "10B981"
                 ) {
-                    showingAppointments = true
+                    showingAppointmentBooking = true
                 }
                 
                 HealthRecordButton(
