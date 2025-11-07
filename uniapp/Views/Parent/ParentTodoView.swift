@@ -154,7 +154,7 @@ struct ParentTodoView: View {
                 }
             }
             .sheet(isPresented: $showingAddTodoSheet) {
-                AddTodoView { newTitle, dueDate, priority, category, notes in
+                ParentAddTodoView { newTitle, dueDate, priority, category, notes in
                     let newTodo = TodoItem(
                         title: newTitle,
                         dueDate: dueDate,
@@ -306,7 +306,7 @@ struct ParentTodoStatCard: View {
     }
 }
 
-struct AddTodoView: View {
+struct ParentAddTodoView: View {
     @Environment(\.dismiss) var dismiss
     @State private var title = ""
     @State private var dueDate = Date()
