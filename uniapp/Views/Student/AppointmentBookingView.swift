@@ -9,7 +9,7 @@ struct AppointmentBookingView: View {
     @State private var selectedDepartment: Department?
     @State private var selectedDoctor: Doctor?
     @State private var selectedDate: Date = Date()
-    @State private var selectedTimeSlot: TimeSlot?
+    @State private var selectedTimeSlot: AppointmentTimeSlot?
     @State private var patientName = ""
     @State private var patientPhone = ""
     @State private var symptoms = ""
@@ -134,13 +134,19 @@ struct AppointmentBookingView: View {
         guard let doctor = selectedDoctor, let timeSlot = selectedTimeSlot else { return }
         
         let appointment = MedicalAppointment(
-            id: UUID().uuidString,
+            appointmentNumber: "UCL-\(Date().timeIntervalSince1970)",
             doctor: doctor,
             date: selectedDate,
-            time: timeSlot.time,
-            department: selectedDepartment?.name ?? "全科",
-            reason: symptoms,
-            status: .scheduled
+            timeSlot: timeSlot.time,
+            location: "\(selectedDepartment?.name ?? "全科")诊室",
+            appointmentType: .newSymptom,
+            reason: [symptoms],
+            description: symptoms,
+            needsTranslation: false,
+            attachments: [],
+            emergencyContact: EmergencyContact(name: patientName, phone: patientPhone, relationship: "本人"),
+            status: .scheduled,
+            remindersSent: []
         )
         
         healthData.appointments.append(appointment)
@@ -358,10 +364,10 @@ struct DoctorCard: View {
 // MARK: - 步骤2：选择时间
 struct TimeSelectionStep: View {
     @Binding var selectedDate: Date
-    @Binding var selectedTimeSlot: TimeSlot?
+    @Binding var selectedTimeSlot: AppointmentTimeSlot?
     let doctor: Doctor?
     
-    @State private var availableSlots: [TimeSlot] = []
+    @State private var availableSlots: [AppointmentTimeSlot] = []
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -424,24 +430,24 @@ struct TimeSelectionStep: View {
         let currentHour = calendar.component(.hour, from: Date())
         
         availableSlots = [
-            TimeSlot(time: "09:00", available: !isToday || currentHour < 9),
-            TimeSlot(time: "09:30", available: !isToday || currentHour < 9),
-            TimeSlot(time: "10:00", available: !isToday || currentHour < 10),
-            TimeSlot(time: "10:30", available: !isToday || currentHour < 10),
-            TimeSlot(time: "11:00", available: !isToday || currentHour < 11),
-            TimeSlot(time: "14:00", available: !isToday || currentHour < 14),
-            TimeSlot(time: "14:30", available: !isToday || currentHour < 14),
-            TimeSlot(time: "15:00", available: !isToday || currentHour < 15),
-            TimeSlot(time: "15:30", available: !isToday || currentHour < 15),
-            TimeSlot(time: "16:00", available: !isToday || currentHour < 16),
-            TimeSlot(time: "16:30", available: !isToday || currentHour < 16)
-        ].filter { $0.available }
+            AppointmentTimeSlot(time: "09:00", isAvailable: !isToday || currentHour < 9, isRecommended: false),
+            AppointmentTimeSlot(time: "09:30", isAvailable: !isToday || currentHour < 9, isRecommended: false),
+            AppointmentTimeSlot(time: "10:00", isAvailable: !isToday || currentHour < 10, isRecommended: true),
+            AppointmentTimeSlot(time: "10:30", isAvailable: !isToday || currentHour < 10, isRecommended: false),
+            AppointmentTimeSlot(time: "11:00", isAvailable: !isToday || currentHour < 11, isRecommended: false),
+            AppointmentTimeSlot(time: "14:00", isAvailable: !isToday || currentHour < 14, isRecommended: false),
+            AppointmentTimeSlot(time: "14:30", isAvailable: !isToday || currentHour < 14, isRecommended: true),
+            AppointmentTimeSlot(time: "15:00", isAvailable: !isToday || currentHour < 15, isRecommended: false),
+            AppointmentTimeSlot(time: "15:30", isAvailable: !isToday || currentHour < 15, isRecommended: false),
+            AppointmentTimeSlot(time: "16:00", isAvailable: !isToday || currentHour < 16, isRecommended: false),
+            AppointmentTimeSlot(time: "16:30", isAvailable: !isToday || currentHour < 16, isRecommended: false)
+        ].filter { $0.isAvailable }
     }
 }
 
 // MARK: - 时间段卡片
 struct TimeSlotCard: View {
-    let slot: TimeSlot
+    let slot: AppointmentTimeSlot
     let isSelected: Bool
     
     var body: some View {
@@ -538,7 +544,7 @@ struct InformationStep: View {
 struct ConfirmationStep: View {
     let doctor: Doctor?
     let date: Date
-    let timeSlot: TimeSlot?
+    let timeSlot: AppointmentTimeSlot?
     let patientName: String
     let symptoms: String
     
@@ -749,10 +755,12 @@ struct Department: Identifiable {
     ]
 }
 
-struct TimeSlot: Identifiable {
+// 预约专用时间段（避免与 HealthModels 中的 TimeSlot 冲突）
+struct AppointmentTimeSlot: Identifiable {
     let id = UUID()
     let time: String
-    let available: Bool
+    let isAvailable: Bool
+    let isRecommended: Bool
 }
 
 #Preview {

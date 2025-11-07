@@ -125,7 +125,11 @@ struct MedicalAppointment: Identifiable {
 struct Doctor: Identifiable {
     let id = UUID()
     let name: String
+    let title: String  // 添加职称
     let department: String
+    let specialization: String  // 添加专长
+    let experience: Int  // 添加经验年限
+    let available: Bool  // 添加可预约状态
     let specialties: [String]
     let languages: [String]
     let consultationCount: Int
@@ -154,6 +158,8 @@ struct TimeSlot: Identifiable {
 
 // MARK: - 健康数据管理器
 class HealthDataManager: ObservableObject {
+    static let shared = HealthDataManager()  // 添加单例
+    
     @Published var medicalRecords: [MedicalRecord] = []
     @Published var prescriptions: [Prescription] = []
     @Published var allergies: [AllergyRecord] = []
@@ -297,7 +303,11 @@ class HealthDataManager: ObservableObject {
         doctors = [
             Doctor(
                 name: "Dr. Sarah Johnson",
-                department: "风湿免疫科",
+                title: "主任医师",
+                department: "全科",
+                specialization: "强直性脊柱炎、类风湿关节炎",
+                experience: 15,
+                available: true,
                 specialties: ["强直性脊柱炎", "类风湿关节炎", "系统性红斑狼疮"],
                 languages: ["English"],
                 consultationCount: 5,
@@ -306,7 +316,11 @@ class HealthDataManager: ObservableObject {
             ),
             Doctor(
                 name: "Dr. James Smith",
-                department: "风湿免疫科",
+                title: "副主任医师",
+                department: "骨科",
+                specialization: "骨关节疾病、运动损伤",
+                experience: 10,
+                available: true,
                 specialties: ["自身免疫性疾病", "关节炎"],
                 languages: ["English"],
                 consultationCount: 3,
@@ -315,7 +329,11 @@ class HealthDataManager: ObservableObject {
             ),
             Doctor(
                 name: "Dr. Emily Chen",
-                department: "全科医生",
+                title: "主治医师",
+                department: "全科",
+                specialization: "全科医疗、慢性病管理",
+                experience: 8,
+                available: true,
                 specialties: ["全科医疗", "慢性病管理"],
                 languages: ["English", "中文"],
                 consultationCount: 0,
