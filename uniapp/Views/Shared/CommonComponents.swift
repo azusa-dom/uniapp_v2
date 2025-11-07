@@ -331,8 +331,7 @@ struct TodoDetailView: View {
 
 struct UpcomingDeadlinesCard: View {
     @EnvironmentObject var appState: AppState
-    @Binding var selectedTodo: TodoItem?
-    @Binding var showingDetail: Bool
+    let onTodoTap: (TodoItem) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -347,8 +346,7 @@ struct UpcomingDeadlinesCard: View {
             } else {
                 ForEach(appState.todoManager.upcomingDeadlines) { todo in
                     Button(action: {
-                        selectedTodo = todo
-                        showingDetail = true
+                        onTodoTap(todo)
                     }) {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {

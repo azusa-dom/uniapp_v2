@@ -14,6 +14,23 @@ struct ParentDashboardView: View {
     @State private var selectedTodo: TodoItem? = nil
     @State private var showingTodoDetail = false
     
+    // 使用枚举管理不同的 modal 状态
+    @State private var activeSheet: ParentDashboardSheet?
+    
+    enum ParentDashboardSheet: Identifiable {
+        case settings
+        case todoDetail(TodoItem)
+        
+        var id: String {
+            switch self {
+            case .settings:
+                return "settings"
+            case .todoDetail(let todo):
+                return "todo-\(todo.id)"
+            }
+        }
+    }
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -36,8 +53,9 @@ struct ParentDashboardView: View {
                         // 即将截止的任务
                         if !appState.todoManager.upcomingDeadlines.isEmpty {
                             UpcomingDeadlinesCard(
-                                selectedTodo: $selectedTodo,
-                                showingDetail: $showingTodoDetail
+                                onTodoTap: { todo in
+                                    activeSheet = .todoDetail(todo)
+                                }
                             )
                         }
                         
@@ -68,7 +86,7 @@ struct ParentDashboardView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        showingSettings = true
+                        activeSheet = .settings
                     }) {
                         Image(systemName: "gearshape.fill")
                             .font(.system(size: 20))
@@ -76,11 +94,23 @@ struct ParentDashboardView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showingSettings) {
-                ParentSettingsView()
-            }
-            .sheet(item: $selectedTodo) { todo in
-                TodoDetailView(todo: todo, isPresented: $showingTodoDetail)
+            .sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .settings:
+                    ParentSettingsView()
+                        .environmentObject(appState)
+                        .environmentObject(loc)
+                case .todoDetail(let todo):
+                    TodoDetailView(
+                        todo: todo,
+                        isPresented: Binding(
+                            get: { activeSheet != nil },
+                            set: { if !$0 { activeSheet = nil } }
+                        )
+                    )
+                    .environmentObject(appState)
+                    .environmentObject(loc)
+                }
             }
         }
     }
