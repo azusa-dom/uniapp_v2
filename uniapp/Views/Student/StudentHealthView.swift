@@ -110,7 +110,9 @@ struct StudentHealthView: View {
                 }
             }
             .navigationTitle("健康")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            #endif
             .sheet(item: $selectedMetric) { metric in
                 HealthMetricDetailView(metric: metric)
                     .environmentObject(loc)

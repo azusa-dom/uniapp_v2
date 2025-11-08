@@ -58,7 +58,9 @@ struct MedicalRecordsView: View {
                 }
             }
             .navigationTitle("就诊历史")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            #endif
             .sheet(item: $selectedRecord) { record in
                 MedicalRecordDetailView(record: record)
                     .environmentObject(loc)

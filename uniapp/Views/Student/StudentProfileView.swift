@@ -50,7 +50,9 @@ struct StudentProfileView: View {
                 }
             }
             .navigationTitle(loc.tr("profile_title"))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            #endif
             .sheet(isPresented: $showingLanguageSheet) {
                 LanguageSelectionSheet()
             }

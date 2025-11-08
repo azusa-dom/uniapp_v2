@@ -532,7 +532,9 @@ struct ModuleDetailView: View {
             }
         }
         .navigationTitle("课程详情")
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
     
     func markColor(_ mark: Double) -> Color {

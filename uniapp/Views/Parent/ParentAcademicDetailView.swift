@@ -24,7 +24,9 @@ struct ParentAcademicDetailView: View {
             .padding(.vertical)
         }
         .navigationTitle(loc.tr("parent_academic_detail_title"))
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
     
     private var overallSummary: some View {

@@ -83,7 +83,9 @@ struct ParentHealthView: View {
                 }
             }
             .navigationTitle("健康")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            #endif
             .sheet(item: $selected) { item in
                 ParentHealthDetailView(item: item)
                     .environmentObject(loc)

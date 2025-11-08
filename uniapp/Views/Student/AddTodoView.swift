@@ -42,7 +42,9 @@ struct AddTodoView: View {
                 }
             }
             .navigationTitle("添加待办事项")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {

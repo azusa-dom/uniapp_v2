@@ -77,7 +77,9 @@ struct StudentEmailView: View {
                 }
             }
             .navigationTitle("邮件")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            #endif
         }
     }
 }
@@ -462,7 +464,9 @@ Best regards,
             }
         }
         .navigationTitle(email.title)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }
 struct AddEmailToCalendarView: View {

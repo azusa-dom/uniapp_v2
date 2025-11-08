@@ -494,7 +494,9 @@ struct ParentAIAssistantView: View {
                 }
             }
             .navigationTitle(loc.tr("ai_title"))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
         }
     }
     
