@@ -235,7 +235,9 @@ struct TimetableView: View {
                 }
             }
             .navigationTitle("我的课程表")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .task {
                 await loadTimetable()
             }
