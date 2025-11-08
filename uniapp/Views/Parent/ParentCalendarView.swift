@@ -82,7 +82,9 @@ struct ParentCalendarView: View {
                         .padding()
                 }
             }
+            #if os(iOS)
             .navigationBarHidden(true)
+            #endif
             .sheet(isPresented: $showingSettings) {
                 ParentCalendarSettingsView()
             }

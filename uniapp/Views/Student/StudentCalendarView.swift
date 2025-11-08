@@ -103,7 +103,9 @@ struct StudentCalendarView: View {
                     .padding(.bottom, 30)
                 }
             }
+            #if os(iOS)
             .navigationBarHidden(true)
+            #endif
             .sheet(isPresented: $showingAddEventSheet) {
                 AddEventSheet(viewModel: viewModel)
             }
