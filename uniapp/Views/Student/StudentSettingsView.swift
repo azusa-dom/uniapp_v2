@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct StudentSettingsView: View {
     @EnvironmentObject var appState: AppState
