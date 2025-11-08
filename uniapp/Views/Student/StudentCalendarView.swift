@@ -1207,17 +1207,32 @@ struct ActivityDetailSheet: View {
     // 添加到日历方法
     func addToCalendar() async {
         // 请求日历访问权限
-        let status = EKEventStore.authorizationStatus(for: .event)
-        
-        if status == .notDetermined {
-            let granted = try? await eventStore.requestAccess(to: .event)
-            if granted != true {
+        if #available(macOS 14.0, iOS 17.0, *) {
+            let status = EKEventStore.authorizationStatus(for: .event)
+            
+            if status == .notDetermined {
+                let granted = try? await eventStore.requestFullAccessToEvents()
+                if granted != true {
+                    showingAddError = true
+                    return
+                }
+            } else if status != .fullAccess {
                 showingAddError = true
                 return
             }
-        } else if status != .authorized {
-            showingAddError = true
-            return
+        } else {
+            let status = EKEventStore.authorizationStatus(for: .event)
+            
+            if status == .notDetermined {
+                let granted = try? await eventStore.requestAccess(to: .event)
+                if granted != true {
+                    showingAddError = true
+                    return
+                }
+            } else if status != .authorized {
+                showingAddError = true
+                return
+            }
         }
         
         // 创建事件

@@ -42,7 +42,7 @@ final class UCLAPIViewModel: ObservableObject {
         let today = Date()
         
         // 获取今天是星期几
-        let weekday = calendar.component(.weekday, from: today)
+        _ = calendar.component(.weekday, from: today)
         
         // 生成本周的课程表（周一到周五）
         var weekEvents: [UCLAPIEvent] = []
