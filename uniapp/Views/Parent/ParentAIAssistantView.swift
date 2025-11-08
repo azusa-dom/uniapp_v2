@@ -274,6 +274,7 @@ class ParentAIAssistantViewModel: ObservableObject {
                 self.isProcessing = false
             }
         }
+        .navigationViewStyle(.stack)
     }
     
     private func generateSmartResponse(for query: String) -> String {

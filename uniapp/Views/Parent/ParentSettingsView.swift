@@ -103,6 +103,7 @@ struct ParentSettingsView: View {
                 #endif
             }
         }
+        .navigationViewStyle(.stack)
     }
 }
 

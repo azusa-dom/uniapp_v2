@@ -222,6 +222,7 @@ class StudentAIAssistantViewModel: ObservableObject {
                 self.isProcessing = false
             }
         }
+        .navigationViewStyle(.stack)
     }
     
     // 智能回复生成

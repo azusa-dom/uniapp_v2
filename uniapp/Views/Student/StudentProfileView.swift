@@ -60,6 +60,7 @@ struct StudentProfileView: View {
                 AvatarPickerView(selectedIcon: $appState.avatarIcon)
             }
         }
+        .navigationViewStyle(.stack)
     }
 }
 

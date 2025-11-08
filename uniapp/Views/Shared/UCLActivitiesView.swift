@@ -39,6 +39,7 @@ struct UCLActivitiesView: View {
                 ($0.description?.localizedCaseInsensitiveContains(searchText) ?? false)
             }
         }
+        .navigationViewStyle(.stack)
     }
 
     var body: some View {

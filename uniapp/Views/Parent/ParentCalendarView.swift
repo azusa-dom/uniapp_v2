@@ -98,6 +98,7 @@ struct ParentCalendarView: View {
                 loadData()
             }
         }
+        .navigationViewStyle(.stack)
     }
     
     // MARK: - 顶部控制栏

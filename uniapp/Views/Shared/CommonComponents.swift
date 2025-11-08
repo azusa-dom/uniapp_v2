@@ -326,6 +326,7 @@ struct TodoDetailView: View {
                 Text("确定要删除这个待办事项吗？此操作无法撤销。")
             }
         }  // ✅ NavigationView 结束
+        .navigationViewStyle(.stack)
     }  // ✅ body 结束
 }  // ✅ struct 结束
 

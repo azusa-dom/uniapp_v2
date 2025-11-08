@@ -95,6 +95,7 @@ struct AppointmentBookingView: View {
                 }
             }
         }
+        .navigationViewStyle(.stack)
         .alert("预约成功", isPresented: $showConfirmation) {
             Button("确定") {
                 dismiss()

@@ -131,6 +131,7 @@ struct StudentHealthView: View {
                     .environmentObject(loc)
             }
         }
+        .navigationViewStyle(.stack)
     }
     
     // MARK: - 健康档案区域

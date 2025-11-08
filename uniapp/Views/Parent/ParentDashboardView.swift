@@ -115,6 +115,7 @@ struct ParentDashboardView: View {
                 }
             }
         }
+        .navigationViewStyle(.stack)
     }
 }
 
