@@ -55,9 +55,15 @@ struct UCLActivitiesView: View {
                 }
             }
             .navigationTitle("UCL 活动")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            #endif
             .toolbar {
+                #if os(iOS)
                 ToolbarItem(placement: .navigationBarTrailing) {
+                #else
+                ToolbarItem(placement: .automatic) {
+                #endif
                     Button(action: {
                         activitiesService.refreshActivities()
                     }) {
