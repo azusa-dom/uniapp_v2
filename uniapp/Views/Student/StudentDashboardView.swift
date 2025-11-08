@@ -69,15 +69,15 @@ struct StudentDashboardView: View {
                 DesignSystem.backgroundGradient.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 24) {
+                    VStack(spacing: 20) {
                         header
                         statsRow
                         todayClassesSection
                         upcomingDeadlinesSection
                         recommendationsSection
                     }
-                    .padding(.horizontal)
-                    .padding(.vertical, 30)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 20)
                 }
                 .sheet(item: $activeModal) { modal in
                     switch modal {
@@ -122,60 +122,46 @@ struct StudentDashboardView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 16) {
+                    Menu {
+                        Button {
+                            activeModal = .profile
+                        } label: {
+                            Label(loc.tr("profile_title"), systemImage: "person.crop.circle")
+                        }
+
+                        Button {
+                            activeModal = .avatar
+                        } label: {
+                            Label(loc.tr("profile_select_avatar"), systemImage: "paintbrush.pointed")
+                        }
+                        
                         Button {
                             activeModal = .settings
                         } label: {
-                            Image(systemName: "gearshape.fill")
+                            Label("设置", systemImage: "gearshape.fill")
+                        }
+
+                        Divider()
+
+                        Button(role: .destructive) {
+                            showingLogoutAlert = true
+                        } label: {
+                            Label(loc.tr("profile_logout"), systemImage: "rectangle.portrait.and.arrow.right")
+                        }
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(Color.white.opacity(0.9))
+                                .frame(width: 38, height: 38)
+                                .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
+
+                            Circle()
+                                .stroke(Color(hex: "6366F1").opacity(0.3), lineWidth: 1)
+                                .frame(width: 38, height: 38)
+
+                            Image(systemName: appState.avatarIcon)
                                 .font(.system(size: 18, weight: .semibold))
                                 .foregroundColor(Color(hex: "6366F1"))
-                        }
-                        
-                        Menu {
-                            Button {
-                                activeModal = .profile
-                            } label: {
-                                Label(loc.tr("profile_title"), systemImage: "person.crop.circle")
-                            }
-
-                            Button {
-                                activeModal = .avatar
-                            } label: {
-                                Label(loc.tr("profile_select_avatar"), systemImage: "paintbrush.pointed")
-                            }
-
-                            Divider()
-
-                            if appState.userRole == .student {
-                                Button {
-                                    withAnimation(.spring(response: 0.4)) {
-                                        appState.userRole = .parent
-                                    }
-                                } label: {
-                                    Label(loc.tr("profile_switch_parent"), systemImage: "arrow.left.arrow.right.circle")
-                                }
-                            }
-
-                            Button(role: .destructive) {
-                                showingLogoutAlert = true
-                            } label: {
-                                Label(loc.tr("profile_logout"), systemImage: "rectangle.portrait.and.arrow.right")
-                            }
-                        } label: {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.white.opacity(0.9))
-                                    .frame(width: 38, height: 38)
-                                    .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
-
-                                Circle()
-                                    .stroke(Color(hex: "6366F1").opacity(0.3), lineWidth: 1)
-                                    .frame(width: 38, height: 38)
-
-                                Image(systemName: appState.avatarIcon)
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(Color(hex: "6366F1"))
-                            }
                         }
                     }
                 }
@@ -198,9 +184,9 @@ struct StudentDashboardView: View {
         }
     }
 
-    // MARK: - 头部区域（只保留邮件和活动）
+    // MARK: - 头部区域（简洁版本）
     private var header: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(loc.tr("home_welcome") + " Zoya")
                 .font(.system(size: 28, weight: .bold))
                 .foregroundColor(.primary)
@@ -208,17 +194,6 @@ struct StudentDashboardView: View {
             Text("MSc Health Data Science · Year 1")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.secondary)
-
-            // 只保留邮件和活动两个快捷按钮
-            HStack(spacing: 16) {
-                quickActionButton(icon: "envelope.fill", title: loc.tr("home_qa_email")) {
-                    selectedTab = 4
-                }
-
-                quickActionButton(icon: "sparkles", title: loc.tr("home_qa_activities")) {
-                    selectedTab = 5
-                }
-            }
         }
     }
 
@@ -258,12 +233,14 @@ struct StudentDashboardView: View {
                 
                 Spacer()
                 
-                Button(action: {
-                    selectedTab = 1
-                }) {
-                    Text("查看全部")
-                        .font(.system(size: 14))
-                        .foregroundColor(Color(hex: "6366F1"))
+                if !todayClasses.isEmpty {
+                    Button(action: {
+                        selectedTab = 1
+                    }) {
+                        Text("查看全部")
+                            .font(.system(size: 14))
+                            .foregroundColor(Color(hex: "6366F1"))
+                    }
                 }
             }
 
@@ -407,39 +384,6 @@ struct StudentDashboardView: View {
                 }
             }
         }
-    }
-
-    // MARK: - 快捷操作按钮
-    private func quickActionButton(icon: String, title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 50, height: 50)
-                        .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
-
-                    Image(systemName: icon)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(Color(hex: "6366F1"))
-                }
-
-                Text(title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-            }
-            .padding(16)
-            .background(Color.white.opacity(0.8))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-        }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 
