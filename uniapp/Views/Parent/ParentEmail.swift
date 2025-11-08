@@ -94,7 +94,9 @@ struct ParentEmailView: View {
                 .padding(.top)
             }
             .navigationTitle("邮件")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            #endif
         }
     }
 }
