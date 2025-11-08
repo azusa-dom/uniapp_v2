@@ -502,6 +502,7 @@ struct InformationStep: View {
                     Text("联系电话")
                         .font(.system(size: 15, weight: .medium))
                     
+                    #if canImport(UIKit)
                     TextField("请输入联系电话", text: $patientPhone)
                         .keyboardType(.phonePad)
                         .textFieldStyle(.plain)
@@ -512,6 +513,17 @@ struct InformationStep: View {
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                         )
+                    #else
+                    TextField("请输入联系电话", text: $patientPhone)
+                        .textFieldStyle(.plain)
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                        )
+                    #endif
                 }
                 
                 // 症状描述
