@@ -173,15 +173,28 @@ final class UCLAPIViewModel: ObservableObject {
     }
 
     func addEventToCalendar(event: UCLAPIEvent) {
-        eventStore.requestAccess(to: .event) { granted, _ in
-            guard granted else { return }
-            let ekEvent = EKEvent(eventStore: self.eventStore)
-            ekEvent.title = event.title
-            ekEvent.startDate = event.startTime
-            ekEvent.endDate = event.endTime
-            ekEvent.location = event.location
-            ekEvent.calendar = self.eventStore.defaultCalendarForNewEvents
-            try? self.eventStore.save(ekEvent, span: .thisEvent)
+        if #available(macOS 14.0, iOS 17.0, *) {
+            eventStore.requestFullAccessToEvents { granted, _ in
+                guard granted else { return }
+                let ekEvent = EKEvent(eventStore: self.eventStore)
+                ekEvent.title = event.title
+                ekEvent.startDate = event.startTime
+                ekEvent.endDate = event.endTime
+                ekEvent.location = event.location
+                ekEvent.calendar = self.eventStore.defaultCalendarForNewEvents
+                try? self.eventStore.save(ekEvent, span: .thisEvent)
+            }
+        } else {
+            eventStore.requestAccess(to: .event) { granted, _ in
+                guard granted else { return }
+                let ekEvent = EKEvent(eventStore: self.eventStore)
+                ekEvent.title = event.title
+                ekEvent.startDate = event.startTime
+                ekEvent.endDate = event.endTime
+                ekEvent.location = event.location
+                ekEvent.calendar = self.eventStore.defaultCalendarForNewEvents
+                try? self.eventStore.save(ekEvent, span: .thisEvent)
+            }
         }
     }
 

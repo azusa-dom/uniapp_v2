@@ -46,7 +46,7 @@ struct AddTodoView: View {
             .navigationBarTitleDisplayMode(.large)
             #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button {
                         dismiss()
                     } label: {
