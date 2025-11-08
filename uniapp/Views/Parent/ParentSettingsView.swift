@@ -103,7 +103,9 @@ struct ParentSettingsView: View {
                 #endif
             }
         }
+        #if os(iOS)
         .navigationViewStyle(.stack)
+        #endif
     }
 }
 

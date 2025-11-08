@@ -222,7 +222,6 @@ class StudentAIAssistantViewModel: ObservableObject {
                 self.isProcessing = false
             }
         }
-        .navigationViewStyle(.stack)
     }
     
     // 智能回复生成
@@ -475,6 +474,9 @@ struct StudentAIAssistantView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
         }
+        #if os(iOS)
+        .navigationViewStyle(.stack)
+        #endif
     }
     
     // 根据类别触发相应的演示对话
