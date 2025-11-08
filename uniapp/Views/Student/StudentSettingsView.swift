@@ -51,8 +51,11 @@ struct StudentSettingsView: View {
                 }
             }
             .navigationTitle("设置")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            #endif
             .toolbar {
+                #if os(iOS)
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
                         if hasUnsavedChanges {
@@ -77,6 +80,32 @@ struct StudentSettingsView: View {
                     }
                     .disabled(!hasUnsavedChanges)
                 }
+                #else
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        if hasUnsavedChanges {
+                            showingSaveAlert = true
+                        } else {
+                            dismiss()
+                        }
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        saveChanges()
+                    } label: {
+                        Text("保存")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(hasUnsavedChanges ? Color(hex: "6366F1") : .secondary)
+                    }
+                    .disabled(!hasUnsavedChanges)
+                }
+                #endif
             }
             .alert("未保存的更改", isPresented: $showingSaveAlert) {
                 Button("放弃更改", role: .destructive) {
@@ -142,12 +171,14 @@ struct StudentSettingsView: View {
                             .frame(width: 120, height: 120)
                             .clipShape(Circle())
                     } else {
-                    #endif
                         Image(systemName: appState.avatarIcon)
                             .font(.system(size: 50, weight: .semibold))
                             .foregroundColor(.white)
-                    #if canImport(UIKit)
                     }
+                    #else
+                    Image(systemName: appState.avatarIcon)
+                        .font(.system(size: 50, weight: .semibold))
+                        .foregroundColor(.white)
                     #endif
                     
                     // 编辑按钮
@@ -293,6 +324,7 @@ struct StudentSettingsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             VStack(spacing: 12) {
+                #if canImport(UIKit)
                 SettingsTextField(
                     icon: "phone.fill",
                     title: "手机号",
@@ -300,6 +332,14 @@ struct StudentSettingsView: View {
                     text: $editedPhone,
                     keyboardType: .phonePad
                 )
+                #else
+                SettingsTextField(
+                    icon: "phone.fill",
+                    title: "手机号",
+                    placeholder: "请输入手机号",
+                    text: $editedPhone
+                )
+                #endif
             }
             .padding(16)
             .background(Color.white.opacity(0.8))
@@ -387,7 +427,9 @@ struct SettingsTextField: View {
     let title: String
     let placeholder: String
     @Binding var text: String
+    #if canImport(UIKit)
     var keyboardType: UIKeyboardType = .default
+    #endif
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -401,16 +443,25 @@ struct SettingsTextField: View {
                     .foregroundColor(.secondary)
             }
             
+            #if canImport(UIKit)
             TextField(placeholder, text: $text)
                 .font(.system(size: 15))
                 .padding(12)
                 .background(Color.gray.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .keyboardType(keyboardType)
+            #else
+            TextField(placeholder, text: $text)
+                .font(.system(size: 15))
+                .padding(12)
+                .background(Color.gray.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            #endif
         }
     }
 }
 
+#if canImport(UIKit)
 // MARK: - 图片选择器
 struct ImagePicker: UIViewControllerRepresentable {
     @Binding var image: UIImage?
@@ -451,6 +502,7 @@ struct ImagePicker: UIViewControllerRepresentable {
         }
     }
 }
+#endif
 
 // MARK: - 预览
 struct StudentSettingsView_Previews: PreviewProvider {
