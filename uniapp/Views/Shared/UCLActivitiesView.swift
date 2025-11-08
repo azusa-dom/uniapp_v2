@@ -61,9 +61,6 @@ struct UCLActivitiesView: View {
             .toolbar {
                 #if os(iOS)
                 ToolbarItem(placement: .navigationBarTrailing) {
-                #else
-                ToolbarItem(placement: .automatic) {
-                #endif
                     Button(action: {
                         activitiesService.refreshActivities()
                     }) {
@@ -71,6 +68,16 @@ struct UCLActivitiesView: View {
                             .foregroundColor(Color(hex: "6366F1"))
                     }
                 }
+                #else
+                ToolbarItem(placement: .automatic) {
+                    Button(action: {
+                        activitiesService.refreshActivities()
+                    }) {
+                        Image(systemName: "arrow.clockwise")
+                            .foregroundColor(Color(hex: "6366F1"))
+                    }
+                }
+                #endif
             }
             .onAppear {
                 if activitiesService.activities.isEmpty {
