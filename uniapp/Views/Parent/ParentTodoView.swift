@@ -172,7 +172,9 @@ struct ParentTodoView: View {
                 TodoDetailView(todo: todo, isPresented: $showingTodoDetail)
             }
         }
+        #if os(iOS)
         .navigationViewStyle(.stack)
+        #endif
     }
 }
 
