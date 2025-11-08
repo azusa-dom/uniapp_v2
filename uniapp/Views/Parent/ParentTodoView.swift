@@ -141,9 +141,11 @@ struct ParentTodoView: View {
                 }
             }
             .navigationTitle("待办事项")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Button(action: {
                         showingAddTodoSheet = true
                     }) {
