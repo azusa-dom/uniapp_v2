@@ -88,14 +88,19 @@ struct ParentSettingsView: View {
             .toolbar {
                 #if os(iOS)
                 ToolbarItem(placement: .navigationBarTrailing) {
-                #else
-                ToolbarItem(placement: .automatic) {
-                #endif
                     Button(loc.tr("done")) {
                         dismiss()
                     }
                     .foregroundColor(Color(hex: "6366F1"))
                 }
+                #else
+                ToolbarItem(placement: .automatic) {
+                    Button(loc.tr("done")) {
+                        dismiss()
+                    }
+                    .foregroundColor(Color(hex: "6366F1"))
+                }
+                #endif
             }
         }
     }

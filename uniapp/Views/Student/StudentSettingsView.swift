@@ -6,7 +6,9 @@
 //
 
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#endif
 
 struct StudentSettingsView: View {
     @EnvironmentObject var appState: AppState
@@ -15,7 +17,9 @@ struct StudentSettingsView: View {
     
     @State private var showingAvatarPicker = false
     @State private var showingImagePicker = false
+    #if canImport(UIKit)
     @State private var selectedImage: UIImage?
+    #endif
     
     // 个人信息编辑状态
     @State private var editedName: String = ""
@@ -90,9 +94,11 @@ struct StudentSettingsView: View {
                 AvatarPickerView(selectedIcon: $appState.avatarIcon)
                     .environmentObject(loc)
             }
+            #if canImport(UIKit)
             .sheet(isPresented: $showingImagePicker) {
                 ImagePicker(image: $selectedImage)
             }
+            #endif
             .onAppear {
                 loadCurrentData()
             }
@@ -128,6 +134,7 @@ struct StudentSettingsView: View {
                         .frame(width: 120, height: 120)
                         .shadow(color: Color(hex: "6366F1").opacity(0.3), radius: 15, x: 0, y: 5)
                     
+                    #if canImport(UIKit)
                     if let image = selectedImage {
                         Image(uiImage: image)
                             .resizable()
@@ -135,10 +142,13 @@ struct StudentSettingsView: View {
                             .frame(width: 120, height: 120)
                             .clipShape(Circle())
                     } else {
+                    #endif
                         Image(systemName: appState.avatarIcon)
                             .font(.system(size: 50, weight: .semibold))
                             .foregroundColor(.white)
+                    #if canImport(UIKit)
                     }
+                    #endif
                     
                     // 编辑按钮
                     VStack {
