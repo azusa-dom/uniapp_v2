@@ -81,7 +81,9 @@ struct StudentEmailView: View {
             .navigationBarTitleDisplayMode(.large)
             #endif
         }
+        #if os(iOS)
         .navigationViewStyle(.stack)
+        #endif
     }
 }
 
