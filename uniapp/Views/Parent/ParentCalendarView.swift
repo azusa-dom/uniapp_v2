@@ -931,9 +931,11 @@ struct ParentEventDetailSheet: View {
                 .padding(24)
             }
             .background(Color(hex: "FFF8F0").ignoresSafeArea())
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Button("关闭") {
                         dismiss()
                     }
@@ -964,9 +966,11 @@ struct ParentCalendarSettingsView: View {
                 }
             }
             .navigationTitle("日历设置")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Button("完成") {
                         dismiss()
                     }

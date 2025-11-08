@@ -453,9 +453,11 @@ struct CalendarSettingsView: View {
                 }
             }
             .navigationTitle(loc.tr("calendar_settings"))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Button(loc.tr("done")) {
                         dismiss()
                     }
@@ -984,15 +986,17 @@ struct AddEventSheet: View {
                 }
             }
             .navigationTitle("添加事件")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .automatic) {
                     Button("取消") {
                         dismiss()
                     }
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
+
+                ToolbarItem(placement: .automatic) {
                     Button("保存") {
                         let newEvent = UCLAPIViewModel.UCLAPIEvent(
                             id: UUID(),
@@ -1174,9 +1178,11 @@ struct ActivityDetailSheet: View {
                     .padding(.horizontal, 20)
                 }
                 .navigationTitle("活动详情")
+                #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
+                #endif
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
+                    ToolbarItem(placement: .automatic) {
                         Button("关闭") {
                             dismiss()
                         }

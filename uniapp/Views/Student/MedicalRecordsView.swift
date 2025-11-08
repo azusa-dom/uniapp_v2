@@ -224,9 +224,11 @@ struct MedicalRecordDetailView: View {
                 }
             }
             .navigationTitle("就诊详情")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Button("完成") {
                         dismiss()
                     }

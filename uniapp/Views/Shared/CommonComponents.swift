@@ -282,16 +282,18 @@ struct TodoDetailView: View {
             }
             .background(DesignSystem.backgroundGradient.ignoresSafeArea())
             .navigationTitle("待办详情")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar(content: {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .automatic) {
                     Button("取消") {
                         isPresented = false
                     }
                     .foregroundColor(Color(hex: "6366F1"))
                 }
 
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Menu {
                         if !todo.isCompleted {
                             Button(action: {

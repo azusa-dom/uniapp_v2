@@ -119,9 +119,11 @@ struct StudentDashboardView: View {
                 }
             }
             .navigationTitle(loc.tr("tab_home"))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Menu {
                         Button {
                             activeModal = .profile

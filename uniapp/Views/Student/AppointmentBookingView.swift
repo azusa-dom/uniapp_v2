@@ -84,9 +84,11 @@ struct AppointmentBookingView: View {
                 }
             }
             .navigationTitle("预约面诊")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Button("取消") {
                         dismiss()
                     }

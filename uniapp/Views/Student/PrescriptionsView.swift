@@ -65,7 +65,9 @@ struct PrescriptionsView: View {
                 }
             }
             .navigationTitle("处方记录")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            #endif
             .sheet(item: $selectedPrescription) { prescription in
                 PrescriptionDetailView(prescription: prescription)
                     .environmentObject(loc)
@@ -271,9 +273,11 @@ struct PrescriptionDetailView: View {
                 }
             }
             .navigationTitle(prescription.medicationName)
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Button("完成") {
                         dismiss()
                     }

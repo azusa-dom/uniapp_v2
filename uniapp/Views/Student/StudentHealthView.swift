@@ -458,9 +458,11 @@ struct HealthMetricDetailView: View {
                 }
             }
             .navigationTitle(metric.title)
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Button("完成") {
                         dismiss()
                     }

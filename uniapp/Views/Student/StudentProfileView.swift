@@ -533,9 +533,11 @@ struct LanguageSelectionSheet: View {
                 }
             }
             .navigationTitle("选择语言")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Button(loc.tr("done")) {
                         dismiss()
                     }
@@ -628,9 +630,11 @@ struct AvatarPickerView: View {
                 }
             }
             .navigationTitle(loc.tr("profile_select_avatar"))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Button(loc.tr("done")) {
                         dismiss()
                     }

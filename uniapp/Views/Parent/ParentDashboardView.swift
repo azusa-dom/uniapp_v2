@@ -82,9 +82,11 @@ struct ParentDashboardView: View {
                 }
             }
             .navigationTitle("家长中心")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Button(action: {
                         activeSheet = .settings
                     }) {

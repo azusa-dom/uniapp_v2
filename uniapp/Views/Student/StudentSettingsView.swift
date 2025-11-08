@@ -3,6 +3,7 @@
 //  uniapp
 //
 //  学生设置界面：支持更换头像和编辑个人信息
+//  优化版本 - 跨平台兼容
 //
 
 import SwiftUI
@@ -141,17 +142,39 @@ struct StudentSettingsView: View {
         }
     }
     
-    // MARK: - 头像区域
+    // MARK: - 头像区域（美化版）
     private var avatarSection: some View {
-        VStack(spacing: 16) {
-            Text("头像设置")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 20) {
+            HStack {
+                Image(systemName: "person.crop.circle.fill")
+                    .font(.system(size: 22))
+                    .foregroundColor(Color(hex: "6366F1"))
+                
+                Text("头像设置")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
             
-            VStack(spacing: 20) {
-                // 当前头像显示
+            VStack(spacing: 24) {
+                // 当前头像显示 - 增强版
                 ZStack {
+                    // 外圈光晕
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(hex: "6366F1").opacity(0.3),
+                                    Color(hex: "8B5CF6").opacity(0.2)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 140, height: 140)
+                        .blur(radius: 8)
+                    
                     Circle()
                         .fill(
                             LinearGradient(
@@ -160,102 +183,138 @@ struct StudentSettingsView: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: 120, height: 120)
-                        .shadow(color: Color(hex: "6366F1").opacity(0.3), radius: 15, x: 0, y: 5)
+                        .frame(width: 130, height: 130)
+                        .shadow(color: Color(hex: "6366F1").opacity(0.4), radius: 20, x: 0, y: 8)
                     
                     #if canImport(UIKit)
                     if let image = selectedImage {
                         Image(uiImage: image)
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 120, height: 120)
+                            .frame(width: 130, height: 130)
                             .clipShape(Circle())
                     } else {
                         Image(systemName: appState.avatarIcon)
-                            .font(.system(size: 50, weight: .semibold))
+                            .font(.system(size: 56, weight: .semibold))
                             .foregroundColor(.white)
                     }
                     #else
                     Image(systemName: appState.avatarIcon)
-                        .font(.system(size: 50, weight: .semibold))
+                        .font(.system(size: 56, weight: .semibold))
                         .foregroundColor(.white)
                     #endif
                     
-                    // 编辑按钮
+                    // 编辑按钮 - 美化版
                     VStack {
                         Spacer()
                         HStack {
                             Spacer()
                             Button {
-                                // 选择更换方式
+                                showingAvatarPicker = true
                             } label: {
                                 ZStack {
                                     Circle()
                                         .fill(Color.white)
+                                        .frame(width: 42, height: 42)
+                                        .shadow(color: Color(hex: "6366F1").opacity(0.3), radius: 8, x: 0, y: 4)
+                                    
+                                    Circle()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
                                         .frame(width: 36, height: 36)
                                     
-                                    Image(systemName: "camera.fill")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(Color(hex: "6366F1"))
+                                    Image(systemName: "pencil")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.white)
                                 }
-                                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
                             }
                         }
                     }
-                    .frame(width: 120, height: 120)
+                    .frame(width: 130, height: 130)
                 }
+                .padding(.vertical, 10)
                 
-                // 头像选择按钮
-                HStack(spacing: 12) {
+                // 头像选择按钮 - 美化版
+                HStack(spacing: 14) {
                     Button {
                         showingAvatarPicker = true
                     } label: {
-                        HStack {
-                            Image(systemName: "paintbrush.pointed.fill")
-                                .font(.system(size: 16))
+                        HStack(spacing: 8) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 16, weight: .semibold))
                             Text("选择图标")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(.system(size: 15, weight: .bold))
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color(hex: "6366F1"))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .padding(.vertical, 14)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .shadow(color: Color(hex: "6366F1").opacity(0.4), radius: 8, x: 0, y: 4)
                     }
                     
+                    #if canImport(UIKit)
                     Button {
                         showingImagePicker = true
                     } label: {
-                        HStack {
-                            Image(systemName: "photo.fill")
-                                .font(.system(size: 16))
-                            Text("相册上传")
-                                .font(.system(size: 15, weight: .semibold))
+                        HStack(spacing: 8) {
+                            Image(systemName: "photo.fill.on.rectangle.fill")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text("相册")
+                                .font(.system(size: 15, weight: .bold))
                         }
                         .foregroundColor(Color(hex: "6366F1"))
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color(hex: "6366F1").opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .padding(.vertical, 14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.9))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color(hex: "6366F1").opacity(0.3), lineWidth: 2)
+                                )
+                        )
+                        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
                     }
+                    #endif
                 }
             }
-            .padding(20)
-            .background(Color.white.opacity(0.8))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white.opacity(0.9))
+                    .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
+            )
         }
     }
     
     // MARK: - 个人信息区域
     private var personalInfoSection: some View {
         VStack(spacing: 16) {
-            Text("个人信息")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 10) {
+                Image(systemName: "person.text.rectangle.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(Color(hex: "10B981"))
+                
+                Text("个人信息")
+                    .font(.system(size: 19, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
             
-            VStack(spacing: 12) {
+            VStack(spacing: 16) {
                 SettingsTextField(
                     icon: "person.fill",
                     title: "姓名",
@@ -267,8 +326,7 @@ struct StudentSettingsView: View {
                     icon: "envelope.fill",
                     title: "邮箱",
                     placeholder: "请输入邮箱",
-                    text: $editedEmail,
-                    keyboardType: .emailAddress
+                    text: $editedEmail
                 )
                 
                 SettingsTextField(
@@ -278,22 +336,31 @@ struct StudentSettingsView: View {
                     text: $editedStudentId
                 )
             }
-            .padding(16)
-            .background(Color.white.opacity(0.8))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(Color.white.opacity(0.9))
+                    .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 3)
+            )
         }
     }
     
     // MARK: - 学业信息区域
     private var academicInfoSection: some View {
         VStack(spacing: 16) {
-            Text("学业信息")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 10) {
+                Image(systemName: "graduationcap.circle.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(Color(hex: "F59E0B"))
+                
+                Text("学业信息")
+                    .font(.system(size: 19, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
             
-            VStack(spacing: 12) {
+            VStack(spacing: 16) {
                 SettingsTextField(
                     icon: "graduationcap.fill",
                     title: "专业",
@@ -308,76 +375,128 @@ struct StudentSettingsView: View {
                     text: $editedYear
                 )
             }
-            .padding(16)
-            .background(Color.white.opacity(0.8))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(Color.white.opacity(0.9))
+                    .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 3)
+            )
         }
     }
     
     // MARK: - 联系方式区域
     private var contactSection: some View {
-        VStack(spacing: 16) {
-            Text("联系方式")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 18) {
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: "EF4444").opacity(0.12))
+                        .frame(width: 40, height: 40)
+                    
+                    Image(systemName: "phone.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(Color(hex: "EF4444"))
+                }
+                
+                Text("联系方式")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(Color(hex: "10B981"))
+            }
             
-            VStack(spacing: 12) {
-                #if canImport(UIKit)
-                SettingsTextField(
-                    icon: "phone.fill",
-                    title: "手机号",
-                    placeholder: "请输入手机号",
-                    text: $editedPhone,
-                    keyboardType: .phonePad
-                )
-                #else
+            VStack(spacing: 16) {
                 SettingsTextField(
                     icon: "phone.fill",
                     title: "手机号",
                     placeholder: "请输入手机号",
                     text: $editedPhone
                 )
-                #endif
             }
-            .padding(16)
-            .background(Color.white.opacity(0.8))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(Color.white.opacity(0.9))
+                    .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 3)
+            )
         }
     }
     
-    // MARK: - 个人简介区域
+    // MARK: - 个人简介区域（美化版）
     private var aboutSection: some View {
         VStack(spacing: 16) {
-            Text("个人简介")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    Image(systemName: "doc.text.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(Color(hex: "6366F1"))
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: "8B5CF6").opacity(0.12))
+                        .frame(width: 40, height: 40)
                     
-                    Text("简介")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.secondary)
+                    Image(systemName: "text.quote")
+                        .font(.system(size: 20))
+                        .foregroundColor(Color(hex: "8B5CF6"))
                 }
                 
-                TextEditor(text: $editedBio)
-                    .font(.system(size: 15))
-                    .frame(height: 100)
-                    .padding(8)
-                    .background(Color.gray.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                Text("个人简介")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                HStack(spacing: 4) {
+                    Image(systemName: "character.cursor.ibeam")
+                        .font(.system(size: 11))
+                        .foregroundColor(editedBio.count > 180 ? Color(hex: "EF4444") : .secondary)
+                    
+                    Text("\(editedBio.count)/200")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(editedBio.count > 180 ? Color(hex: "EF4444") : .secondary)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(
+                    Capsule()
+                        .fill((editedBio.count > 180 ? Color(hex: "EF4444") : Color.gray).opacity(0.1))
+                )
             }
-            .padding(16)
-            .background(Color.white.opacity(0.8))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            
+            VStack(alignment: .leading, spacing: 12) {
+                ZStack(alignment: .topLeading) {
+                    if editedBio.isEmpty {
+                        Text("介绍一下你自己吧...")
+                            .font(.system(size: 15))
+                            .foregroundColor(.secondary.opacity(0.6))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                    }
+                    
+                    TextEditor(text: $editedBio)
+                        .font(.system(size: 15))
+                        .frame(height: 120)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white.opacity(0.7))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(editedBio.isEmpty ? Color.gray.opacity(0.2) : Color(hex: "8B5CF6").opacity(0.3), lineWidth: 1.5)
+                        )
+                )
+                .shadow(color: .black.opacity(0.03), radius: 2, x: 0, y: 1)
+            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(Color.white.opacity(0.9))
+                    .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 3)
+            )
         }
     }
     
@@ -421,42 +540,46 @@ struct StudentSettingsView: View {
     }
 }
 
-// MARK: - 设置文本框组件
+// MARK: - 设置文本框组件（美化版）
 struct SettingsTextField: View {
     let icon: String
     let title: String
     let placeholder: String
     @Binding var text: String
-    #if canImport(UIKit)
-    var keyboardType: UIKeyboardType = .default
-    #endif
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "6366F1"))
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(hex: "6366F1").opacity(0.1))
+                        .frame(width: 32, height: 32)
+                    
+                    Image(systemName: icon)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(hex: "6366F1"))
+                }
                 
                 Text(title)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
             }
             
-            #if canImport(UIKit)
             TextField(placeholder, text: $text)
                 .font(.system(size: 15))
-                .padding(12)
-                .background(Color.gray.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .keyboardType(keyboardType)
-            #else
-            TextField(placeholder, text: $text)
-                .font(.system(size: 15))
-                .padding(12)
-                .background(Color.gray.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            #endif
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white.opacity(0.7))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(text.isEmpty ? Color.gray.opacity(0.2) : Color(hex: "6366F1").opacity(0.3), lineWidth: 1.5)
+                        )
+                )
+                .shadow(color: .black.opacity(0.03), radius: 2, x: 0, y: 1)
         }
     }
 }
