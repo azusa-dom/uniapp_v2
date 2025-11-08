@@ -82,9 +82,15 @@ struct ParentSettingsView: View {
                 }
             }
             .navigationTitle(loc.tr("tab_parent_settings"))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
+                #if os(iOS)
                 ToolbarItem(placement: .navigationBarTrailing) {
+                #else
+                ToolbarItem(placement: .automatic) {
+                #endif
                     Button(loc.tr("done")) {
                         dismiss()
                     }

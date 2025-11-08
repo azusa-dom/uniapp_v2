@@ -96,13 +96,13 @@ struct StudentSettingsView: View {
             .onAppear {
                 loadCurrentData()
             }
-            .onChange(of: editedName) { _ in checkForChanges() }
-            .onChange(of: editedEmail) { _ in checkForChanges() }
-            .onChange(of: editedStudentId) { _ in checkForChanges() }
-            .onChange(of: editedProgram) { _ in checkForChanges() }
-            .onChange(of: editedYear) { _ in checkForChanges() }
-            .onChange(of: editedPhone) { _ in checkForChanges() }
-            .onChange(of: editedBio) { _ in checkForChanges() }
+            .onChange(of: editedName) { _, _ in checkForChanges() }
+            .onChange(of: editedEmail) { _, _ in checkForChanges() }
+            .onChange(of: editedStudentId) { _, _ in checkForChanges() }
+            .onChange(of: editedProgram) { _, _ in checkForChanges() }
+            .onChange(of: editedYear) { _, _ in checkForChanges() }
+            .onChange(of: editedPhone) { _, _ in checkForChanges() }
+            .onChange(of: editedBio) { _, _ in checkForChanges() }
         }
     }
     

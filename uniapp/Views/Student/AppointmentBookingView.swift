@@ -385,7 +385,7 @@ struct TimeSelectionStep: View {
             .tint(Color(hex: "6366F1"))
             .background(Color.white)
             .cornerRadius(12)
-            .onChange(of: selectedDate) { _ in
+            .onChange(of: selectedDate) { _, _ in
                 loadAvailableSlots()
             }
             
