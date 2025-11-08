@@ -500,7 +500,11 @@ struct AddEmailToCalendarView: View {
                 .disabled(eventName.isEmpty)
             }
             .navigationTitle(loc.tr("email_add_to_calendar"))
-            .navigationBarItems(trailing: Button("Cancel") { dismiss() })
+            .toolbar {
+                ToolbarItem(placement: .automatic) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
         }
     }
 }

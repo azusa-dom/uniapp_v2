@@ -793,7 +793,7 @@ struct OverallAverageGauge: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color(.systemBackground))
+                .fill(Color.white)
                 .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
         )
     }
@@ -877,7 +877,11 @@ struct AddModuleView: View {
                 .disabled(name.isEmpty)
             }
             .navigationTitle(loc.tr("academics_add_module"))
-            .navigationBarItems(trailing: Button("取消") { dismiss() })
+            .toolbar {
+                ToolbarItem(placement: .automatic) {
+                    Button("取消") { dismiss() }
+                }
+            }
         }
     }
 }
@@ -928,7 +932,11 @@ struct AddAssignmentView: View {
                 .disabled(title.isEmpty)
             }
             .navigationTitle(loc.tr("academics_add_assignment"))
-            .navigationBarItems(trailing: Button("取消") { dismiss() })
+            .toolbar {
+                ToolbarItem(placement: .automatic) {
+                    Button("取消") { dismiss() }
+                }
+            }
         }
     }
 }
