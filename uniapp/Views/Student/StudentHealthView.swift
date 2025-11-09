@@ -100,6 +100,9 @@ struct StudentHealthView: View {
                         // 健康档案快捷入口
                         healthRecordsSection
                         
+                        // 30天健康监测趋势
+                        dailyHealthTrendsSection
+                        
                         rangeSelector
                         metricsGrid
                         tipsSection
@@ -182,6 +185,68 @@ struct StudentHealthView: View {
                     // 打开过敏史
                 }
             }
+        }
+    }
+    
+    // MARK: - 30天健康监测趋势
+    private var dailyHealthTrendsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("30天健康监测趋势")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.primary)
+            
+            // 睡眠趋势
+            HealthTrendCard(
+                title: "睡眠质量",
+                icon: "bed.double.fill",
+                color: "6366F1",
+                data: healthData.dailyHealthData
+            ) { day in
+                TrendDataPoint(
+                    day: day.day,
+                    value: day.sleepHours,
+                    label: "\(String(format: "%.1f", day.sleepHours))h",
+                    detail: "深睡:\(String(format: "%.1f", day.deepSleepHours))h 醒:\(day.nightAwakenings)次"
+                )
+            }
+            
+            // 运动活动趋势
+            HealthTrendCard(
+                title: "每日步数",
+                icon: "figure.walk",
+                color: "10B981",
+                data: healthData.dailyHealthData
+            ) { day in
+                TrendDataPoint(
+                    day: day.day,
+                    value: Double(day.stepsPerDay),
+                    label: "\(day.stepsPerDay)步",
+                    detail: "久坐:\(String(format: "%.1f", day.sittingHoursPerDay))h"
+                )
+            }
+            
+            // 压力水平趋势
+            HealthTrendCard(
+                title: "压力指数",
+                icon: "waveform.path.ecg",
+                color: "F59E0B",
+                data: healthData.dailyHealthData
+            ) { day in
+                TrendDataPoint(
+                    day: day.day,
+                    value: day.stressScore,
+                    label: String(format: "%.1f", day.stressScore),
+                    detail: day.stressLevel
+                )
+            }
+            
+            // 过敏和就诊事件
+            HealthEventCard(
+                title: "健康事件",
+                icon: "exclamationmark.triangle.fill",
+                color: "EF4444",
+                data: healthData.dailyHealthData
+            )
         }
     }
     
@@ -474,6 +539,241 @@ struct HealthMetricDetailView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - 趋势数据点
+struct TrendDataPoint {
+    let day: Int
+    let value: Double
+    let label: String
+    let detail: String
+}
+
+// MARK: - 健康趋势卡片
+struct HealthTrendCard<Data: RandomAccessCollection>: View where Data.Element == DailyHealthData {
+    let title: String
+    let icon: String
+    let color: String
+    let data: Data
+    let transform: (DailyHealthData) -> TrendDataPoint
+    
+    private var trendData: [TrendDataPoint] {
+        data.map(transform)
+    }
+    
+    private var minValue: Double {
+        trendData.map { $0.value }.min() ?? 0
+    }
+    
+    private var maxValue: Double {
+        trendData.map { $0.value }.max() ?? 100
+    }
+    
+    private var avgValue: Double {
+        let sum = trendData.reduce(0.0) { $0 + $1.value }
+        return sum / Double(trendData.count)
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Color(hex: color))
+                
+                Text(title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("平均")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Text(String(format: "%.1f", avgValue))
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(hex: color))
+                }
+            }
+            
+            // 简化的趋势线图
+            GeometryReader { geometry in
+                let width = geometry.size.width
+                let height = geometry.size.height
+                let points = trendData.enumerated().map { index, point in
+                    let x = CGFloat(index) / CGFloat(max(trendData.count - 1, 1)) * width
+                    let normalizedValue = (point.value - minValue) / max(maxValue - minValue, 0.01)
+                    let y = height - (CGFloat(normalizedValue) * height * 0.8 + height * 0.1)
+                    return CGPoint(x: x, y: y)
+                }
+                
+                ZStack {
+                    // 背景网格
+                    Path { path in
+                        for i in 0...4 {
+                            let y = CGFloat(i) * height / 4
+                            path.move(to: CGPoint(x: 0, y: y))
+                            path.addLine(to: CGPoint(x: width, y: y))
+                        }
+                    }
+                    .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+                    
+                    // 趋势线
+                    Path { path in
+                        guard points.count > 1 else { return }
+                        path.move(to: points[0])
+                        for point in points.dropFirst() {
+                            path.addLine(to: point)
+                        }
+                    }
+                    .stroke(Color(hex: color), lineWidth: 2)
+                    
+                    // 数据点
+                    ForEach(0..<points.count, id: \.self) { index in
+                        Circle()
+                            .fill(Color(hex: color))
+                            .frame(width: 4, height: 4)
+                            .position(points[index])
+                    }
+                }
+            }
+            .frame(height: 120)
+            
+            // 统计信息
+            HStack {
+                StatBadge(label: "最低", value: String(format: "%.1f", minValue), color: color)
+                StatBadge(label: "最高", value: String(format: "%.1f", maxValue), color: color)
+                StatBadge(label: "样本", value: "\(trendData.count)天", color: color)
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white.opacity(0.8))
+        )
+        .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+    }
+}
+
+// MARK: - 健康事件卡片
+struct HealthEventCard<Data: RandomAccessCollection>: View where Data.Element == DailyHealthData {
+    let title: String
+    let icon: String
+    let color: String
+    let data: Data
+    
+    private var allergyDays: [Int] {
+        data.filter { $0.allergyAttackToday > 0 }.map { $0.day }
+    }
+    
+    private var visitDays: [Int] {
+        data.filter { $0.visitToday > 0 }.map { $0.day }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Color(hex: color))
+                
+                Text(title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
+            
+            VStack(spacing: 10) {
+                // 过敏事件
+                HStack {
+                    Image(systemName: "allergens")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(hex: "F59E0B"))
+                        .frame(width: 24)
+                    
+                    Text("过敏发作")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Text("\(allergyDays.count)次")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(hex: "F59E0B"))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(hex: "F59E0B").opacity(0.1))
+                .cornerRadius(8)
+                
+                if !allergyDays.isEmpty {
+                    Text("发生日期: 第 \(allergyDays.map(String.init).joined(separator: ", ")) 天")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                
+                // 就诊事件
+                HStack {
+                    Image(systemName: "cross.case.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(hex: "EF4444"))
+                        .frame(width: 24)
+                    
+                    Text("医疗就诊")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Text("\(visitDays.count)次")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(hex: "EF4444"))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(hex: "EF4444").opacity(0.1))
+                .cornerRadius(8)
+                
+                if !visitDays.isEmpty {
+                    Text("就诊日期: 第 \(visitDays.map(String.init).joined(separator: ", ")) 天")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white.opacity(0.8))
+        )
+        .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+    }
+}
+
+// MARK: - 统计徽章
+struct StatBadge: View {
+    let label: String
+    let value: String
+    let color: String
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.secondary)
+            Text(value)
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundColor(Color(hex: color))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(Color(hex: color).opacity(0.1))
+        .cornerRadius(8)
     }
 }
 

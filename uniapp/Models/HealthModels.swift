@@ -58,6 +58,59 @@ struct Prescription: Identifiable {
     }
 }
 
+// MARK: - 每日健康数据
+struct DailyHealthData: Identifiable {
+    let id = UUID()
+    let subjectId: String
+    let day: Int
+    let sleepHours: Double
+    let deepSleepHours: Double
+    let nightAwakenings: Int
+    let stepsPerDay: Int
+    let sittingHoursPerDay: Double
+    let stressScore: Double
+    let allergyAttackToday: Int
+    let visitToday: Int
+    
+    var date: Date {
+        let calendar = Calendar.current
+        let baseDate = Date().addingTimeInterval(-Double(30 - day) * 86400)
+        return calendar.startOfDay(for: baseDate)
+    }
+    
+    var sleepQuality: String {
+        if sleepHours >= 7.0 && nightAwakenings <= 2 {
+            return "优秀"
+        } else if sleepHours >= 6.0 && nightAwakenings <= 3 {
+            return "良好"
+        } else if sleepHours >= 5.0 {
+            return "一般"
+        } else {
+            return "较差"
+        }
+    }
+    
+    var activityLevel: String {
+        if stepsPerDay >= 8000 {
+            return "活跃"
+        } else if stepsPerDay >= 5000 {
+            return "适中"
+        } else {
+            return "偏少"
+        }
+    }
+    
+    var stressLevel: String {
+        if stressScore < 5.0 {
+            return "低"
+        } else if stressScore < 7.0 {
+            return "中等"
+        } else {
+            return "较高"
+        }
+    }
+}
+
 // MARK: - 过敏史
 struct AllergyRecord: Identifiable {
     let id = UUID()
@@ -165,6 +218,7 @@ class HealthDataManager: ObservableObject {
     @Published var allergies: [AllergyRecord] = []
     @Published var appointments: [MedicalAppointment] = []
     @Published var doctors: [Doctor] = []
+    @Published var dailyHealthData: [DailyHealthData] = []
     
     init() {
         loadSampleData()
@@ -177,6 +231,42 @@ class HealthDataManager: ObservableObject {
         loadSampleAllergies()
         loadSampleDoctors()
         loadSampleAppointments()
+        loadDailyHealthData()
+    }
+    
+    private func loadDailyHealthData() {
+        dailyHealthData = [
+            DailyHealthData(subjectId: "001", day: 1, sleepHours: 6.9, deepSleepHours: 1.7, nightAwakenings: 3, stepsPerDay: 5200, sittingHoursPerDay: 9.4, stressScore: 6.6, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 2, sleepHours: 6.3, deepSleepHours: 1.8, nightAwakenings: 3, stepsPerDay: 4900, sittingHoursPerDay: 9.3, stressScore: 6.7, allergyAttackToday: 1, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 3, sleepHours: 6.5, deepSleepHours: 1.5, nightAwakenings: 2, stepsPerDay: 5300, sittingHoursPerDay: 9.8, stressScore: 5.9, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 4, sleepHours: 6.8, deepSleepHours: 1.6, nightAwakenings: 3, stepsPerDay: 4700, sittingHoursPerDay: 9.0, stressScore: 6.9, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 5, sleepHours: 6.3, deepSleepHours: 1.5, nightAwakenings: 2, stepsPerDay: 5200, sittingHoursPerDay: 9.9, stressScore: 6.4, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 6, sleepHours: 6.4, deepSleepHours: 2.0, nightAwakenings: 3, stepsPerDay: 5200, sittingHoursPerDay: 10.0, stressScore: 6.3, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 7, sleepHours: 6.6, deepSleepHours: 1.7, nightAwakenings: 3, stepsPerDay: 5300, sittingHoursPerDay: 9.0, stressScore: 6.4, allergyAttackToday: 1, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 8, sleepHours: 6.9, deepSleepHours: 2.0, nightAwakenings: 3, stepsPerDay: 5100, sittingHoursPerDay: 9.8, stressScore: 6.6, allergyAttackToday: 1, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 9, sleepHours: 6.7, deepSleepHours: 1.7, nightAwakenings: 3, stepsPerDay: 4800, sittingHoursPerDay: 9.0, stressScore: 6.5, allergyAttackToday: 1, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 10, sleepHours: 6.7, deepSleepHours: 1.6, nightAwakenings: 3, stepsPerDay: 5000, sittingHoursPerDay: 9.1, stressScore: 6.0, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 11, sleepHours: 6.5, deepSleepHours: 2.0, nightAwakenings: 4, stepsPerDay: 5100, sittingHoursPerDay: 9.3, stressScore: 6.9, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 12, sleepHours: 6.6, deepSleepHours: 1.9, nightAwakenings: 2, stepsPerDay: 5000, sittingHoursPerDay: 9.2, stressScore: 6.2, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 13, sleepHours: 6.8, deepSleepHours: 1.8, nightAwakenings: 3, stepsPerDay: 5300, sittingHoursPerDay: 9.0, stressScore: 5.8, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 14, sleepHours: 6.4, deepSleepHours: 1.6, nightAwakenings: 2, stepsPerDay: 5300, sittingHoursPerDay: 8.8, stressScore: 6.0, allergyAttackToday: 1, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 15, sleepHours: 6.6, deepSleepHours: 1.8, nightAwakenings: 4, stepsPerDay: 5000, sittingHoursPerDay: 9.5, stressScore: 6.5, allergyAttackToday: 2, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 16, sleepHours: 6.3, deepSleepHours: 2.0, nightAwakenings: 3, stepsPerDay: 5400, sittingHoursPerDay: 8.7, stressScore: 7.2, allergyAttackToday: 2, visitToday: 1),
+            DailyHealthData(subjectId: "001", day: 17, sleepHours: 6.3, deepSleepHours: 1.7, nightAwakenings: 3, stepsPerDay: 5300, sittingHoursPerDay: 9.9, stressScore: 6.8, allergyAttackToday: 1, visitToday: 1),
+            DailyHealthData(subjectId: "001", day: 18, sleepHours: 6.9, deepSleepHours: 1.8, nightAwakenings: 3, stepsPerDay: 5400, sittingHoursPerDay: 10.2, stressScore: 6.3, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 19, sleepHours: 6.7, deepSleepHours: 1.9, nightAwakenings: 2, stepsPerDay: 5100, sittingHoursPerDay: 9.2, stressScore: 6.3, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 20, sleepHours: 6.6, deepSleepHours: 1.7, nightAwakenings: 2, stepsPerDay: 5300, sittingHoursPerDay: 9.5, stressScore: 6.0, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 21, sleepHours: 6.5, deepSleepHours: 1.8, nightAwakenings: 4, stepsPerDay: 5100, sittingHoursPerDay: 9.0, stressScore: 6.4, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 22, sleepHours: 6.3, deepSleepHours: 2.0, nightAwakenings: 3, stepsPerDay: 5200, sittingHoursPerDay: 9.5, stressScore: 6.6, allergyAttackToday: 1, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 23, sleepHours: 6.8, deepSleepHours: 1.6, nightAwakenings: 2, stepsPerDay: 4800, sittingHoursPerDay: 8.9, stressScore: 6.9, allergyAttackToday: 2, visitToday: 1),
+            DailyHealthData(subjectId: "001", day: 24, sleepHours: 6.4, deepSleepHours: 1.7, nightAwakenings: 4, stepsPerDay: 5300, sittingHoursPerDay: 9.9, stressScore: 6.7, allergyAttackToday: 1, visitToday: 1),
+            DailyHealthData(subjectId: "001", day: 25, sleepHours: 6.9, deepSleepHours: 1.5, nightAwakenings: 3, stepsPerDay: 5300, sittingHoursPerDay: 9.6, stressScore: 6.1, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 26, sleepHours: 6.3, deepSleepHours: 1.9, nightAwakenings: 3, stepsPerDay: 4900, sittingHoursPerDay: 9.9, stressScore: 6.5, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 27, sleepHours: 6.9, deepSleepHours: 1.8, nightAwakenings: 2, stepsPerDay: 5400, sittingHoursPerDay: 9.2, stressScore: 6.2, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 28, sleepHours: 6.4, deepSleepHours: 1.7, nightAwakenings: 3, stepsPerDay: 5100, sittingHoursPerDay: 9.3, stressScore: 6.6, allergyAttackToday: 0, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 29, sleepHours: 6.8, deepSleepHours: 1.9, nightAwakenings: 3, stepsPerDay: 5100, sittingHoursPerDay: 9.8, stressScore: 6.4, allergyAttackToday: 1, visitToday: 0),
+            DailyHealthData(subjectId: "001", day: 30, sleepHours: 6.5, deepSleepHours: 1.5, nightAwakenings: 2, stepsPerDay: 5000, sittingHoursPerDay: 9.1, stressScore: 6.8, allergyAttackToday: 2, visitToday: 1)
+        ]
     }
     
     private func loadSampleMedicalRecords() {
