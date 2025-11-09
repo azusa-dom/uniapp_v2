@@ -68,6 +68,16 @@ struct Assignment: Identifiable {
     var isCompleted: Bool
 }
 
+struct WeeklySchedule: Identifiable {
+    let id = UUID()
+    var dayOfWeek: String
+    var courseName: String
+    var courseCode: String
+    var time: String
+    var location: String
+    var color: String
+}
+
 // MARK: - ViewModel
 
 class AcademicViewModel: ObservableObject {
@@ -84,7 +94,9 @@ class AcademicViewModel: ObservableObject {
             assignmentList: [
                 .init(name: "数据分析作业", grade: 90, submitted: true, dueDate: "11月1日"),
                 .init(name: "Python 项目", grade: 88, submitted: true, dueDate: "10月20日"),
-                .init(name: "统计习题集", grade: 0, submitted: false, dueDate: "11月8日")
+                .init(name: "统计习题集", grade: 0, submitted: false, dueDate: "11月8日"),
+                .init(name: "研究设计报告", grade: 0, submitted: false, dueDate: "11月20日"),
+                .init(name: "模拟试卷", grade: 0, submitted: false, dueDate: "12月1日")
             ]
         ),
         Module(
@@ -98,7 +110,9 @@ class AcademicViewModel: ObservableObject {
             moduleAverage: 68,
             assignmentList: [
                 .init(name: "回归分析", grade: 75, submitted: true, dueDate: "10月15日"),
-                .init(name: "统计建模", grade: 0, submitted: false, dueDate: "11月10日")
+                .init(name: "统计建模", grade: 0, submitted: false, dueDate: "11月10日"),
+                .init(name: "多元分析练习", grade: 0, submitted: false, dueDate: "11月25日"),
+                .init(name: "概率论小测", grade: 0, submitted: false, dueDate: "12月3日")
             ]
         ),
         Module(
@@ -109,7 +123,13 @@ class AcademicViewModel: ObservableObject {
             participation: 75,
             midterm: 62,
             final: 65,
-            moduleAverage: 62
+            moduleAverage: 62,
+            assignmentList: [
+                .init(name: "文献综述作业", grade: 76, submitted: true, dueDate: "10月30日"),
+                .init(name: "数据系统案例分析", grade: 0, submitted: false, dueDate: "11月18日"),
+                .init(name: "小组讨论演示", grade: 0, submitted: false, dueDate: "11月28日"),
+                .init(name: "模块测验", grade: 0, submitted: false, dueDate: "12月5日")
+            ]
         ),
         Module(
             name: "Python 健康研究编程",
@@ -122,7 +142,10 @@ class AcademicViewModel: ObservableObject {
             moduleAverage: 70,
             assignmentList: [
                 .init(name: "数据清洗项目", grade: 88, submitted: true, dueDate: "10月5日"),
-                .init(name: "可视化作业", grade: 90, submitted: true, dueDate: "10月25日")
+                .init(name: "可视化作业", grade: 90, submitted: true, dueDate: "10月25日"),
+                .init(name: "脚本优化练习", grade: 0, submitted: false, dueDate: "11月15日"),
+                .init(name: "Pandas 期末练习", grade: 0, submitted: false, dueDate: "11月30日"),
+                .init(name: "代码规范检查", grade: 0, submitted: false, dueDate: "12月6日")
             ]
         ),
         Module(
@@ -133,7 +156,13 @@ class AcademicViewModel: ObservableObject {
             participation: 78,
             midterm: 65,
             final: 68,
-            moduleAverage: 64
+            moduleAverage: 64,
+            assignmentList: [
+                .init(name: "研究设计报告", grade: 72, submitted: true, dueDate: "11月10日"),
+                .init(name: "数据集清理练习", grade: 0, submitted: false, dueDate: "11月28日"),
+                .init(name: "流行病模型推导", grade: 0, submitted: false, dueDate: "12月5日"),
+                .init(name: "R 代码应用测试", grade: 0, submitted: false, dueDate: "12月8日")
+            ]
         ),
         Module(
             name: "医疗人工智能",
@@ -146,7 +175,9 @@ class AcademicViewModel: ObservableObject {
             moduleAverage: 72,
             assignmentList: [
                 .init(name: "CNN 图像分类", grade: 93, submitted: true, dueDate: "10月18日"),
-                .init(name: "NLP 文本分析", grade: 95, submitted: true, dueDate: "11月2日")
+                .init(name: "NLP 文本分析", grade: 95, submitted: true, dueDate: "11月2日"),
+                .init(name: "Transformer 文献讨论", grade: 0, submitted: false, dueDate: "11月25日"),
+                .init(name: "期末模型复现", grade: 0, submitted: false, dueDate: "12月10日")
             ]
         ),
         Module(
@@ -158,6 +189,48 @@ class AcademicViewModel: ObservableObject {
             midterm: 82,
             final: 84,
             moduleAverage: 68
+        ),
+        Module(
+            name: "Essentials of Informatics for Healthcare Systems",
+            code: "CHME0021",
+            mark: 0,
+            assignments: 0,
+            participation: 0,
+            midterm: 0,
+            final: 0,
+            moduleAverage: 66,
+            assignmentList: [
+                .init(name: "HL7/FHIR 解析作业", grade: 0, submitted: false, dueDate: "11月22日"),
+                .init(name: "医院 IT 基础设施分析", grade: 0, submitted: false, dueDate: "12月1日")
+            ]
+        ),
+        Module(
+            name: "Applied Computational Genomics",
+            code: "CHME0012",
+            mark: 0,
+            assignments: 0,
+            participation: 0,
+            midterm: 0,
+            final: 0,
+            moduleAverage: 64,
+            assignmentList: [
+                .init(name: "SNP 变异分析", grade: 0, submitted: false, dueDate: "11月30日"),
+                .init(name: "基因组可视化报告", grade: 0, submitted: false, dueDate: "12月12日")
+            ]
+        ),
+        Module(
+            name: "Health Economics & Decision Modelling",
+            code: "CHME0030",
+            mark: 0,
+            assignments: 0,
+            participation: 0,
+            midterm: 0,
+            final: 0,
+            moduleAverage: 63,
+            assignmentList: [
+                .init(name: "决策树模型构建", grade: 0, submitted: false, dueDate: "11月27日"),
+                .init(name: "Markov 模型小组项目", grade: 0, submitted: false, dueDate: "12月10日")
+            ]
         )
     ]
     
@@ -170,11 +243,27 @@ class AcademicViewModel: ObservableObject {
         Assignment(title: "流行病学案例分析", course: "数据科学流行病学", score: 72, total: 100, isCompleted: true),
     ]
     
+    @Published var weeklySchedule: [WeeklySchedule] = [
+        WeeklySchedule(dayOfWeek: "周一", courseName: "数据方法与健康研究", courseCode: "CHME0013", time: "10:00 - 12:00", location: "Cruciform Building B.3.05", color: "6366F1"),
+        WeeklySchedule(dayOfWeek: "周二", courseName: "数据科学与统计", courseCode: "CHME0007", time: "14:00 - 16:00", location: "Foster Court 114", color: "8B5CF6"),
+        WeeklySchedule(dayOfWeek: "周三", courseName: "Python 健康研究编程", courseCode: "CHME0011", time: "09:00 - 11:00", location: "Roberts Building G06 Sir Ambrose Fleming LT", color: "10B981"),
+        WeeklySchedule(dayOfWeek: "周四", courseName: "医疗人工智能", courseCode: "CHME0016", time: "13:00 - 15:00", location: "Cruciform Building B.4.01", color: "EF4444"),
+        WeeklySchedule(dayOfWeek: "周五", courseName: "健康数据科学原理", courseCode: "CHME0006", time: "11:00 - 13:00", location: "UCL East Building One 1.03", color: "F59E0B")
+    ]
+    
     var overallAverage: Double {
         let validModules = modules.filter { $0.mark > 0 }
         if validModules.isEmpty { return 0 }
         let totalMark = validModules.reduce(0) { $0 + $1.mark }
         return totalMark / Double(validModules.count)
+    }
+    
+    var completedModulesCount: Int {
+        modules.filter { $0.mark > 0 }.count
+    }
+    
+    var totalModulesCount: Int {
+        modules.count
     }
     
     func addModule(name: String, code: String, mark: Double, assignments: Double, participation: Double, midterm: Double, final: Double) {
@@ -205,7 +294,7 @@ struct StudentAcademicsView: View {
     @State private var showingAddAssignment = false
     
     enum AcademicsTab {
-        case modules, assignments
+        case modules, assignments, schedule
     }
     
     var body: some View {
@@ -216,6 +305,7 @@ struct StudentAcademicsView: View {
                     Picker("Academics", selection: $selectedTab) {
                         Text(loc.tr("academics_modules")).tag(AcademicsTab.modules)
                         Text(loc.tr("academics_assignments")).tag(AcademicsTab.assignments)
+                        Text("课程表").tag(AcademicsTab.schedule)
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .padding()
@@ -223,8 +313,10 @@ struct StudentAcademicsView: View {
                     
                     if selectedTab == .modules {
                         ModuleGradesView(viewModel: viewModel)
-                    } else {
+                    } else if selectedTab == .assignments {
                         AssignmentScoresView(viewModel: viewModel)
+                    } else {
+                        WeeklyScheduleView(viewModel: viewModel)
                     }
                 }
             }
@@ -271,6 +363,31 @@ struct ModuleGradesView: View {
                 // 总平均分概览
                 OverallAverageGauge(average: viewModel.overallAverage)
                 
+                // 课程统计
+                HStack(spacing: 12) {
+                    ModuleStatBadge(
+                        icon: "checkmark.circle.fill",
+                        label: "已评分",
+                        value: "\(viewModel.completedModulesCount)",
+                        color: "10B981"
+                    )
+                    
+                    ModuleStatBadge(
+                        icon: "hourglass",
+                        label: "进行中",
+                        value: "\(viewModel.totalModulesCount - viewModel.completedModulesCount)",
+                        color: "F59E0B"
+                    )
+                    
+                    ModuleStatBadge(
+                        icon: "books.vertical.fill",
+                        label: "总课程",
+                        value: "\(viewModel.totalModulesCount)",
+                        color: "6366F1"
+                    )
+                }
+                .padding(.horizontal)
+                
                 // 课程列表
                 VStack(alignment: .leading, spacing: 16) {
                     Text("我的课程")
@@ -286,6 +403,38 @@ struct ModuleGradesView: View {
             }
             .padding(.vertical)
         }
+    }
+}
+
+// MARK: - 模块统计徽章
+
+struct ModuleStatBadge: View {
+    let icon: String
+    let label: String
+    let value: String
+    let color: String
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 18))
+                .foregroundColor(Color(hex: color))
+            
+            Text(value)
+                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .foregroundColor(Color(hex: color))
+            
+            Text(label)
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.9))
+                .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+        )
     }
 }
 
@@ -318,35 +467,51 @@ struct EnhancedModuleCard: View {
                         Spacer()
                         
                         VStack(alignment: .trailing, spacing: 4) {
-                            Text("\(Int(module.mark))")
-                                .font(.system(size: 28, weight: .bold))
-                                .foregroundColor(markColor(module.mark))
-                            
-                            Text(gradeLabel(module.mark))
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(markColor(module.mark))
-                                .clipShape(Capsule())
+                            if module.mark > 0 {
+                                Text("\(Int(module.mark))")
+                                    .font(.system(size: 28, weight: .bold))
+                                    .foregroundColor(markColor(module.mark))
+                                
+                                Text(gradeLabel(module.mark))
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 3)
+                                    .background(markColor(module.mark))
+                                    .clipShape(Capsule())
+                            } else {
+                                Image(systemName: "hourglass")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(Color(hex: "F59E0B"))
+                                
+                                Text("进行中")
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 3)
+                                    .background(Color(hex: "F59E0B"))
+                                    .clipShape(Capsule())
+                            }
                         }
                     }
                     
                     // 统计信息
                     HStack(spacing: 16) {
-                        StatBadge(
-                            icon: "chart.line.uptrend.xyaxis",
-                            label: "比平均",
-                            value: "+\(Int(module.mark) - module.moduleAverage)",
-                            color: Color(hex: "10B981")
-                        )
-                        
-                        StatBadge(
-                            icon: "person.3",
-                            label: "班级平均",
-                            value: "\(module.moduleAverage)",
-                            color: Color(hex: "6B7280")
-                        )
+                        if module.mark > 0 {
+                            StatBadge(
+                                icon: "chart.line.uptrend.xyaxis",
+                                label: "比平均",
+                                value: "+\(Int(module.mark) - module.moduleAverage)",
+                                color: Color(hex: "10B981")
+                            )
+                            
+                            StatBadge(
+                                icon: "person.3",
+                                label: "班级平均",
+                                value: "\(module.moduleAverage)",
+                                color: Color(hex: "6B7280")
+                            )
+                        }
                         
                         if !module.assignmentList.isEmpty {
                             let completed = module.assignmentList.filter { $0.submitted }.count
@@ -360,23 +525,25 @@ struct EnhancedModuleCard: View {
                     }
                     
                     // 进度条
-                    GeometryReader { geometry in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.gray.opacity(0.2))
-                            
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [markColor(module.mark), markColor(module.mark).opacity(0.7)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
+                    if module.mark > 0 {
+                        GeometryReader { geometry in
+                            ZStack(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(Color.gray.opacity(0.2))
+                                
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [markColor(module.mark), markColor(module.mark).opacity(0.7)],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
                                     )
-                                )
-                                .frame(width: geometry.size.width * CGFloat(module.mark) / 100)
+                                    .frame(width: geometry.size.width * CGFloat(module.mark) / 100)
+                            }
                         }
+                        .frame(height: 6)
                     }
-                    .frame(height: 6)
                 }
                 .padding(20)
             }
@@ -941,5 +1108,167 @@ struct AddAssignmentView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - 课程表视图
+
+struct WeeklyScheduleView: View {
+    @EnvironmentObject var loc: LocalizationService
+    @ObservedObject var viewModel: AcademicViewModel
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("本周课程安排")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.primary)
+                        .padding(.horizontal)
+                    
+                    ForEach(viewModel.weeklySchedule) { schedule in
+                        ScheduleCard(schedule: schedule)
+                            .padding(.horizontal)
+                    }
+                }
+                
+                // 统计信息
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("📊 本周统计")
+                        .font(.headline)
+                        .padding(.horizontal)
+                    
+                    HStack(spacing: 12) {
+                        ScheduleStatCard(
+                            icon: "book.fill",
+                            label: "总课程",
+                            value: "\(viewModel.weeklySchedule.count)",
+                            color: "6366F1"
+                        )
+                        
+                        ScheduleStatCard(
+                            icon: "clock.fill",
+                            label: "总课时",
+                            value: "\(viewModel.weeklySchedule.count * 2)h",
+                            color: "10B981"
+                        )
+                        
+                        ScheduleStatCard(
+                            icon: "list.bullet.rectangle.fill",
+                            label: "全部课程",
+                            value: "\(viewModel.modules.count)",
+                            color: "F59E0B"
+                        )
+                    }
+                    .padding(.horizontal)
+                }
+            }
+            .padding(.vertical)
+        }
+    }
+}
+
+// MARK: - 课程卡片
+
+struct ScheduleCard: View {
+    let schedule: WeeklySchedule
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            // 左侧日期标签
+            VStack(spacing: 4) {
+                Text(schedule.dayOfWeek)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                
+                Circle()
+                    .fill(Color.white.opacity(0.3))
+                    .frame(width: 6, height: 6)
+            }
+            .frame(width: 50)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(hex: schedule.color))
+            )
+            
+            // 课程信息
+            VStack(alignment: .leading, spacing: 8) {
+                Text(schedule.courseName)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                
+                HStack(spacing: 4) {
+                    Image(systemName: "number")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                    Text(schedule.courseCode)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack(spacing: 12) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 11))
+                            .foregroundColor(Color(hex: schedule.color))
+                        Text(schedule.time)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(Color(hex: schedule.color))
+                    }
+                }
+                
+                HStack(spacing: 4) {
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                    Text(schedule.location)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white.opacity(0.9))
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        )
+    }
+}
+
+// MARK: - 课程表统计卡片
+
+struct ScheduleStatCard: View {
+    let icon: String
+    let label: String
+    let value: String
+    let color: String
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(Color(hex: color))
+            
+            Text(value)
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundColor(Color(hex: color))
+            
+            Text(label)
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.9))
+                .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+        )
     }
 }
