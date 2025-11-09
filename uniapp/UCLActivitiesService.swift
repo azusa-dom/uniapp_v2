@@ -122,6 +122,39 @@ class UCLActivitiesService: ObservableObject {
                 endTime: "2025-11-06T17:00:00",
                 location: "Tower Hamlets",
                 rawData: nil
+            ),
+            UCLActivity(
+                id: "10",
+                title: "Graduate Open Events: Health Data, Informatics and AI",
+                description: "研究生开放日：健康数据、医疗信息学与 AI。包含 AI 医疗、健康信息学和健康数据科学三个专业方向的线上信息会，适合对健康数据/医疗信息学/AI 健康方向感兴趣的学生。",
+                type: "academic",
+                date: "2025-11-03",
+                startTime: "2025-11-03T13:00:00",
+                endTime: "2025-11-06T14:00:00",
+                location: "线上 - UCL Faculty of Population Health Sciences",
+                rawData: nil
+            ),
+            UCLActivity(
+                id: "11",
+                title: "UCL Graduate Open Events: Population Health Sciences",
+                description: "研究生开放日：人口健康科学。涵盖健康数据科学、公共卫生、全球健康、儿童健康、临床试验等多个方向。提供线上信息会和线下校园参观机会。",
+                type: "academic",
+                date: "2025-10-15",
+                startTime: "2025-10-15T10:00:00",
+                endTime: "2025-11-27T17:00:00",
+                location: "UCL Main Campus, Gower St, London WC1E 6BT (线上+线下)",
+                rawData: nil
+            ),
+            UCLActivity(
+                id: "12",
+                title: "Health Studies User Conference 2025",
+                description: "2025 健康研究用户大会。由 UK Data Service 与 UCL 及 National Centre for Social Research 协作举办，聚焦健康相关调查数据、世代队列研究、社会科学与健康交叉数据等。展示 UCL 在健康数据/流行病学/队列数据方面的研究实力。",
+                type: "academic",
+                date: "2025-06-23",
+                startTime: "2025-06-23T09:30:00",
+                endTime: "2025-06-23T16:30:00",
+                location: "线上 - UK Data Service",
+                rawData: nil
             )
         ]
     }
