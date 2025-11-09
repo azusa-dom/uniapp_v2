@@ -96,11 +96,6 @@ struct ParentHealthView: View {
         .navigationViewStyle(.stack)
         #endif
     }
-        }
-        #if os(iOS)
-        .navigationViewStyle(.stack)
-        #endif
-    }
     
     private var filterBar: some View {
         Picker("时间范围", selection: $range) {
