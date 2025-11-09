@@ -26,6 +26,7 @@ struct StudentDashboardView: View {
         case avatar
         case settings
         case addTodo
+        case allTodos
 
         var id: String {
             switch self {
@@ -39,6 +40,8 @@ struct StudentDashboardView: View {
                 return "settings"
             case .addTodo:
                 return "addTodo"
+            case .allTodos:
+                return "allTodos"
             }
         }
     }
@@ -113,6 +116,10 @@ struct StudentDashboardView: View {
                             .environmentObject(loc)
                     case .addTodo:
                         AddTodoView()
+                            .environmentObject(appState)
+                            .environmentObject(loc)
+                    case .allTodos:
+                        StudentAllTodosView()
                             .environmentObject(appState)
                             .environmentObject(loc)
                     }
@@ -292,8 +299,8 @@ struct StudentDashboardView: View {
                 
                 if !appState.todoManager.upcomingDeadlines.isEmpty {
                     Button(action: {
-                        // 跳转到学业界面的作业tab
-                        selectedTab = 2
+                        // 打开所有待办事项视图
+                        activeModal = .allTodos
                     }) {
                         Text("查看全部")
                             .font(.system(size: 14))
@@ -745,5 +752,314 @@ struct RecommendationActivityCard: View {
         case "cultural": return Color(hex: "A855F7")
         default: return Color(hex: "6B7280")
         }
+    }
+}
+
+// MARK: - 学生全部待办事项视图
+
+struct StudentAllTodosView: View {
+    @EnvironmentObject var loc: LocalizationService
+    @EnvironmentObject var appState: AppState
+    @Environment(\.dismiss) var dismiss
+    @State private var showingAddTodo = false
+    @State private var selectedFilter: TodoFilter = .all
+    @State private var selectedTodo: TodoItem?
+    
+    enum TodoFilter: String, CaseIterable {
+        case all = "全部"
+        case upcoming = "即将截止"
+        case today = "今天"
+        case week = "本周"
+        case completed = "已完成"
+        
+        var systemImage: String {
+            switch self {
+            case .all: return "list.bullet"
+            case .upcoming: return "clock.fill"
+            case .today: return "calendar"
+            case .week: return "calendar.badge.clock"
+            case .completed: return "checkmark.circle.fill"
+            }
+        }
+    }
+    
+    private var filteredTodos: [TodoItem] {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        switch selectedFilter {
+        case .all:
+            return appState.todoManager.todos
+        case .upcoming:
+            return appState.todoManager.upcomingDeadlines
+        case .today:
+            return appState.todoManager.todos.filter { todo in
+                guard let dueDate = todo.dueDate else { return false }
+                return calendar.isDateInToday(dueDate)
+            }
+        case .week:
+            return appState.todoManager.todos.filter { todo in
+                guard let dueDate = todo.dueDate else { return false }
+                let weekFromNow = calendar.date(byAdding: .day, value: 7, to: now)!
+                return dueDate >= now && dueDate <= weekFromNow
+            }
+        case .completed:
+            return appState.todoManager.todos.filter { $0.isCompleted }
+        }
+    }
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                DesignSystem.backgroundGradient.ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    // 筛选器
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(TodoFilter.allCases, id: \.self) { filter in
+                                FilterChip(
+                                    title: filter.rawValue,
+                                    icon: filter.systemImage,
+                                    isSelected: selectedFilter == filter,
+                                    count: countForFilter(filter)
+                                ) {
+                                    selectedFilter = filter
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                        .padding(.vertical, 12)
+                    }
+                    .background(.ultraThinMaterial)
+                    
+                    // 待办列表
+                    if filteredTodos.isEmpty {
+                        VStack(spacing: 20) {
+                            Spacer()
+                            
+                            Image(systemName: selectedFilter == .completed ? "checkmark.circle.fill" : "tray")
+                                .font(.system(size: 60))
+                                .foregroundColor(Color(hex: "6366F1").opacity(0.3))
+                            
+                            Text(selectedFilter == .completed ? "暂无已完成的任务" : "暂无待办事项")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.secondary)
+                            
+                            Button {
+                                showingAddTodo = true
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "plus.circle.fill")
+                                    Text("添加新待办")
+                                }
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(Color(hex: "6366F1"))
+                                .cornerRadius(12)
+                            }
+                            
+                            Spacer()
+                        }
+                    } else {
+                        ScrollView {
+                            VStack(spacing: 12) {
+                                ForEach(filteredTodos) { todo in
+                                    TodoRowCard(todo: todo) {
+                                        selectedTodo = todo
+                                    } onToggle: {
+                                        appState.todoManager.toggleTodo(todo)
+                                    }
+                                }
+                            }
+                            .padding()
+                        }
+                    }
+                }
+            }
+            .navigationTitle("待办事项")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("关闭") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showingAddTodo = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showingAddTodo) {
+                AddTodoView()
+                    .environmentObject(appState)
+                    .environmentObject(loc)
+            }
+            .sheet(item: $selectedTodo) { todo in
+                TodoDetailView(
+                    todo: todo,
+                    isPresented: Binding(
+                        get: { selectedTodo != nil },
+                        set: { if !$0 { selectedTodo = nil } }
+                    )
+                )
+                .environmentObject(loc)
+                .environmentObject(appState)
+            }
+        }
+        #if os(iOS)
+        .navigationViewStyle(.stack)
+        #endif
+    }
+    
+    private func countForFilter(_ filter: TodoFilter) -> Int {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        switch filter {
+        case .all:
+            return appState.todoManager.todos.count
+        case .upcoming:
+            return appState.todoManager.upcomingDeadlines.count
+        case .today:
+            return appState.todoManager.todos.filter { todo in
+                guard let dueDate = todo.dueDate else { return false }
+                return calendar.isDateInToday(dueDate)
+            }.count
+        case .week:
+            return appState.todoManager.todos.filter { todo in
+                guard let dueDate = todo.dueDate else { return false }
+                let weekFromNow = calendar.date(byAdding: .day, value: 7, to: now)!
+                return dueDate >= now && dueDate <= weekFromNow
+            }.count
+        case .completed:
+            return appState.todoManager.todos.filter { $0.isCompleted }.count
+        }
+    }
+}
+
+// MARK: - 筛选器芯片
+
+struct FilterChip: View {
+    let title: String
+    let icon: String
+    let isSelected: Bool
+    let count: Int
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 12))
+                
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(isSelected ? .white : Color(hex: "6366F1"))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(isSelected ? Color.white.opacity(0.3) : Color(hex: "6366F1").opacity(0.1))
+                        .cornerRadius(8)
+                }
+            }
+            .foregroundColor(isSelected ? .white : .primary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(isSelected ? Color(hex: "6366F1") : Color.white.opacity(0.8))
+            )
+            .shadow(color: isSelected ? Color(hex: "6366F1").opacity(0.3) : .clear, radius: 8, y: 2)
+        }
+    }
+}
+
+// MARK: - 待办行卡片
+
+struct TodoRowCard: View {
+    let todo: TodoItem
+    let onTap: () -> Void
+    let onToggle: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                // 完成按钮
+                Button(action: onToggle) {
+                    Image(systemName: todo.isCompleted ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 24))
+                        .foregroundColor(todo.isCompleted ? Color(hex: "10B981") : Color.gray.opacity(0.3))
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                // 内容
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(todo.title)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(todo.isCompleted ? .secondary : .primary)
+                        .strikethrough(todo.isCompleted)
+                    
+                    HStack(spacing: 12) {
+                        if let dueDate = todo.dueDate {
+                            HStack(spacing: 4) {
+                                Image(systemName: "clock")
+                                    .font(.system(size: 11))
+                                Text(dueDate, style: .relative)
+                                    .font(.system(size: 12))
+                            }
+                            .foregroundColor(isOverdue(dueDate) && !todo.isCompleted ? Color(hex: "EF4444") : .secondary)
+                        }
+                        
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(Color(hex: todo.priority.color))
+                                .frame(width: 6, height: 6)
+                            Text(todo.priority.displayName)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(Color(hex: todo.priority.color))
+                        }
+                        
+                        if let category = todo.category {
+                            Text(category.displayName)
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(4)
+                        }
+                    }
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.white.opacity(0.9))
+                    .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private func isOverdue(_ date: Date) -> Bool {
+        return date < Date()
     }
 }
