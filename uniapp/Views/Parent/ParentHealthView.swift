@@ -92,7 +92,14 @@ struct ParentHealthView: View {
                     .environmentObject(appState)
             }
         }
+        #if os(iOS)
         .navigationViewStyle(.stack)
+        #endif
+    }
+        }
+        #if os(iOS)
+        .navigationViewStyle(.stack)
+        #endif
     }
     
     private var filterBar: some View {

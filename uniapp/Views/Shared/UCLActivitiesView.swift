@@ -39,7 +39,6 @@ struct UCLActivitiesView: View {
                 ($0.description?.localizedCaseInsensitiveContains(searchText) ?? false)
             }
         }
-        .navigationViewStyle(.stack)
     }
 
     var body: some View {
@@ -86,6 +85,9 @@ struct UCLActivitiesView: View {
                 }
             }
         }
+        #if os(iOS)
+        .navigationViewStyle(.stack)
+        #endif
     }
 
     private var searchBar: some View {

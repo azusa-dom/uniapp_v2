@@ -62,7 +62,9 @@ struct AddTodoView: View {
                 Text(validationMessage)
             }
         }
+        #if os(iOS)
         .navigationViewStyle(.stack)
+        #endif
     }
     
     // MARK: - 标题输入区域

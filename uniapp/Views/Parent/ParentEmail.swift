@@ -98,7 +98,9 @@ struct ParentEmailView: View {
             .navigationBarTitleDisplayMode(.large)
             #endif
         }
+        #if os(iOS)
         .navigationViewStyle(.stack)
+        #endif
     }
 }
 

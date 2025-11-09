@@ -184,7 +184,9 @@ struct StudentDashboardView: View {
                 }
             }
         }
+        #if os(iOS)
         .navigationViewStyle(.stack)
+        #endif
     }
 
     // MARK: - 头部区域（简洁版本）

@@ -274,7 +274,6 @@ class ParentAIAssistantViewModel: ObservableObject {
                 self.isProcessing = false
             }
         }
-        .navigationViewStyle(.stack)
     }
     
     private func generateSmartResponse(for query: String) -> String {
@@ -499,6 +498,9 @@ struct ParentAIAssistantView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
         }
+        #if os(iOS)
+        .navigationViewStyle(.stack)
+        #endif
     }
     
     // 根据分类触发对应的演示对话

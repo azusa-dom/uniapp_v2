@@ -66,7 +66,9 @@ struct MedicalRecordsView: View {
                     .environmentObject(loc)
             }
         }
+        #if os(iOS)
         .navigationViewStyle(.stack)
+        #endif
     }
     
     private var filterBar: some View {

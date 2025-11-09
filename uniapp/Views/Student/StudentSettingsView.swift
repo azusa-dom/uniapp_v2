@@ -140,7 +140,9 @@ struct StudentSettingsView: View {
             .onChange(of: editedPhone) { _, _ in checkForChanges() }
             .onChange(of: editedBio) { _, _ in checkForChanges() }
         }
+        #if os(iOS)
         .navigationViewStyle(.stack)
+        #endif
     }
     
     // MARK: - 头像区域（美化版）

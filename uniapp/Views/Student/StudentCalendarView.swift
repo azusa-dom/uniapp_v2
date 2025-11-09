@@ -122,7 +122,9 @@ struct StudentCalendarView: View {
                 loadData()
             }
         }
+        #if os(iOS)
         .navigationViewStyle(.stack)
+        #endif
     }
     
     // MARK: - 顶部控制栏

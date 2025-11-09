@@ -253,7 +253,9 @@ struct StudentAcademicsView: View {
                 }
             }
         }
+        #if os(iOS)
         .navigationViewStyle(.stack)
+        #endif
     }
 }
 

@@ -115,7 +115,9 @@ struct ParentDashboardView: View {
                 }
             }
         }
+        #if os(iOS)
         .navigationViewStyle(.stack)
+        #endif
     }
 }
 
