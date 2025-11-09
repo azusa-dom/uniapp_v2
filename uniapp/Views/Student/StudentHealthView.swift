@@ -643,9 +643,9 @@ struct HealthTrendCard<Data: RandomAccessCollection>: View where Data.Element ==
             
             // 统计信息
             HStack {
-                StatBadge(label: "最低", value: String(format: "%.1f", minValue), color: color)
-                StatBadge(label: "最高", value: String(format: "%.1f", maxValue), color: color)
-                StatBadge(label: "样本", value: "\(trendData.count)天", color: color)
+                HealthStatBadge(label: "最低", value: String(format: "%.1f", minValue), color: color)
+                HealthStatBadge(label: "最高", value: String(format: "%.1f", maxValue), color: color)
+                HealthStatBadge(label: "样本", value: "\(trendData.count)天", color: color)
             }
         }
         .padding(16)
@@ -755,8 +755,8 @@ struct HealthEventCard<Data: RandomAccessCollection>: View where Data.Element ==
     }
 }
 
-// MARK: - 统计徽章
-struct StatBadge: View {
+// MARK: - 健康统计徽章
+struct HealthStatBadge: View {
     let label: String
     let value: String
     let color: String
