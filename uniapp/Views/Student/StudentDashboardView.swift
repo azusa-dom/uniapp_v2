@@ -921,28 +921,41 @@ struct StudentAllTodosView: View {
     }
     
     private func countForFilter(_ filter: TodoFilter) -> Int {
-        let calendar = Calendar.current
-        let now = Date()
-        
         switch filter {
         case .all:
             return appState.todoManager.todos.count
         case .upcoming:
             return appState.todoManager.upcomingDeadlines.count
         case .today:
-            return appState.todoManager.todos.filter { todo in
-                guard let dueDate = todo.dueDate else { return false }
-                return calendar.isDateInToday(dueDate)
-            }.count
+            return todayTodosCount
         case .week:
-            return appState.todoManager.todos.filter { todo in
-                guard let dueDate = todo.dueDate else { return false }
-                let weekFromNow = calendar.date(byAdding: .day, value: 7, to: now)!
-                return dueDate >= now && dueDate <= weekFromNow
-            }.count
+            return weekTodosCount
         case .completed:
-            return appState.todoManager.todos.filter { $0.isCompleted }.count
+            return completedTodosCount
         }
+    }
+    
+    private var todayTodosCount: Int {
+        let calendar = Calendar.current
+        return appState.todoManager.todos.filter { todo in
+            guard let dueDate = todo.dueDate else { return false }
+            return calendar.isDateInToday(dueDate)
+        }.count
+    }
+    
+    private var weekTodosCount: Int {
+        let calendar = Calendar.current
+        let now = Date()
+        guard let weekFromNow = calendar.date(byAdding: .day, value: 7, to: now) else { return 0 }
+        
+        return appState.todoManager.todos.filter { todo in
+            guard let dueDate = todo.dueDate else { return false }
+            return dueDate >= now && dueDate <= weekFromNow
+        }.count
+    }
+    
+    private var completedTodosCount: Int {
+        return appState.todoManager.todos.filter { $0.isCompleted }.count
     }
 }
 
@@ -1002,7 +1015,7 @@ struct TodoRowCard: View {
                         .font(.system(size: 24))
                         .foregroundColor(todo.isCompleted ? Color(hex: "10B981") : Color.gray.opacity(0.3))
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(.plain)
                 
                 // 内容
                 VStack(alignment: .leading, spacing: 6) {
@@ -1056,7 +1069,7 @@ struct TodoRowCard: View {
                     .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
             )
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(.plain)
     }
     
     private func isOverdue(_ date: Date) -> Bool {
