@@ -586,6 +586,7 @@ struct TodoItemRow: View {
     
     var priorityColor: Color {
         switch todo.priority {
+        case .urgent: return Color(hex: "DC2626")
         case .high: return Color(hex: "EF4444")
         case .medium: return Color(hex: "F59E0B")
         case .low: return Color(hex: "10B981")
@@ -884,6 +885,8 @@ struct DataNotSharedView: View {
 // MARK: - TodoItem 扩展（用于显示）
 extension TodoItem {
     var timeLeftDescription: String {
+        guard let dueDate = dueDate else { return "无截止日期" }
+        
         let now = Date()
         let components = Calendar.current.dateComponents([.day, .hour, .minute], from: now, to: dueDate)
         
@@ -899,6 +902,8 @@ extension TodoItem {
     }
     
     var isUrgent: Bool {
+        guard let dueDate = dueDate else { return false }
+        
         let now = Date()
         let hoursLeft = Calendar.current.dateComponents([.hour], from: now, to: dueDate).hour ?? 0
         return hoursLeft <= 24
