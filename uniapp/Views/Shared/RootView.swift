@@ -158,6 +158,7 @@ struct RoleButton: View {
 // 学生端 Tab（5个）
 struct StudentTabView: View {
     @EnvironmentObject var loc: LocalizationService
+    @EnvironmentObject var viewModel: UCLAPIViewModel
     @StateObject private var aiViewModel = StudentAIAssistantViewModel()
     @State private var selectedTab = 0
     
@@ -165,6 +166,7 @@ struct StudentTabView: View {
         TabView(selection: $selectedTab) {
             // 1. 首页
             StudentDashboardView(selectedTab: $selectedTab)
+                .environmentObject(viewModel)
                 .tabItem {
                     Label(loc.tr("tab_home"), systemImage: "house.fill")
                 }
@@ -172,6 +174,7 @@ struct StudentTabView: View {
             
             // 2. 活动与日历（合并）
             StudentCalendarView()
+                .environmentObject(viewModel)
                 .tabItem {
                     Label("活动日历", systemImage: "calendar")
                 }
@@ -213,6 +216,7 @@ struct StudentTabView: View {
 // 家长端 Tab（5个）
 struct ParentTabView: View {
     @EnvironmentObject var loc: LocalizationService
+    @EnvironmentObject var viewModel: UCLAPIViewModel
     @State private var selectedTab = 0
     
     var body: some View {
@@ -226,6 +230,7 @@ struct ParentTabView: View {
             
             // 2. 活动与日历（合并）
             ParentCalendarView()
+                .environmentObject(viewModel)
                 .tabItem {
                     Label("活动日历", systemImage: "calendar")
                 }
