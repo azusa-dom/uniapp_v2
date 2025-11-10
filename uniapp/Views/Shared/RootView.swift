@@ -10,14 +10,17 @@ import SwiftUI
 struct RootView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var loc: LocalizationService
+    @EnvironmentObject var viewModel: UCLAPIViewModel
     
     var body: some View {
         Group {
             if appState.isLoggedIn {
                 if appState.userRole == .student {
                     StudentTabView()
+                        .environmentObject(viewModel)
                 } else {
                     ParentTabView()
+                        .environmentObject(viewModel)
                 }
             } else {
                 LoginView()
