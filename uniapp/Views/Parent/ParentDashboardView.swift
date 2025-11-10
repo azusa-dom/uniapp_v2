@@ -610,11 +610,11 @@ struct TodoItemRow: View {
                         .font(.system(size: 12))
                         .foregroundColor(todo.isUrgent ? Color(hex: "EF4444") : .secondary)
                     
-                    if let category = todo.category {
+                    if !todo.category.isEmpty {
                         Text("·")
                             .foregroundColor(.secondary)
                         
-                        Text(category)
+                        Text(todo.category)
                             .font(.system(size: 12))
                             .foregroundColor(.secondary)
                     }
