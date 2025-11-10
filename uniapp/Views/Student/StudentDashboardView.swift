@@ -863,7 +863,7 @@ struct StudentAllTodosView: View {
                                     TodoRowCard(todo: todo) {
                                         selectedTodo = todo
                                     } onToggle: {
-                                        appState.todoManager.toggleTodo(todo)
+                                        appState.todoManager.toggleCompletion(todo)
                                     }
                                 }
                             }
