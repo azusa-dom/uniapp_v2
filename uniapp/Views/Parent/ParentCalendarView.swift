@@ -130,11 +130,11 @@ struct ParentCalendarView: View {
                     
                     Image(systemName: "bell.fill")
                         .font(.system(size: 18))
-                        .foregroundColor(Color(hex: "F59E0B"))
+                        .foregroundColor(Color(hex: "8B5CF6"))
                     
                     // 未读提示
                     Circle()
-                        .fill(Color(hex: "EF4444"))
+                        .fill(Color(hex: "7C3AED"))
                         .frame(width: 8, height: 8)
                         .offset(x: 12, y: -12)
                 }
@@ -150,7 +150,7 @@ struct ParentCalendarView: View {
                     
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 18))
-                        .foregroundColor(Color(hex: "F59E0B"))
+                        .foregroundColor(Color(hex: "8B5CF6"))
                 }
             }
         }
@@ -170,14 +170,14 @@ struct ParentCalendarView: View {
                             Text(mode.rawValue)
                                 .font(.system(size: 14, weight: .semibold))
                         }
-                        .foregroundColor(viewMode == mode ? .white : Color(hex: "F59E0B"))
+                        .foregroundColor(viewMode == mode ? .white : Color(hex: "8B5CF6"))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
                         .background(
                             Group {
                                 if viewMode == mode {
                                     LinearGradient(
-                                        colors: [Color(hex: "F59E0B"), Color(hex: "EF4444")],
+                                        colors: [Color(hex: "8B5CF6"), Color(hex: "7C3AED")],
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )
@@ -187,7 +187,7 @@ struct ParentCalendarView: View {
                             }
                         )
                         .clipShape(Capsule())
-                        .shadow(color: viewMode == mode ? Color(hex: "F59E0B").opacity(0.3) : .clear, radius: 8, x: 0, y: 4)
+                        .shadow(color: viewMode == mode ? Color(hex: "8B5CF6").opacity(0.3) : .clear, radius: 8, x: 0, y: 4)
                     }
                 }
             }
@@ -224,7 +224,7 @@ struct ParentCalendarView: View {
                 title: "课程",
                 count: todayEvents.count,
                 icon: "book.fill",
-                color: "F59E0B"
+                color: "8B5CF6"
             )
             
             ParentOverviewStatCard(
@@ -251,7 +251,7 @@ struct ParentCalendarView: View {
             HStack {
                 Image(systemName: "calendar.badge.clock")
                     .font(.system(size: 16))
-                    .foregroundColor(Color(hex: "F59E0B"))
+                    .foregroundColor(Color(hex: "8B5CF6"))
                 
                 Text("今日课程")
                     .font(.system(size: 20, weight: .bold))
@@ -270,7 +270,7 @@ struct ParentCalendarView: View {
                 EmptyStateCard(
                     icon: "calendar",
                     message: "今天没有安排课程",
-                    color: "F59E0B"
+                    color: "8B5CF6"
                 )
             } else {
                 VStack(spacing: 12) {
@@ -350,7 +350,7 @@ struct ParentCalendarView: View {
                     icon: "book.fill",
                     title: "本周课程",
                     count: weeklyStats.courses,
-                    color: "F59E0B"
+                    color: "8B5CF6"
                 )
                 
                 WeeklyStatRow(
@@ -479,10 +479,10 @@ struct ParentEventCard: View {
                 VStack(spacing: 4) {
                     Text(event.startTime, style: .time)
                         .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(Color(hex: "F59E0B"))
+                        .foregroundColor(Color(hex: "8B5CF6"))
                     
                     Rectangle()
-                        .fill(Color(hex: "F59E0B").opacity(0.3))
+                        .fill(Color(hex: "8B5CF6").opacity(0.3))
                         .frame(width: 2, height: 30)
                     
                     Text(event.endTime, style: .time)
@@ -500,7 +500,7 @@ struct ParentEventCard: View {
                     HStack(spacing: 6) {
                         Image(systemName: "mappin.circle.fill")
                             .font(.system(size: 12))
-                            .foregroundColor(Color(hex: "F59E0B"))
+                            .foregroundColor(Color(hex: "8B5CF6"))
                         
                         Text(event.location)
                             .font(.system(size: 14))
@@ -516,7 +516,7 @@ struct ParentEventCard: View {
                             .padding(.vertical, 4)
                             .background(
                                 Capsule()
-                                    .fill(Color(hex: "F59E0B"))
+                                    .fill(Color(hex: "8B5CF6"))
                             )
                         
                         // 时间状态
@@ -552,7 +552,7 @@ struct ParentEventCard: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color(hex: "F59E0B").opacity(0.2), lineWidth: 1)
+                    .stroke(Color(hex: "8B5CF6").opacity(0.2), lineWidth: 1)
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -718,7 +718,7 @@ struct ParentMonthView: View {
                 displayedComponents: .date
             )
             .datePickerStyle(GraphicalDatePickerStyle())
-            .tint(Color(hex: "F59E0B"))
+            .tint(Color(hex: "8B5CF6"))
         }
         .padding(20)
         .background(
@@ -767,12 +767,12 @@ struct ParentWeekView: View {
                                 Group {
                                     if Calendar.current.isDate(date, inSameDayAs: selectedDate) {
                                         LinearGradient(
-                                            colors: [Color(hex: "F59E0B"), Color(hex: "EF4444")],
+                                            colors: [Color(hex: "8B5CF6"), Color(hex: "7C3AED")],
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
                                         )
                                     } else if Calendar.current.isDateInToday(date) {
-                                        Color(hex: "F59E0B").opacity(0.15)
+                                        Color(hex: "8B5CF6").opacity(0.15)
                                     } else {
                                         Color.clear
                                     }
@@ -780,7 +780,7 @@ struct ParentWeekView: View {
                             )
                             .clipShape(Circle())
                             .shadow(
-                                color: Calendar.current.isDate(date, inSameDayAs: selectedDate) ? Color(hex: "F59E0B").opacity(0.4) : .clear,
+                                color: Calendar.current.isDate(date, inSameDayAs: selectedDate) ? Color(hex: "8B5CF6").opacity(0.4) : .clear,
                                 radius: 8,
                                 x: 0,
                                 y: 4
@@ -821,11 +821,11 @@ struct ParentDayView: View {
                 }) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color(hex: "F59E0B"))
+                        .foregroundColor(Color(hex: "8B5CF6"))
                         .frame(width: 40, height: 40)
                         .background(
                             Circle()
-                                .fill(Color(hex: "F59E0B").opacity(0.1))
+                                .fill(Color(hex: "8B5CF6").opacity(0.1))
                         )
                 }
                 
@@ -852,11 +852,11 @@ struct ParentDayView: View {
                 }) {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color(hex: "F59E0B"))
+                        .foregroundColor(Color(hex: "8B5CF6"))
                         .frame(width: 40, height: 40)
                         .background(
                             Circle()
-                                .fill(Color(hex: "F59E0B").opacity(0.1))
+                                .fill(Color(hex: "8B5CF6").opacity(0.1))
                         )
                 }
             }
@@ -889,7 +889,7 @@ struct ParentEventDetailSheet: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 12) {
                             Image(systemName: "clock.fill")
-                                .foregroundColor(Color(hex: "F59E0B"))
+                                .foregroundColor(Color(hex: "8B5CF6"))
                             Text("开始时间")
                                 .foregroundColor(.secondary)
                             Spacer()
@@ -899,7 +899,7 @@ struct ParentEventDetailSheet: View {
                         
                         HStack(spacing: 12) {
                             Image(systemName: "clock.fill")
-                                .foregroundColor(Color(hex: "F59E0B"))
+                                .foregroundColor(Color(hex: "8B5CF6"))
                             Text("结束时间")
                                 .foregroundColor(.secondary)
                             Spacer()
@@ -909,7 +909,7 @@ struct ParentEventDetailSheet: View {
                         
                         HStack(spacing: 12) {
                             Image(systemName: "mappin.circle.fill")
-                                .foregroundColor(Color(hex: "F59E0B"))
+                                .foregroundColor(Color(hex: "8B5CF6"))
                             Text("地点")
                                 .foregroundColor(.secondary)
                             Spacer()
@@ -920,7 +920,7 @@ struct ParentEventDetailSheet: View {
                     .padding(16)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(hex: "F59E0B").opacity(0.1))
+                            .fill(Color(hex: "8B5CF6").opacity(0.1))
                     )
                     
                     // 描述
