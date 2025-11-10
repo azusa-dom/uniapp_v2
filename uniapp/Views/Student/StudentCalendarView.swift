@@ -783,16 +783,139 @@ struct WeeklyRecommendationCard: View {
 // MARK: - 现代化月视图
 struct ModernMonthView: View {
     @Binding var selectedDate: Date
+    @EnvironmentObject var viewModel: UCLAPIViewModel
+    
+    private let calendar = Calendar.current
+    private let daysOfWeek = ["日", "一", "二", "三", "四", "五", "六"]
+    
+    private var monthDates: [Date?] {
+        guard let monthInterval = calendar.dateInterval(of: .month, for: selectedDate),
+              let monthFirstWeek = calendar.dateInterval(of: .weekOfMonth, for: monthInterval.start) else {
+            return []
+        }
+        
+        var dates: [Date?] = []
+        var currentDate = monthFirstWeek.start
+        
+        while dates.count < 42 { // 6 周
+            if calendar.isDate(currentDate, equalTo: selectedDate, toGranularity: .month) {
+                dates.append(currentDate)
+            } else {
+                dates.append(nil)
+            }
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
+        }
+        
+        return dates
+    }
+    
+    private func hasEvents(on date: Date) -> Bool {
+        viewModel.events.contains { event in
+            calendar.isDate(event.startTime, inSameDayAs: date)
+        }
+    }
     
     var body: some View {
-        VStack(spacing: 0) {
-            DatePicker(
-                "",
-                selection: $selectedDate,
-                displayedComponents: .date
-            )
-            .datePickerStyle(GraphicalDatePickerStyle())
-            .tint(Color(hex: "6366F1"))
+        VStack(spacing: 16) {
+            // 月份选择器
+            HStack {
+                Button(action: {
+                    if let newDate = calendar.date(byAdding: .month, value: -1, to: selectedDate) {
+                        withAnimation(.spring(response: 0.3)) {
+                            selectedDate = newDate
+                        }
+                    }
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Color(hex: "6366F1"))
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(Color(hex: "6366F1").opacity(0.1)))
+                }
+                
+                Spacer()
+                
+                Text(selectedDate.formatted(.dateTime.year().month(.wide)))
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Button(action: {
+                    if let newDate = calendar.date(byAdding: .month, value: 1, to: selectedDate) {
+                        withAnimation(.spring(response: 0.3)) {
+                            selectedDate = newDate
+                        }
+                    }
+                }) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Color(hex: "6366F1"))
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(Color(hex: "6366F1").opacity(0.1)))
+                }
+            }
+            .padding(.horizontal, 8)
+            
+            // 星期标题
+            HStack(spacing: 0) {
+                ForEach(daysOfWeek, id: \.self) { day in
+                    Text(day)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.vertical, 8)
+            
+            // 日期网格
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 8) {
+                ForEach(0..<42, id: \.self) { index in
+                    if let date = monthDates[index] {
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3)) {
+                                selectedDate = date
+                            }
+                        }) {
+                            VStack(spacing: 4) {
+                                Text(calendar.component(.day, from: date).description)
+                                    .font(.system(size: 16, weight: calendar.isDate(date, inSameDayAs: selectedDate) ? .bold : .medium))
+                                    .foregroundColor(calendar.isDate(date, inSameDayAs: selectedDate) ? .white : .primary)
+                                
+                                // 事件指示器小点
+                                if hasEvents(on: date) {
+                                    Circle()
+                                        .fill(calendar.isDate(date, inSameDayAs: selectedDate) ? Color.white : Color(hex: "6366F1"))
+                                        .frame(width: 4, height: 4)
+                                } else {
+                                    Spacer().frame(height: 4)
+                                }
+                            }
+                            .frame(height: 44)
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                Group {
+                                    if calendar.isDate(date, inSameDayAs: selectedDate) {
+                                        LinearGradient(
+                                            colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    } else if calendar.isDateInToday(date) {
+                                        Color(hex: "6366F1").opacity(0.1)
+                                    } else {
+                                        Color.clear
+                                    }
+                                }
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    } else {
+                        Color.clear.frame(height: 44)
+                    }
+                }
+            }
         }
         .padding(20)
         .background(
@@ -806,6 +929,7 @@ struct ModernMonthView: View {
 // MARK: - 现代化周视图
 struct ModernWeekView: View {
     @Binding var selectedDate: Date
+    @EnvironmentObject var viewModel: UCLAPIViewModel
     
     private var daysInWeek: [Date] {
         guard let weekInterval = Calendar.current.dateInterval(of: .weekOfYear, for: selectedDate) else {
@@ -820,6 +944,12 @@ struct ModernWeekView: View {
         return dates
     }
     
+    private func hasEvents(on date: Date) -> Bool {
+        viewModel.events.contains { event in
+            Calendar.current.isDate(event.startTime, inSameDayAs: date)
+        }
+    }
+    
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
@@ -829,32 +959,42 @@ struct ModernWeekView: View {
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.secondary)
                         
-                        Text(date.formatted(.dateTime.day()))
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(Calendar.current.isDate(date, inSameDayAs: selectedDate) ? .white : .primary)
-                            .frame(width: 44, height: 44)
-                            .background(
-                                Group {
-                                    if Calendar.current.isDate(date, inSameDayAs: selectedDate) {
-                                        LinearGradient(
-                                            colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    } else if Calendar.current.isDateInToday(date) {
-                                        Color(hex: "6366F1").opacity(0.15)
-                                    } else {
-                                        Color.clear
+                        ZStack(alignment: .bottom) {
+                            Text(date.formatted(.dateTime.day()))
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(Calendar.current.isDate(date, inSameDayAs: selectedDate) ? .white : .primary)
+                                .frame(width: 44, height: 44)
+                                .background(
+                                    Group {
+                                        if Calendar.current.isDate(date, inSameDayAs: selectedDate) {
+                                            LinearGradient(
+                                                colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        } else if Calendar.current.isDateInToday(date) {
+                                            Color(hex: "6366F1").opacity(0.15)
+                                        } else {
+                                            Color.clear
+                                        }
                                     }
-                                }
-                            )
-                            .clipShape(Circle())
-                            .shadow(
-                                color: Calendar.current.isDate(date, inSameDayAs: selectedDate) ? Color(hex: "6366F1").opacity(0.4) : .clear,
-                                radius: 8,
-                                x: 0,
-                                y: 4
-                            )
+                                )
+                                .clipShape(Circle())
+                                .shadow(
+                                    color: Calendar.current.isDate(date, inSameDayAs: selectedDate) ? Color(hex: "6366F1").opacity(0.4) : .clear,
+                                    radius: 8,
+                                    x: 0,
+                                    y: 4
+                                )
+                            
+                            // 事件指示器小点
+                            if hasEvents(on: date) {
+                                Circle()
+                                    .fill(Calendar.current.isDate(date, inSameDayAs: selectedDate) ? Color.white : Color(hex: "6366F1"))
+                                    .frame(width: 5, height: 5)
+                                    .offset(y: 6)
+                            }
+                        }
                     }
                     .onTapGesture {
                         withAnimation(.spring(response: 0.3)) {
