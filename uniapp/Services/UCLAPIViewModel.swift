@@ -45,17 +45,26 @@ final class UCLAPIViewModel: ObservableObject {
     @Published var activities: [UCLActivity] = []  // UCL 活动数据
     private let eventStore = EKEventStore()
     private let activitiesService = UCLActivitiesService()
+    
+    init() {
+        // 在初始化时加载活动数据
+        activitiesService.loadActivities()
+        
+        // 监听活动加载完成
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            self.activities = self.activitiesService.activities
+            print("📱 活动数据已加载: \(self.activities.count) 个")
+        }
+    }
 
     func fetchEvents() {
         guard events.isEmpty else { return }
+        
         let calendar = Calendar.current
         let today = Date()
         
         // 生成本周的课程表（周一到周五）- 真实 HDS 课程
         var weekEvents: [UCLAPIEvent] = []
-        
-        // 加载 UCL 活动
-        loadUCLActivities()
         
         // 周一 - 数据方法与健康研究（CHME0013）
         if let monday = getWeekday(1, from: today) {
@@ -121,6 +130,22 @@ final class UCLAPIViewModel: ObservableObject {
         addAssignmentDeadlines(&weekEvents, relativeTo: today)
         
         events = weekEvents
+        
+        // 如果活动已经加载，立即集成；否则稍后集成
+        if !activities.isEmpty {
+            integrateActivitiesToEvents()
+            generateRecommendations()
+            print("📅 活动已集成到日历: \(activities.count) 个")
+        } else {
+            // 等待活动加载完成
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                if !self.activities.isEmpty {
+                    self.integrateActivitiesToEvents()
+                    self.generateRecommendations()
+                    print("📅 延迟集成活动到日历: \(self.activities.count) 个")
+                }
+            }
+        }
     }
     
     // 辅助函数：获取本周特定星期几的日期
