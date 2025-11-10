@@ -483,6 +483,8 @@ final class UCLAPIViewModel: ObservableObject {
         let recommendedTypes = ["academic", "lecture", "seminar"]
         let healthKeywords = ["health", "data", "ai", "medical", "population", "informatics"]
         
+        var recommendCount = 0
+        
         for activity in activities {
             // 判断是否推荐
             let typeMatch = recommendedTypes.contains { activity.type.lowercased().contains($0) }
@@ -492,6 +494,8 @@ final class UCLAPIViewModel: ObservableObject {
             }
             
             if typeMatch || keywordMatch {
+                print("✨ 匹配推荐: \(activity.title)")
+                
                 // 检查活动是否已经在事件中
                 if let index = events.firstIndex(where: { event in
                     event.title == activity.title &&
@@ -509,9 +513,13 @@ final class UCLAPIViewModel: ObservableObject {
                         activityType: events[index].activityType,
                         isRecommended: true
                     )
+                    recommendCount += 1
+                    print("✅ 已标记为推荐")
                 }
             }
         }
+        
+        print("🎯 总共标记了 \(recommendCount) 个推荐活动")
     }
     
     /// 解析活动日期时间
@@ -568,10 +576,15 @@ final class UCLAPIViewModel: ObservableObject {
     
     /// 获取推荐活动列表
     func getRecommendedActivities() -> [UCLAPIEvent] {
-        return events.filter { $0.isRecommended && $0.startTime > Date() }
+        let recommended = events.filter { $0.isRecommended && $0.startTime > Date() }
             .sorted { $0.startTime < $1.startTime }
             .prefix(5)
             .map { $0 }
+        
+        print("🎯 推荐活动数量: \(recommended.count) / 总事件: \(events.count)")
+        print("🎯 已标记推荐的事件: \(events.filter { $0.isRecommended }.count)")
+        
+        return Array(recommended)
     }
     
     /// 添加活动到日历
