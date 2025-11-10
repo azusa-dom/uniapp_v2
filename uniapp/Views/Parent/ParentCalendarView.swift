@@ -906,7 +906,6 @@ struct ParentWeekView: View {
                                             Color(hex: "8B5CF6").opacity(0.15)
                                         } else {
                                             Color.clear
-                                    }
                                         }
                                     }
                                 )
