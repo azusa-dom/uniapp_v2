@@ -16,13 +16,10 @@ struct StudentDashboardView: View {
     @Binding var selectedTab: Int
     @State private var activeModal: DashboardModal?
     @State private var showingLogoutAlert = false
+    @State private var recommendedEvents: [UCLAPIViewModel.UCLAPIEvent] = []
 
     private var pinnedActivities: [UCLActivity] {
         activitiesService.activities.prefix(3).map { $0 }
-    }
-    
-    private var recommendedEvents: [UCLAPIViewModel.UCLAPIEvent] {
-        viewModel.getRecommendedActivities()
     }
 
     private enum DashboardModal: Identifiable {
@@ -194,11 +191,34 @@ struct StudentDashboardView: View {
                 if activitiesService.activities.isEmpty {
                     activitiesService.loadActivities()
                 }
+                
+                // 触发事件加载
+                if viewModel.events.isEmpty {
+                    viewModel.fetchEvents()
+                }
+                
+                // 初始加载推荐事件
+                updateRecommendedEvents()
+                
+                // 延迟更新以捕获异步加载的事件
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    updateRecommendedEvents()
+                }
+            }
+            .onChange(of: viewModel.events.count) { _, _ in
+                // 当事件数量改变时更新推荐
+                updateRecommendedEvents()
             }
         }
         #if os(iOS)
         .navigationViewStyle(.stack)
         #endif
+    }
+    
+    // MARK: - 辅助方法
+    private func updateRecommendedEvents() {
+        recommendedEvents = viewModel.getRecommendedActivities()
+        print("🔄 更新推荐事件: \(recommendedEvents.count) 个")
     }
 
     // MARK: - 头部区域（简洁版本）
