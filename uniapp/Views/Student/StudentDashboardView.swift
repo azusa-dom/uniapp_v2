@@ -818,14 +818,7 @@ struct StudentAllTodosView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
                             ForEach(TodoFilter.allCases, id: \.self) { filter in
-                                FilterChip(
-                                    title: filter.rawValue,
-                                    icon: filter.systemImage,
-                                    isSelected: selectedFilter == filter,
-                                    count: countForFilter(filter)
-                                ) {
-                                    selectedFilter = filter
-                                }
+                                makeFilterChip(for: filter)
                             }
                         }
                         .padding(.horizontal)
@@ -918,6 +911,17 @@ struct StudentAllTodosView: View {
         #if os(iOS)
         .navigationViewStyle(.stack)
         #endif
+    }
+    
+    private func makeFilterChip(for filter: TodoFilter) -> some View {
+        FilterChip(
+            title: filter.rawValue,
+            icon: filter.systemImage,
+            isSelected: selectedFilter == filter,
+            count: countForFilter(filter)
+        ) {
+            selectedFilter = filter
+        }
     }
     
     private func countForFilter(_ filter: TodoFilter) -> Int {
