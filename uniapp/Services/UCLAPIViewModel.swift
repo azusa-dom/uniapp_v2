@@ -574,16 +574,3 @@ final class UCLAPIViewModel: ObservableObject {
         addEventToCalendar(event: event)
     }
 }
-        
-        if let dec10b = calendar.date(byAdding: .day, value: 30, to: today) {
-            events.append(UCLAPIEvent(
-                title: "📝 Markov 模型小组项目截止 (CHME0030)",
-                startTime: setTime(date: dec10b, hour: 23, minute: 59),
-                endTime: setTime(date: dec10b, hour: 23, minute: 59),
-                location: "课堂展示",
-                type: .api,
-                description: "健康经济学与决策建模 - Markov 模型小组项目"
-            ))
-        }
-    }
-}
