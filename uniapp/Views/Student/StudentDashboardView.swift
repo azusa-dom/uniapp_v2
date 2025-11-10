@@ -968,6 +968,22 @@ struct FilterChip: View {
     let count: Int
     let action: () -> Void
     
+    private var badgeBackgroundColor: Color {
+        isSelected ? Color.white.opacity(0.3) : Color(hex: "6366F1").opacity(0.1)
+    }
+    
+    private var badgeForegroundColor: Color {
+        isSelected ? .white : Color(hex: "6366F1")
+    }
+    
+    private var chipBackgroundColor: Color {
+        isSelected ? Color(hex: "6366F1") : Color.white.opacity(0.8)
+    }
+    
+    private var shadowColor: Color {
+        isSelected ? Color(hex: "6366F1").opacity(0.3) : .clear
+    }
+    
     var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
@@ -978,13 +994,7 @@ struct FilterChip: View {
                     .font(.system(size: 14, weight: .semibold))
                 
                 if count > 0 {
-                    Text("\(count)")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(isSelected ? .white : Color(hex: "6366F1"))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(isSelected ? Color.white.opacity(0.3) : Color(hex: "6366F1").opacity(0.1))
-                        .cornerRadius(8)
+                    countBadge
                 }
             }
             .foregroundColor(isSelected ? .white : .primary)
@@ -992,10 +1002,20 @@ struct FilterChip: View {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(isSelected ? Color(hex: "6366F1") : Color.white.opacity(0.8))
+                    .fill(chipBackgroundColor)
             )
-            .shadow(color: isSelected ? Color(hex: "6366F1").opacity(0.3) : .clear, radius: 8, y: 2)
+            .shadow(color: shadowColor, radius: 8, y: 2)
         }
+    }
+    
+    private var countBadge: some View {
+        Text("\(count)")
+            .font(.system(size: 11, weight: .bold))
+            .foregroundColor(badgeForegroundColor)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(badgeBackgroundColor)
+            .cornerRadius(8)
     }
 }
 
@@ -1044,8 +1064,8 @@ struct TodoRowCard: View {
                                 .foregroundColor(Color(hex: todo.priority.color))
                         }
                         
-                        if let category = todo.category {
-                            Text(category.displayName)
+                        if !todo.category.isEmpty {
+                            Text(todo.category)
                                 .font(.system(size: 11))
                                 .foregroundColor(.secondary)
                                 .padding(.horizontal, 8)
