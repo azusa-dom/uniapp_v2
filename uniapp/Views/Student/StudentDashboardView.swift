@@ -11,6 +11,7 @@ import SwiftUI
 struct StudentDashboardView: View {
     @EnvironmentObject var loc: LocalizationService
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var viewModel: UCLAPIViewModel
     @StateObject private var activitiesService = UCLActivitiesService()
     @Binding var selectedTab: Int
     @State private var activeModal: DashboardModal?
@@ -18,6 +19,10 @@ struct StudentDashboardView: View {
 
     private var pinnedActivities: [UCLActivity] {
         activitiesService.activities.prefix(3).map { $0 }
+    }
+    
+    private var recommendedEvents: [UCLAPIViewModel.UCLAPIEvent] {
+        viewModel.getRecommendedActivities()
     }
 
     private enum DashboardModal: Identifiable {
@@ -358,13 +363,19 @@ struct StudentDashboardView: View {
     private var recommendationsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("🎯 " + loc.tr("home_recommendations"))
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.primary)
+                HStack(spacing: 8) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 18))
+                        .foregroundColor(Color(hex: "F59E0B"))
+                    
+                    Text("为你推荐")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.primary)
+                }
                 
                 Spacer()
                 
-                if !pinnedActivities.isEmpty {
+                if !recommendedEvents.isEmpty {
                     Button(action: {
                         selectedTab = 5 // 跳转到活动
                     }) {
@@ -375,26 +386,34 @@ struct StudentDashboardView: View {
                 }
             }
 
-            if activitiesService.isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-                    .padding()
-            } else if pinnedActivities.isEmpty {
+            if recommendedEvents.isEmpty {
                 StudentEmptyStateCard(
-                    icon: "sparkles",
-                    message: "暂无活动，稍后再来看看吧",
+                    icon: "star.fill",
+                    message: "正在为你寻找合适的活动...",
                     color: "F59E0B"
                 )
             } else {
                 VStack(spacing: 12) {
-                    ForEach(pinnedActivities) { activity in
-                        RecommendationActivityCard(activity: activity)
+                    ForEach(recommendedEvents) { event in
+                        RecommendedEventCard(event: event)
                             .onTapGesture {
                                 selectedTab = 5
                             }
                     }
                 }
             }
+            
+            // 说明文字
+            HStack(spacing: 6) {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                
+                Text("根据你的专业（健康数据科学）智能推荐")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+            .padding(.top, 4)
         }
     }
 }
@@ -1098,5 +1117,151 @@ struct TodoRowCard: View {
     
     private func isOverdue(_ date: Date) -> Bool {
         return date < Date()
+    }
+}
+
+// MARK: - 推荐活动卡片
+struct RecommendedEventCard: View {
+    let event: UCLAPIViewModel.UCLAPIEvent
+    
+    var formattedDate: String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "zh_CN")
+        dateFormatter.dateFormat = "M月d日"
+        return dateFormatter.string(from: event.startTime)
+    }
+    
+    var formattedTime: String {
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "HH:mm"
+        let start = timeFormatter.string(from: event.startTime)
+        let end = timeFormatter.string(from: event.endTime)
+        return "\(start) - \(end)"
+    }
+    
+    var activityTypeIcon: String {
+        guard let type = event.activityType else { return "star.fill" }
+        switch type.lowercased() {
+        case "academic", "lecture", "seminar":
+            return "graduationcap.fill"
+        case "cultural", "art", "exhibition":
+            return "paintpalette.fill"
+        case "sport", "fitness":
+            return "figure.run"
+        case "club", "society":
+            return "person.3.fill"
+        case "workshop":
+            return "hammer.fill"
+        default:
+            return "star.fill"
+        }
+    }
+    
+    var activityTypeColor: Color {
+        guard let type = event.activityType else { return Color(hex: "F59E0B") }
+        switch type.lowercased() {
+        case "academic", "lecture", "seminar":
+            return Color(hex: "6366F1")
+        case "cultural", "art", "exhibition":
+            return Color(hex: "EC4899")
+        case "sport", "fitness":
+            return Color(hex: "10B981")
+        case "club", "society":
+            return Color(hex: "8B5CF6")
+        case "workshop":
+            return Color(hex: "F59E0B")
+        default:
+            return Color(hex: "F59E0B")
+        }
+    }
+    
+    var body: some View {
+        HStack(spacing: 14) {
+            // 左侧图标
+            ZStack {
+                Circle()
+                    .fill(activityTypeColor.opacity(0.15))
+                    .frame(width: 50, height: 50)
+                
+                Image(systemName: activityTypeIcon)
+                    .font(.system(size: 20))
+                    .foregroundColor(activityTypeColor)
+            }
+            
+            // 中间内容
+            VStack(alignment: .leading, spacing: 6) {
+                Text(event.title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                
+                HStack(spacing: 12) {
+                    // 日期
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                        Text(formattedDate)
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // 时间
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                        Text(formattedTime)
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                // 地点
+                if !event.location.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "mappin.circle")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                        Text(event.location)
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+            }
+            
+            Spacer()
+            
+            // 右侧推荐标签
+            VStack(spacing: 4) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 14))
+                    .foregroundColor(Color(hex: "F59E0B"))
+                
+                Text("推荐")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(Color(hex: "F59E0B"))
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.95),
+                            activityTypeColor.opacity(0.05)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(activityTypeColor.opacity(0.2), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        )
     }
 }

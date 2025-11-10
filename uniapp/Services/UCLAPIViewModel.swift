@@ -5,6 +5,8 @@ final class UCLAPIViewModel: ObservableObject {
     enum EventType: String {
         case api
         case manual
+        case activity  // UCL 活动
+        case recommended  // 推荐活动
     }
 
     struct UCLAPIEvent: Identifiable, Equatable {
@@ -15,6 +17,8 @@ final class UCLAPIViewModel: ObservableObject {
         var location: String
         var type: EventType
         var description: String?
+        var activityType: String?  // 活动类型 (academic, cultural, sport等)
+        var isRecommended: Bool  // 是否为推荐活动
 
         init(id: UUID = UUID(),
              title: String,
@@ -22,7 +26,9 @@ final class UCLAPIViewModel: ObservableObject {
              endTime: Date,
              location: String,
              type: EventType,
-             description: String? = nil) {
+             description: String? = nil,
+             activityType: String? = nil,
+             isRecommended: Bool = false) {
             self.id = id
             self.title = title
             self.startTime = startTime
@@ -30,11 +36,15 @@ final class UCLAPIViewModel: ObservableObject {
             self.location = location
             self.type = type
             self.description = description
+            self.activityType = activityType
+            self.isRecommended = isRecommended
         }
     }
 
     @Published var events: [UCLAPIEvent] = []
+    @Published var activities: [UCLActivity] = []  // UCL 活动数据
     private let eventStore = EKEventStore()
+    private let activitiesService = UCLActivitiesService()
 
     func fetchEvents() {
         guard events.isEmpty else { return }
@@ -43,6 +53,9 @@ final class UCLAPIViewModel: ObservableObject {
         
         // 生成本周的课程表（周一到周五）- 真实 HDS 课程
         var weekEvents: [UCLAPIEvent] = []
+        
+        // 加载 UCL 活动
+        loadUCLActivities()
         
         // 周一 - 数据方法与健康研究（CHME0013）
         if let monday = getWeekday(1, from: today) {
@@ -390,6 +403,177 @@ final class UCLAPIViewModel: ObservableObject {
                 description: "健康经济学与决策建模 - 决策树模型构建"
             ))
         }
+        
+    }
+    
+    // MARK: - UCL 活动集成
+    
+    /// 加载 UCL 活动数据
+    func loadUCLActivities() {
+        activitiesService.loadActivities()
+        
+        // 监听活动加载完成
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.activities = self.activitiesService.activities
+            self.integrateActivitiesToEvents()
+            self.generateRecommendations()
+        }
+    }
+    
+    /// 将 UCL 活动集成到日历事件中
+    private func integrateActivitiesToEvents() {
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        
+        for activity in activities {
+            // 解析日期时间
+            let startDate = parseActivityDateTime(activity.date, activity.startTime)
+            let endDate = parseActivityDateTime(activity.date, activity.endTime)
+            
+            // 创建事件
+            let event = UCLAPIEvent(
+                title: activity.title,
+                startTime: startDate,
+                endTime: endDate,
+                location: activity.location ?? "UCL Campus",
+                type: .activity,
+                description: activity.description,
+                activityType: activity.type,
+                isRecommended: false
+            )
+            
+            // 避免重复添加
+            if !events.contains(where: { $0.id == event.id }) {
+                events.append(event)
+            }
+        }
+        
+        // 按时间排序
+        events.sort { $0.startTime < $1.startTime }
+    }
+    
+    /// 生成个性化推荐活动
+    private func generateRecommendations() {
+        // 根据学生的专业（健康数据科学）推荐相关活动
+        let recommendedTypes = ["academic", "lecture", "seminar"]
+        let healthKeywords = ["health", "data", "ai", "medical", "population", "informatics"]
+        
+        for activity in activities {
+            // 判断是否推荐
+            let typeMatch = recommendedTypes.contains { activity.type.lowercased().contains($0) }
+            let keywordMatch = healthKeywords.contains { keyword in
+                activity.title.lowercased().contains(keyword) ||
+                (activity.description?.lowercased().contains(keyword) ?? false)
+            }
+            
+            if typeMatch || keywordMatch {
+                // 检查活动是否已经在事件中
+                if let index = events.firstIndex(where: { event in
+                    event.title == activity.title &&
+                    Calendar.current.isDate(event.startTime, inSameDayAs: parseActivityDateTime(activity.date, activity.startTime))
+                }) {
+                    // 标记为推荐
+                    events[index] = UCLAPIEvent(
+                        id: events[index].id,
+                        title: events[index].title,
+                        startTime: events[index].startTime,
+                        endTime: events[index].endTime,
+                        location: events[index].location,
+                        type: .recommended,
+                        description: events[index].description,
+                        activityType: events[index].activityType,
+                        isRecommended: true
+                    )
+                }
+            }
+        }
+    }
+    
+    /// 解析活动日期时间
+    private func parseActivityDateTime(_ dateStr: String, _ timeStr: String) -> Date {
+        let locale = Locale(identifier: "en_US_POSIX")
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = locale
+        
+        // 尝试 ISO 8601 格式
+        if timeStr.contains("T") {
+            let isoFormatter = ISO8601DateFormatter()
+            isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let isoDate = isoFormatter.date(from: timeStr) {
+                return isoDate
+            }
+            
+            // 尝试不带毫秒的 ISO 格式
+            let fallbackFormats = ["yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd'T'HH:mm"]
+            for format in fallbackFormats {
+                dateFormatter.dateFormat = format
+                if let isoDate = dateFormatter.date(from: timeStr) {
+                    return isoDate
+                }
+            }
+        }
+        
+        // 尝试组合日期和时间
+        let combined = "\(dateStr) \(timeStr)"
+        let combinedFormats = [
+            "MMM d, yyyy HH:mm",
+            "MMM d, yyyy HH:mm:ss",
+            "yyyy-MM-dd HH:mm",
+            "yyyy-MM-dd HH:mm:ss"
+        ]
+        
+        for format in combinedFormats {
+            dateFormatter.dateFormat = format
+            if let date = dateFormatter.date(from: combined) {
+                return date
+            }
+        }
+        
+        // 仅解析日期
+        let dateOnlyFormats = ["MMM d, yyyy", "yyyy-MM-dd"]
+        for format in dateOnlyFormats {
+            dateFormatter.dateFormat = format
+            if let date = dateFormatter.date(from: dateStr) {
+                return date
+            }
+        }
+        
+        return Date()
+    }
+    
+    /// 获取推荐活动列表
+    func getRecommendedActivities() -> [UCLAPIEvent] {
+        return events.filter { $0.isRecommended && $0.startTime > Date() }
+            .sorted { $0.startTime < $1.startTime }
+            .prefix(5)
+            .map { $0 }
+    }
+    
+    /// 添加活动到日历
+    func addActivityToCalendar(_ activity: UCLActivity) {
+        let startDate = parseActivityDateTime(activity.date, activity.startTime)
+        let endDate = parseActivityDateTime(activity.date, activity.endTime)
+        
+        let event = UCLAPIEvent(
+            title: activity.title,
+            startTime: startDate,
+            endTime: endDate,
+            location: activity.location ?? "UCL Campus",
+            type: .activity,
+            description: activity.description,
+            activityType: activity.type
+        )
+        
+        // 添加到事件列表
+        if !events.contains(where: { $0.title == event.title && Calendar.current.isDate($0.startTime, inSameDayAs: event.startTime) }) {
+            events.append(event)
+            events.sort { $0.startTime < $1.startTime }
+        }
+        
+        // 添加到系统日历
+        addEventToCalendar(event: event)
+    }
+}
         
         if let dec10b = calendar.date(byAdding: .day, value: 30, to: today) {
             events.append(UCLAPIEvent(

@@ -176,7 +176,9 @@ struct UCLActivitiesView: View {
 struct ActivityCard: View {
     @EnvironmentObject var loc: LocalizationService
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var viewModel: UCLAPIViewModel
     let activity: UCLActivity
+    @State private var isAddedToCalendar = false
 
     var formattedDate: String {
         let dateFormatter = DateFormatter()
@@ -274,92 +276,37 @@ struct ActivityCard: View {
                         .clipShape(Capsule())
                 }
 
-                swiftButton(action: {
-                    if appState.calendarEvents == nil {
-                        appState.calendarEvents = []
-                    }
-                    if var calendar = appState.calendarEvents {
-                        let newEvent = CalendarEvent(
-                            id: UUID(),
-                            title: activity.title,
-                            startTime: parseActivityDateTime(activity.date, activity.startTime),
-                            endTime: parseActivityDateTime(activity.date, activity.endTime),
-                            location: activity.location ?? "",
-                            type: .activity,
-                            isAddedToCalendar: true
-                        )
-                        calendar.append(newEvent)
-                        appState.calendarEvents = calendar
+                Button(action: {
+                    // 使用 UCLAPIViewModel 添加到日历
+                    viewModel.addActivityToCalendar(activity)
+                    isAddedToCalendar = true
+                    
+                    // 显示成功提示
+                    withAnimation {
+                        // 可以添加震动反馈
+                        #if os(iOS)
+                        let generator = UINotificationFeedbackGenerator()
+                        generator.notificationOccurred(.success)
+                        #endif
                     }
                 }) {
-                    HStack {
-                        Image(systemName: "calendar.badge.plus")
-                        Text(loc.tr("calendar_add_to_calendar"))
+                    HStack(spacing: 6) {
+                        Image(systemName: isAddedToCalendar ? "checkmark.circle.fill" : "calendar.badge.plus")
+                        Text(isAddedToCalendar ? "已添加" : loc.tr("calendar_add_to_calendar"))
                     }
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .background(Color(hex: "6366F1"))
+                    .background(isAddedToCalendar ? Color(hex: "10B981") : Color(hex: "6366F1"))
                     .clipShape(Capsule())
                 }
+                .disabled(isAddedToCalendar)
             }
         }
         .padding(20)
         .background(Color.white.opacity(0.8))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 2)
-    }
-
-    @ViewBuilder
-    private func swiftButton(action: @escaping () -> Void, @ViewBuilder label: () -> some View) -> some View {
-        Button(action: action, label: label)
-    }
-
-    private func parseActivityDateTime(_ dateStr: String, _ timeStr: String) -> Date {
-        let locale = Locale(identifier: "en_US_POSIX")
-        let dateFormatter = DateFormatter()
-        dateFormatter.locale = locale
-
-        let combined = "\(dateStr) \(timeStr)"
-        let combinedFormats = [
-            "MMM d, yyyy HH:mm",
-            "MMM d, yyyy HH:mm:ss",
-            "yyyy-MM-dd HH:mm",
-            "yyyy-MM-dd HH:mm:ss"
-        ]
-
-        for format in combinedFormats {
-            dateFormatter.dateFormat = format
-            if let date = dateFormatter.date(from: combined) {
-                return date
-            }
-        }
-
-        if timeStr.contains("T") {
-            let isoFormatter = ISO8601DateFormatter()
-            isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let isoDate = isoFormatter.date(from: timeStr) {
-                return isoDate
-            }
-
-            let fallbackFormats = ["yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd'T'HH:mm"]
-            for format in fallbackFormats {
-                dateFormatter.dateFormat = format
-                if let isoDate = dateFormatter.date(from: timeStr) {
-                    return isoDate
-                }
-            }
-        }
-
-        let dateOnlyFormats = ["MMM d, yyyy", "yyyy-MM-dd"]
-        for format in dateOnlyFormats {
-            dateFormatter.dateFormat = format
-            if let date = dateFormatter.date(from: dateStr) {
-                return date
-            }
-        }
-
-        return Date()
     }
 }
