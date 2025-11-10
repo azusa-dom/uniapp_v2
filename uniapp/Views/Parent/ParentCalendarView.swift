@@ -197,8 +197,10 @@ struct ParentCalendarView: View {
                 switch viewMode {
                 case .month:
                     ParentMonthView(selectedDate: $selectedDate)
+                        .environmentObject(viewModel)
                 case .week:
                     ParentWeekView(selectedDate: $selectedDate)
+                        .environmentObject(viewModel)
                 case .day:
                     ParentDayView(selectedDate: $selectedDate)
                 }

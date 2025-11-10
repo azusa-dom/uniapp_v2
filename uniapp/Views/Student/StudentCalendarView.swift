@@ -219,8 +219,10 @@ struct StudentCalendarView: View {
                 switch viewMode {
                 case .month:
                     ModernMonthView(selectedDate: $selectedDate)
+                        .environmentObject(viewModel)
                 case .week:
                     ModernWeekView(selectedDate: $selectedDate)
+                        .environmentObject(viewModel)
                 case .day:
                     ModernDayView(selectedDate: $selectedDate)
                 }
