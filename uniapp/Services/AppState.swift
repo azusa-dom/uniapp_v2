@@ -1,10 +1,5 @@
 import SwiftUI
 
-enum UserRole {
-    case student
-    case parent
-}
-
 class AppState: ObservableObject {
     @Published var isLoggedIn = false
     @Published var userRole: UserRole = .student

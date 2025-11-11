@@ -58,18 +58,9 @@ struct ParentHealthView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
-                LinearGradient(
-                    colors: [
-                        Color(hex: "F8FAFC"),
-                        Color(hex: "EEF2FF"),
-                        Color(hex: "E0E7FF").opacity(0.3)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                DesignSystem.backgroundGradient.ignoresSafeArea()
                 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 20) {
@@ -222,18 +213,9 @@ struct ParentHealthDetailView: View {
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
-                LinearGradient(
-                    colors: [
-                        Color(hex: "F8FAFC"),
-                        Color(hex: "EEF2FF"),
-                        Color(hex: "E0E7FF").opacity(0.3)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                DesignSystem.backgroundGradient.ignoresSafeArea()
                 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {

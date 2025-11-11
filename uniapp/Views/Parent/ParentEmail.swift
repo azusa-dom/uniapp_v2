@@ -47,7 +47,7 @@ struct ParentEmailView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 DesignSystem.backgroundGradient.ignoresSafeArea()
                 
@@ -70,7 +70,7 @@ struct ParentEmailView: View {
                                                 ? Color(hex: "8B5CF6")
                                                 : Color.gray.opacity(0.15)
                                         )
-                                        .foregroundColor(selectedFilter == cat ? .white : .primary)
+                                        .foregroundColor(selectedFilter == cat ? Color.white : .primary)
                                         .cornerRadius(12)
                                         .font(.subheadline)
                                         .fontWeight(.medium)

@@ -10,9 +10,9 @@ struct ParentAcademicDetailView: View {
     @EnvironmentObject var loc: LocalizationService
     
     private let courses: [CourseSummary] = [
-        .init(name: "数据方法与健康研究", grade: 87, assignments: 100, participation: 100, average: 65),
-        .init(name: "数据科学与统计", grade: 72, assignments: 75, participation: 95, average: 68),
-        .init(name: "健康数据科学原理", grade: 67, assignments: 80, participation: 100, average: 70)
+        .init(name: "数据方法与健康研究", code: "CHME0007", grade: 87, semester: "2024-25 学年 · 第一学期", assignments: 100, participation: 100, average: 85),
+        .init(name: "数据科学与统计", code: "STAT0032", grade: 72, semester: "2024-25 学年 · 第一学期", assignments: 78, participation: 92, average: 76),
+        .init(name: "健康数据科学原理", code: "MEDS0011", grade: 67, semester: "2024-25 学年 · 第二学期", assignments: 82, participation: 95, average: 70)
     ]
     
     var body: some View {
@@ -28,12 +28,14 @@ struct ParentAcademicDetailView: View {
     }
     
     private var overallSummary: some View {
+        let averageScore = courses.isEmpty ? 0 : Double(courses.reduce(0) { $0 + $1.grade }) / Double(courses.count)
+
         VStack(spacing: 16) {
-            Text("79.6 分")
+            Text(String(format: "%.1f 分", averageScore))
                 .font(.system(size: 48, weight: .bold))
                 .foregroundColor(.primary)
             
-            Text("🏆 一等学位水平")
+            Text("🏆 \(degreeClassification(for: averageScore))")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(Color(hex: "F59E0B"))
                 .padding(.horizontal, 16)
@@ -79,17 +81,6 @@ struct ParentAcademicDetailView: View {
 private struct CourseSummaryRow: View {
     let course: CourseSummary
     
-    private var gradeColor: Color {
-        switch course.grade {
-        case 70...:
-            return Color(hex: "10B981")
-        case 60..<70:
-            return Color(hex: "F59E0B")
-        default:
-            return Color(hex: "EF4444")
-        }
-    }
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -97,6 +88,9 @@ private struct CourseSummaryRow: View {
                     Text(course.name)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
+                    Text(course.code)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
                     Text("平均分: \(course.average)")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
@@ -104,7 +98,7 @@ private struct CourseSummaryRow: View {
                 Spacer()
                 Text("\(course.grade) 分")
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(gradeColor)
+                    .foregroundColor(gradeColor(for: course.grade))
             }
             
             HStack(spacing: 16) {
@@ -131,13 +125,3 @@ private struct CourseSummaryRow: View {
         }
     }
 }
-
-private struct CourseSummary: Identifiable {
-    let id = UUID()
-    let name: String
-    let grade: Int
-    let assignments: Int
-    let participation: Int
-    let average: Int
-}
-

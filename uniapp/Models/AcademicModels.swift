@@ -34,3 +34,36 @@ struct Deadline: Identifiable {
     let priority: String
     let details: String
 }
+
+struct CourseSummary: Identifiable, Hashable {
+    let id = UUID()
+    let name: String
+    let code: String
+    let grade: Int
+    let semester: String
+    let assignments: Int
+    let participation: Int
+    let average: Int
+}
+
+struct CompletedCourse: Identifiable, Hashable {
+    struct Component: Identifiable, Hashable {
+        let id = UUID()
+        let name: String
+        let percentage: Int
+        let score: Int
+    }
+
+    let id = UUID()
+    let name: String
+    let code: String
+    let finalGrade: Int
+    let credit: Int
+    let gradeLevel: String
+    let semester: String
+    let components: [Component]
+}
+
+
+
+

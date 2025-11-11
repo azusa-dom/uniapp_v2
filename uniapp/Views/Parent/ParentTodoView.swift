@@ -29,10 +29,10 @@ struct ParentTodoView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 DesignSystem.backgroundGradient.ignoresSafeArea()
-
+                
                 ScrollView {
                     VStack(spacing: 20) {
                         // 统计卡片
@@ -43,14 +43,14 @@ struct ParentTodoView: View {
                                 icon: "circle",
                                 color: Color(hex: "F59E0B")
                             )
-
+                            
                             ParentTodoStatCard(
                                 title: "已完成",
                                 value: "\(completedTodos.count)",
                                 icon: "checkmark.circle.fill",
                                 color: Color(hex: "10B981")
                             )
-
+                            
                             ParentTodoStatCard(
                                 title: "即将截止",
                                 value: "\(appState.todoManager.upcomingDeadlines.count)",
@@ -59,7 +59,7 @@ struct ParentTodoView: View {
                             )
                         }
                         .padding(.horizontal)
-
+                        
                         // 待完成任务
                         if !incompleteTodos.isEmpty {
                             VStack(alignment: .leading, spacing: 16) {
@@ -67,9 +67,9 @@ struct ParentTodoView: View {
                                     Text("待完成任务")
                                         .font(.system(size: 18, weight: .bold))
                                         .foregroundColor(.primary)
-
+                                    
                                     Spacer()
-
+                                    
                                     Button(action: {
                                         showingCompleted.toggle()
                                     }) {
@@ -79,7 +79,7 @@ struct ParentTodoView: View {
                                     }
                                 }
                                 .padding(.horizontal)
-
+                                
                                 VStack(spacing: 12) {
                                     ForEach(incompleteTodos) { todo in
                                         ParentTodoRow(todo: todo)
@@ -92,7 +92,7 @@ struct ParentTodoView: View {
                                 .padding(.horizontal)
                             }
                         }
-
+                        
                         // 已完成任务（可选显示）
                         if showingCompleted && !completedTodos.isEmpty {
                             VStack(alignment: .leading, spacing: 16) {
@@ -100,7 +100,7 @@ struct ParentTodoView: View {
                                     .font(.system(size: 18, weight: .bold))
                                     .foregroundColor(.primary)
                                     .padding(.horizontal)
-
+                                
                                 VStack(spacing: 12) {
                                     ForEach(completedTodos.prefix(10)) { todo in
                                         ParentTodoRow(todo: todo, isCompleted: true)
@@ -108,7 +108,7 @@ struct ParentTodoView: View {
                                     }
                                 }
                                 .padding(.horizontal)
-
+                                
                                 if completedTodos.count > 10 {
                                     Text("还有 \(completedTodos.count - 10) 个已完成任务")
                                         .font(.system(size: 14))
@@ -117,18 +117,18 @@ struct ParentTodoView: View {
                                 }
                             }
                         }
-
+                        
                         // 空状态
                         if incompleteTodos.isEmpty {
                             VStack(spacing: 20) {
                                 Image(systemName: "checkmark.circle.fill")
                                     .font(.system(size: 64))
                                     .foregroundColor(Color(hex: "10B981"))
-
+                                
                                 Text("所有任务都已完成！")
                                     .font(.system(size: 20, weight: .semibold))
                                     .foregroundColor(.primary)
-
+                                
                                 Text("继续保持，加油！")
                                     .font(.system(size: 16))
                                     .foregroundColor(.secondary)

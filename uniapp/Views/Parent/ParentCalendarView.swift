@@ -39,19 +39,9 @@ struct ParentCalendarView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
-                // 背景渐变
-                LinearGradient(
-                    colors: [
-                        Color(hex: "F8FAFC"),
-                        Color(hex: "EEF2FF"),
-                        Color(hex: "E0E7FF").opacity(0.3)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                DesignSystem.backgroundGradient.ignoresSafeArea()
                 
                 if appState.shareCalendar {
                     ScrollView(showsIndicators: false) {
@@ -872,7 +862,7 @@ struct ParentEventDetailSheet: View {
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     // 标题
@@ -952,7 +942,7 @@ struct ParentCalendarSettingsView: View {
     @State private var syncWithDevice = true
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 Section("通知设置") {
                     Toggle("启用通知", isOn: $notificationsEnabled)
