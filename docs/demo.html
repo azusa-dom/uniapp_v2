@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UCL Smart App - 演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 60px;
+        }
+        
+        .header h1 {
+            font-size: 48px;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 20px;
+            opacity: 0.9;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature-icon {
+            font-size: 40px;
+            margin-bottom: 16px;
+        }
+        
+        .feature-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #333;
+        }
+        
+        .feature-desc {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .screenshots {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .screenshots h2 {
+            font-size: 32px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #333;
+        }
+        
+        .screenshot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .screenshot-item {
+            text-align: center;
+        }
+        
+        .screenshot-placeholder {
+            width: 100%;
+            height: 500px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .screenshot-label {
+            font-size: 16px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .tech-stack {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            margin-top: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tech-stack h2 {
+            font-size: 28px;
+            margin-bottom: 24px;
+            color: #333;
+            text-align: center;
+        }
+        
+        .tech-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+        
+        .tech-tag {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .github-link {
+            text-align: center;
+            margin-top: 40px;
+        }
+        
+        .github-button {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            padding: 16px 40px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 600;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease;
+        }
+        
+        .github-button:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 UCL Smart App</h1>
+            <p>健康数据科学专业学生的智能校园助手</p>
+        </div>
+        
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">📅</div>
+                <div class="feature-title">智能日历</div>
+                <div class="feature-desc">
+                    自动集成课程表、作业截止日期和校园活动。实时同步，一目了然。
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">✨</div>
+                <div class="feature-title">智能推荐</div>
+                <div class="feature-desc">
+                    基于你的专业智能推荐相关学术活动、讲座和研讨会。
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <div class="feature-title">AI 助手</div>
+                <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <div class="feature-title">学业跟踪</div>
+                <div class="feature-desc">
+                    实时查看成绩、出勤率和学习进度。家长端同步监控。
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🏥</div>
+                <div class="feature-title">健康监测</div>
+                <div class="feature-desc">
+                    跟踪睡眠、运动和心理健康数据，保持最佳学习状态。
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">👨‍👩‍👧</div>
+                <div class="feature-title">家长监护</div>
+                <div class="feature-desc">
+                    家长端实时查看孩子的学习情况、健康状态和校园活动。
+                </div>
+            </div>
+        </div>
+        
+        <div class="screenshots">
+            <h2>📱 应用截图</h2>
+            <div class="screenshot-grid">
+                <div class="screenshot-item">
+                    <div class="screenshot-placeholder">
+                        <span>学生首页<br/>智能推荐活动</span>
+                    </div>
+                    <div class="screenshot-label">学生首页</div>
+                </div>
+                
+                <div class="screenshot-item">
+                    <div class="screenshot-placeholder">
+                        <span>课程日历<br/>活动指示器</span>
+                    </div>
+                    <div class="screenshot-label">智能日历</div>
+                </div>
+                
+                <div class="screenshot-item">
+                    <div class="screenshot-placeholder">
+                        <span>AI 对话<br/>智能问答</span>
+                    </div>
+                    <div class="screenshot-label">AI 助手</div>
+                </div>
+                
+                <div class="screenshot-item">
+                    <div class="screenshot-placeholder">
+                        <span>家长端<br/>学业监控</span>
+                    </div>
+                    <div class="screenshot-label">家长端</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tech-stack">
+            <h2>🛠️ 技术栈</h2>
+            <div class="tech-tags">
+                <span class="tech-tag">SwiftUI</span>
+                <span class="tech-tag">Swift 5.9</span>
+                <span class="tech-tag">iOS 17+</span>
+                <span class="tech-tag">macOS 14+</span>
+                <span class="tech-tag">EventKit</span>
+                <span class="tech-tag">Combine</span>
+                <span class="tech-tag">MVVM</span>
+                <span class="tech-tag">RESTful API</span>
+            </div>
+        </div>
+        
+        <div class="github-link">
+            <a href="https://github.com/azusa-dom/uniapp_v2" class="github-button" target="_blank">
+                🌟 查看 GitHub 仓库
+            </a>
+        </div>
+    </div>
+</body>
+</html>
