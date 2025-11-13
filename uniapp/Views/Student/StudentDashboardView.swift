@@ -29,6 +29,7 @@ struct StudentDashboardView: View {
     @EnvironmentObject var loc: LocalizationService
     @EnvironmentObject var appState: AppState
     @StateObject private var activitiesService = UCLActivitiesService()
+    @StateObject private var timetableVM = TimetableViewModel()
     
     @Binding var selectedTab: Int
     
@@ -36,6 +37,7 @@ struct StudentDashboardView: View {
     @State private var showingLogoutAlert = false
     @State private var selectedActivity: UCLActivity?
     @State private var showingActivityDetail = false
+    @State private var showingCampusActivities = false
     
     private var pinnedActivities: [UCLActivity] {
         Array(activitiesService.activities.prefix(3))
@@ -64,22 +66,18 @@ struct StudentDashboardView: View {
     }
     
     private var todayClasses: [TodayClass] {
-        return [
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        let isChinese = loc.language == .chinese
+        return timetableVM.todayEvents.map { e in
             TodayClass(
-                name: "数据科学与统计",
-                code: "CHME0007",
-                time: "14:00 - 16:00",
-                location: "Cruciform Building, Room 4.18",
-                lecturer: "Dr. Johnson"
-            ),
-            TodayClass(
-                name: "健康数据科学原理",
-                code: "CHME0006",
-                time: "16:30 - 18:30",
-                location: "Foster Court, Lecture Theatre",
-                lecturer: "Prof. Smith"
+                name: e.localizedTitle(isChinese: isChinese),
+                code: e.courseCode,
+                time: "\(formatter.string(from: e.startTime)) - \(formatter.string(from: e.endTime))",
+                location: e.localizedLocation(isChinese: isChinese),
+                lecturer: e.localizedInstructor(isChinese: isChinese)
             )
-        ]
+        }
     }
     
     private var highlightedTodos: [TodoItem] {
@@ -97,7 +95,7 @@ struct StudentDashboardView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 // 更柔和的背景渐变
                 LinearGradient(
@@ -111,6 +109,14 @@ struct StudentDashboardView: View {
                 .ignoresSafeArea()
                 
                 ScrollView(showsIndicators: false) {
+                    NavigationLink(
+                        destination: CampusActivitiesView().environmentObject(loc),
+                        isActive: $showingCampusActivities
+                    ) {
+                        EmptyView()
+                    }
+                    .hidden()
+                    
                     VStack(spacing: 16) {
                         // 欢迎卡片
                         welcomeCard
@@ -162,7 +168,7 @@ struct StudentDashboardView: View {
                             }
                         }
                         
-                        // 用户菜单
+                        // 用户菜单（去掉“切换至家长端”）
                         Menu {
                             Button {
                                 activeModal = .profile
@@ -173,16 +179,6 @@ struct StudentDashboardView: View {
                                 activeModal = .avatar
                             } label: {
                                 Label(loc.tr("profile_select_avatar"), systemImage: "paintbrush.pointed")
-                            }
-                            Divider()
-                            if appState.userRole == .student {
-                                Button {
-                                    withAnimation(.spring(response: 0.4)) {
-                                        appState.userRole = .parent
-                                    }
-                                } label: {
-                                    Label(loc.tr("profile_switch_parent"), systemImage: "arrow.left.arrow.right.circle")
-                                }
                             }
                             Button(role: .destructive) {
                                 showingLogoutAlert = true
@@ -367,7 +363,7 @@ struct StudentDashboardView: View {
                     gradient: [DashboardPalette.deep, DashboardPalette.medium],
                     iconColor: .white
                 ) {
-                    selectedTab = 3
+                    selectedTab = 3  // AI 助手 tab
                 }
                 
                 PremiumQuickActionCard(
@@ -377,7 +373,7 @@ struct StudentDashboardView: View {
                     gradient: [DashboardPalette.medium, DashboardPalette.bright],
                     iconColor: .white
                 ) {
-                    selectedTab = 5
+                    selectedTab = 5  // 邮箱 tab
                 }
             }
             .frame(height: 100)
@@ -390,7 +386,7 @@ struct StudentDashboardView: View {
                     gradient: [DashboardPalette.bright, DashboardPalette.soft],
                     iconColor: .white
                 ) {
-                    selectedTab = 4
+                    selectedTab = 4  // 健康 tab
                 }
                 
                 PremiumQuickActionCard(
@@ -400,7 +396,7 @@ struct StudentDashboardView: View {
                     gradient: [DashboardPalette.soft, DashboardPalette.pastel],
                     iconColor: .white
                 ) {
-                    selectedTab = 1
+                    showingCampusActivities = true
                 }
             }
             .frame(height: 100)
@@ -423,10 +419,25 @@ struct StudentDashboardView: View {
                 
                 Spacer()
                 
-                Button(action: { selectedTab = 1 }) {
-                    Text("查看全部")
-                        .font(.system(size: 13, weight: .semibold))
+                HStack(spacing: 12) {
+                    Button(action: { Task { _ = try? await CalendarImportService.shared.importTimetableEvents(MockData.timetableEvents, alarmMinutesBefore: 15) } }) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "calendar.badge.plus")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("导入日历")
+                                .font(.system(size: 13, weight: .semibold))
+                        }
                         .foregroundColor(Color(hex: "6366F1"))
+                    }
+                    NavigationLink {
+                        StudentCalendarView()
+                            .environmentObject(loc)
+                            .environmentObject(appState)
+                    } label: {
+                        Text("查看全部")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(Color(hex: "6366F1"))
+                    }
                 }
             }
             
@@ -439,8 +450,14 @@ struct StudentDashboardView: View {
             } else {
                 VStack(spacing: 10) {
                     ForEach(todayClasses) { classItem in
-                        PremiumClassCard(classItem: classItem)
-                            .onTapGesture { selectedTab = 1 }
+                        NavigationLink {
+                            StudentCalendarView()
+                                .environmentObject(loc)
+                                .environmentObject(appState)
+                        } label: {
+                            PremiumClassCard(classItem: classItem)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -523,7 +540,10 @@ struct StudentDashboardView: View {
                 Spacer()
                 
                 if !pinnedActivities.isEmpty {
-                    Button(action: { selectedTab = 1 }) {
+                    NavigationLink {
+                        CampusActivitiesView()
+                            .environmentObject(loc)
+                    } label: {
                         Text("查看全部")
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(Color(hex: "6366F1"))
@@ -544,8 +564,13 @@ struct StudentDashboardView: View {
             } else {
                 VStack(spacing: 10) {
                     ForEach(pinnedActivities) { activity in
-                        PremiumActivityCard(activity: activity)
-                            .onTapGesture { selectedTab = 1 }
+                        NavigationLink {
+                            CampusActivitiesView()
+                                .environmentObject(loc)
+                        } label: {
+                            PremiumActivityCard(activity: activity)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -605,6 +630,7 @@ private struct PremiumQuickActionCard: View {
 
 // MARK: - Premium Class Card
 private struct PremiumClassCard: View {
+    @EnvironmentObject var loc: LocalizationService
     let classItem: TodayClass
     
     var body: some View {
@@ -765,7 +791,12 @@ private struct PremiumDeadlineCard: View {
 
 // MARK: - Premium Activity Card
 private struct PremiumActivityCard: View {
+    @EnvironmentObject var loc: LocalizationService
     let activity: UCLActivity
+    
+    private var isChinese: Bool {
+        loc.language == .chinese
+    }
     
     var body: some View {
         HStack(spacing: 12) {
@@ -782,12 +813,22 @@ private struct PremiumActivityCard: View {
             
             // 活动信息
             VStack(alignment: .leading, spacing: 4) {
-                Text(activity.title)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
+                HStack(spacing: 6) {
+                    Text(activity.localizedTitle(isChinese: isChinese))
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                    
+                    Text(activity.localizedType(isChinese: isChinese))
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(getTypeColor(activity.type))
+                        .clipShape(Capsule())
+                }
                 
-                if let location = activity.location {
+                if let location = activity.localizedLocation(isChinese: isChinese) {
                     HStack(spacing: 5) {
                         Image(systemName: "mappin.circle.fill")
                             .font(.system(size: 10))
@@ -867,6 +908,33 @@ private struct PremiumActivityCard: View {
         case "career": return DashboardPalette.bright
         case "cultural": return DashboardPalette.pastel
         default: return DashboardPalette.medium
+        }
+    }
+
+    private func localizedTypeLabel(_ raw: String) -> String {
+        let key = raw.lowercased()
+        if loc.language == .chinese {
+            switch key {
+            case "workshop": return "工作坊"
+            case "seminar": return "研讨会"
+            case "lecture": return "讲座"
+            case "social": return "社交活动"
+            case "sports": return "体育活动"
+            case "career": return "职业发展"
+            case "cultural": return "文化活动"
+            default: return "活动"
+            }
+        } else {
+            switch key {
+            case "workshop": return "Workshop"
+            case "seminar": return "Seminar"
+            case "lecture": return "Lecture"
+            case "social": return "Social"
+            case "sports": return "Sports"
+            case "career": return "Career"
+            case "cultural": return "Cultural"
+            default: return "Activity"
+            }
         }
     }
 }

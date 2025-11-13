@@ -65,56 +65,54 @@ struct StudentAIAssistantView: View {
     ]
     
     var body: some View {
-        NavigationStack {
-            ZStack {
-                LinearGradient.appBackground
-                    .ignoresSafeArea()
+        ZStack {
+            LinearGradient.appBackground
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                if !viewModel.isConfigured {
+                    configurationBanner
+                }
                 
-                VStack(spacing: 0) {
-                    if !viewModel.isConfigured {
-                        configurationBanner
-                    }
-                    
-                    ScrollViewReader { proxy in
-                        ScrollView(showsIndicators: false) {
-                            VStack(spacing: 16) {
-                                if viewModel.messages.isEmpty {
-                                    welcomeSection
-                                } else {
-                                    ForEach(viewModel.messages) { message in
-                                        MessageBubble(message: message)
-                                            .id(message.id)
-                                    }
-                                    
-                                    if viewModel.isProcessing {
-                                        typingIndicator
-                                            .id("processing")
-                                    }
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 16) {
+                            if viewModel.messages.isEmpty {
+                                welcomeSection
+                            } else {
+                                ForEach(viewModel.messages) { message in
+                                    MessageBubble(message: message)
+                                        .id(message.id)
+                                }
+                                
+                                if viewModel.isProcessing {
+                                    typingIndicator
+                                        .id("processing")
                                 }
                             }
-                            .padding(.vertical, 20)
-                            .padding(.horizontal, 16)
                         }
-                        .onChangeCompat(viewModel.messages.last?.id) { _ in
-                            guard let id = viewModel.messages.last?.id else { return }
-                            withAnimation {
-                                proxy.scrollTo(id, anchor: .bottom)
-                            }
-                        }
+                        .padding(.vertical, 20)
+                        .padding(.horizontal, 16)
                     }
-                    
-                    ChatInputBar(
-                        text: $viewModel.inputText,
-                        placeholder: "问我任何关于学业与校园生活的问题...",
-                        isProcessing: viewModel.isProcessing
-                    ) {
-                        handleSend()
+                    .onChangeCompat(viewModel.messages.last?.id) { _ in
+                        guard let id = viewModel.messages.last?.id else { return }
+                        withAnimation {
+                            proxy.scrollTo(id, anchor: .bottom)
+                        }
                     }
                 }
+                
+                ChatInputBar(
+                    text: $viewModel.inputText,
+                    placeholder: "问我任何关于学业与校园生活的问题...",
+                    isProcessing: viewModel.isProcessing
+                ) {
+                    handleSend()
+                }
             }
-            .navigationTitle(loc.tr("ai_title"))
-            .navigationBarTitleDisplayMode(.inline)
         }
+        .navigationTitle(loc.tr("ai_title"))
+        .navigationBarTitleDisplayMode(.inline)
     }
     
     private func handleSend() {

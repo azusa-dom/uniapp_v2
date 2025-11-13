@@ -16,12 +16,32 @@ class UCLActivitiesService: ObservableObject {
     // 模拟加载
     func loadActivities() {
         isLoading = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            self.activities = [
-                .init(id: "1", title: "AI in Health 研讨会", startTime: "2024-11-15T14:00:00", endTime: "2024-11-15T16:00:00", date: "Nov 15, 2024", location: "Medawar Building G01", type: "seminar", description: "探讨人工智能在医疗诊断中的最新应用。"),
-                .init(id: "2", title: "Python 数据分析工作坊", startTime: "2024-11-16T10:00:00", endTime: "2024-11-16T13:00:00", date: "Nov 16, 2024", location: "Roberts Building 101", type: "workshop", description: "学习使用 Pandas 和 Matplotlib 进行数据分析。"),
-                .init(id: "3", title: "留学生社交之夜", startTime: "2024-11-16T18:00:00", endTime: "2024-11-16T21:00:00", date: "Nov 16, 2024", location: "Student Union", type: "social", description: "认识新朋友，享受免费披萨。")
-            ]
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            // 使用 MockData.activities 进行演示
+            let dfDate = DateFormatter()
+            dfDate.locale = Locale(identifier: "en_US")
+            dfDate.dateFormat = "MMM d, yyyy"
+
+            let dfTime = DateFormatter()
+            dfTime.locale = Locale(identifier: "en_US")
+            dfTime.dateFormat = "HH:mm"
+
+            self.activities = MockData.activities.map { a in
+                UCLActivity(
+                    id: a.id,
+                    title: a.title,
+                    titleZH: a.titleZH,
+                    startTime: dfTime.string(from: a.startDate),
+                    endTime: dfTime.string(from: a.endDate),
+                    date: dfDate.string(from: a.startDate),
+                    location: a.location,
+                    locationZH: a.locationZH,
+                    type: a.category.lowercased(),
+                    typeZH: a.categoryZH.lowercased(),
+                    description: a.description,
+                    descriptionZH: a.descriptionZH
+                )
+            }
             self.isLoading = false
         }
     }

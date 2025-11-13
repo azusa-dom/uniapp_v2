@@ -113,43 +113,42 @@ struct StudentHealthView: View {
     }
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                LinearGradient(
-                    colors: [
-                        Color(hex: "F8FAFC"),
-                        Color(hex: "EEF2FF"),
-                        Color(hex: "E0E7FF").opacity(0.3)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
-                
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 20) {
-                        telemedicineSection
-                        appointmentSection
-                        serviceFlowSection
-                        // 健康档案快捷入口
-                        healthRecordsSection
-                        
-                        if wearablesEnabled {
-                            wearableStatusHeader
-                            rangeSelector
-                            metricsGrid
-                            tipsSection
-                        } else {
-                            wearableOptInSection
-                        }
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(hex: "F8FAFC"),
+                    Color(hex: "EEF2FF"),
+                    Color(hex: "E0E7FF").opacity(0.3)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 20) {
+                    telemedicineSection
+                    appointmentSection
+                    serviceFlowSection
+                    // 健康档案快捷入口
+                    healthRecordsSection
+                    
+                    if wearablesEnabled {
+                        wearableStatusHeader
+                        rangeSelector
+                        metricsGrid
+                        tipsSection
+                    } else {
+                        wearableOptInSection
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 8)
-                    .padding(.bottom, 40)
                 }
+                .padding(.horizontal)
+                .padding(.top, 8)
+                .padding(.bottom, 40)
             }
-            .navigationTitle("健康")
-            .navigationBarTitleDisplayMode(.large)
+        }
+        .navigationTitle("健康")
+        .navigationBarTitleDisplayMode(.large)
             .sheet(item: $selectedMetric) { metric in
                 HealthMetricDetailView(metric: metric)
                     .environmentObject(loc)
@@ -196,7 +195,6 @@ struct StudentHealthView: View {
             } message: {
                 Text(lastBookingSummary.isEmpty ? "我们已为你保留该项目，稍后会在行程中更新提醒。" : lastBookingSummary)
             }
-        }
     }
     
     private var appointmentCategories: [AppointmentCategory] {

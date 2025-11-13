@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 
+
 // MARK: - Design (内嵌简版设计变量，避免外部依赖)
 private enum DS {
     enum Palette {
@@ -75,17 +76,18 @@ final class MockAuthService: AuthProviding {
         return AuthToken(userId: "google.\(UUID().uuidString)", role: role)
     }
 
+    // 🔴【修改】错误信息现在使用本地化键
     enum AuthError: LocalizedError {
         case invalidPassword, accountNotFound, network
 
         var errorDescription: String? {
             switch self {
             case .invalidPassword:
-                return "密码不正确。"
+                return String(localized: "error.invalidPassword")
             case .accountNotFound:
-                return "未找到该账号/角色组合。"
+                return String(localized: "error.accountNotFound")
             case .network:
-                return "网络异常，请稍后重试。"
+                return String(localized: "error.network")
             }
         }
     }
@@ -120,7 +122,8 @@ final class LoginViewModel: ObservableObject {
     func signIn(onSuccess: @escaping (AuthToken) -> Void) {
         errorMessage = nil
         guard isValid else {
-            errorMessage = "请输入有效邮箱与至少 8 位密码。"
+            // 🔴【修改】使用本地化键
+            errorMessage = String(localized: "error.invalidCredentials")
             return
         }
         isLoading = true
@@ -132,7 +135,8 @@ final class LoginViewModel: ObservableObject {
                 onSuccess(token)
             } catch {
                 isLoading = false
-                errorMessage = (error as? LocalizedError)?.errorDescription ?? "登录失败，请重试。"
+                // 🔴【修改】使用本地化键
+                errorMessage = (error as? LocalizedError)?.errorDescription ?? String(localized: "error.genericLoginFailed")
             }
         }
     }
@@ -148,7 +152,8 @@ final class LoginViewModel: ObservableObject {
                 onSuccess(token)
             } catch {
                 isLoading = false
-                errorMessage = "Apple 登录失败，请稍后重试。"
+                // 🔴【修改】使用本地化键
+                errorMessage = String(localized: "error.appleFailed")
             }
         }
     }
@@ -164,7 +169,8 @@ final class LoginViewModel: ObservableObject {
                 onSuccess(token)
             } catch {
                 isLoading = false
-                errorMessage = "Google 登录失败，请稍后重试。"
+                // 🔴【修改】使用本地化键
+                errorMessage = String(localized: "error.googleFailed")
             }
         }
     }
@@ -183,6 +189,7 @@ final class LoginViewModel: ObservableObject {
 // MARK: - UI
 struct LoginView: View {
     @StateObject private var vm = LoginViewModel()
+    @EnvironmentObject var loc: LocalizationService
     var onAuthenticated: (AuthToken) -> Void
     @State private var animateHero = false
 
@@ -194,6 +201,7 @@ struct LoginView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 28) {
                         headerSection
+                        languageSwitcher // 🟢【新增】语言切换器
                         loginCard
                     }
                     .padding(.horizontal, 24)
@@ -241,22 +249,33 @@ struct LoginView: View {
 
     private var headerSection: some View {
         VStack(spacing: 12) {
-            Text("UniApp")
+            Text("UniApp") // App 名称通常保持不变
                 .font(.system(size: 34, weight: .bold))
-            Text("连接校园与家庭，用一个入口完成课程、健康与沟通。")
+            Text(loc.tr("app.tagline"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
         }
         .padding(.vertical, 12)
     }
+    
+    // 语言切换器视图（使用 LocalizationService ）
+    private var languageSwitcher: some View {
+        Picker("language.select", selection: $loc.language) {
+            ForEach(LocalizationService.Language.allCases) { lang in
+                Text(lang.rawValue).tag(lang)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal, 16)
+    }
 
     private var loginCard: some View {
         VStack(alignment: .leading, spacing: 24) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("安全登录")
+                Text(loc.tr("login.title"))
                     .font(.system(size: 22, weight: .semibold))
-                Text("使用学校统一认证，或快速体验学生 / 家长场景。")
+                Text(loc.tr("login.subtitle"))
                     .font(.footnote)
                     .foregroundColor(.secondary)
             }
@@ -266,47 +285,18 @@ struct LoginView: View {
             }
 
             VStack(spacing: 16) {
-                GlassInput(label: vm.role == .student ? "学号 / 邮箱" : "家长账号 / 手机号", icon: "person.crop.circle.fill") {
-                    TextField(vm.role == .student ? "student@demo.edu" : "parent@demo.edu", text: $vm.email)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.none)
-                        .autocorrectionDisabled()
-                        .textContentType(.username)
-                        .submitLabel(.next)
-                }
-
-                GlassInput(label: "密码", icon: "lock.fill") {
-                    HStack(spacing: 12) {
-                        Group {
-                            if vm.showPassword {
-                                TextField("至少 8 位字符（示例：password123）", text: $vm.password)
-                            } else {
-                                SecureField("至少 8 位字符（示例：password123）", text: $vm.password)
-                            }
-                        }
-                        .textContentType(.password)
-                        .submitLabel(.go)
-
-                        Button {
-                            vm.showPassword.toggle()
-                        } label: {
-                            Image(systemName: vm.showPassword ? "eye.slash" : "eye")
-                                .foregroundColor(.secondary)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(vm.showPassword ? "隐藏密码" : "显示密码")
-                    }
-                }
+                emailInput
+                passwordInput
             }
 
             HStack {
-                Toggle("记住我", isOn: $vm.rememberMe)
+                Toggle(loc.tr("login.rememberMe"), isOn: $vm.rememberMe)
                     .toggleStyle(SwitchToggleStyle(tint: DS.Palette.primary))
                 Spacer()
                 Button {
                     // TODO: Forgot password flow
                 } label: {
-                    Text("忘记密码？")
+                    Text(loc.tr("login.forgotPassword"))
                         .font(.footnote)
                         .fontWeight(.semibold)
                 }
@@ -318,7 +308,7 @@ struct LoginView: View {
                 HStack(spacing: 10) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(DS.Palette.warning)
-                    Text(msg)
+                    Text(msg) // msg 已经从 ViewModel 本地化了
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
@@ -331,7 +321,7 @@ struct LoginView: View {
                 } label: {
                     HStack {
                         Spacer()
-                        Text("安全登录")
+                        Text(loc.tr("login.button.signIn"))
                             .fontWeight(.semibold)
                         Image(systemName: "arrow.right.circle.fill")
                         Spacer()
@@ -355,7 +345,7 @@ struct LoginView: View {
 
                 HStack {
                     Rectangle().fill(Color.secondary.opacity(0.2)).frame(height: 1)
-                    Text("或继续")
+                    Text(loc.tr("login.divider.orContinue"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Rectangle().fill(Color.secondary.opacity(0.2)).frame(height: 1)
@@ -363,26 +353,26 @@ struct LoginView: View {
 
                 VStack(spacing: 10) {
                     HStack(spacing: 12) {
-                        SocialLoginButton(title: "Apple", systemName: "apple.logo", background: .black, foreground: .white) {
+                        SocialLoginButton(title: loc.tr("login.button.apple"), systemName: "apple.logo", background: .black, foreground: .white) {
                             vm.signInWithApple(onSuccess: onAuthenticated)
                         }
-                        SocialLoginButton(title: "Google", systemName: "g.circle.fill", background: Color.white, foreground: .primary) {
+                        SocialLoginButton(title: loc.tr("login.button.google"), systemName: "g.circle.fill", background: Color.white, foreground: .primary) {
                             vm.signInWithGoogle(onSuccess: onAuthenticated)
                         }
                     }
 
                     HStack(spacing: 12) {
-                        QuickDemoChip(title: "学生演示", icon: "graduationcap.fill", tint: Color(hex: "6366F1")) {
+                        QuickDemoChip(title: loc.tr("login.demo.student"), icon: "graduationcap.fill", tint: Color(hex: "6366F1")) {
                             fillDemo(for: .student)
                         }
-                        QuickDemoChip(title: "家长演示", icon: "heart.fill", tint: Color(hex: "EC4899")) {
+                        QuickDemoChip(title: loc.tr("login.demo.parent"), icon: "heart.fill", tint: Color(hex: "EC4899")) {
                             fillDemo(for: .parent)
                         }
                     }
                 }
             }
 
-            Text("登录即表示你同意《服务条款》与《隐私政策》")
+            Text(loc.tr("login.terms"))
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -399,10 +389,52 @@ struct LoginView: View {
         .shadow(color: Color.black.opacity(0.08), radius: 30, x: 0, y: 20)
     }
 
+    // 抽离子视图，降低类型推断复杂度
+    private var emailInput: some View {
+        let emailLabel: String = (vm.role == .student)
+            ? loc.tr("input.student.email")
+            : loc.tr("input.parent.account")
+        let emailPlaceholder: String = (vm.role == .student)
+            ? loc.tr("placeholder.student.email")
+            : loc.tr("placeholder.parent.email")
+        return GlassInput(label: emailLabel, icon: "person.crop.circle.fill") {
+            TextField(emailPlaceholder, text: $vm.email)
+                .keyboardType(.emailAddress)
+                .textInputAutocapitalization(.none)
+                .autocorrectionDisabled()
+                .textContentType(.username)
+                .submitLabel(.next)
+        }
+    }
+
+    private var passwordInput: some View {
+        GlassInput(label: loc.tr("input.password"), icon: "lock.fill") {
+            HStack(spacing: 12) {
+                if vm.showPassword {
+                    TextField(loc.tr("placeholder.password"), text: $vm.password)
+                        .textContentType(.password)
+                        .submitLabel(.go)
+                } else {
+                    SecureField(loc.tr("placeholder.password"), text: $vm.password)
+                        .textContentType(.password)
+                        .submitLabel(.go)
+                }
+
+                Button { vm.showPassword.toggle() } label: {
+                    Image(systemName: vm.showPassword ? "eye.slash" : "eye")
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(vm.showPassword ? loc.tr("a11y.hidePassword") : loc.tr("a11y.showPassword"))
+            }
+        }
+    }
+
     private var loadingOverlay: some View {
         ZStack {
             Color.black.opacity(0.05).ignoresSafeArea()
-            ProgressView("正在登录…")
+            // 🔴【修改】使用本地化键
+            ProgressView(loc.tr("login.loading"))
                 .padding(18)
                 .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
                 .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 6)
@@ -419,6 +451,7 @@ struct LoginView: View {
 
 // MARK: - 子组件
 private struct RoleSegmentedControl: View {
+    @EnvironmentObject var loc: LocalizationService
     let selection: UserRole
     let onSelect: (UserRole) -> Void
 
@@ -430,7 +463,8 @@ private struct RoleSegmentedControl: View {
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: role == .student ? "graduationcap.fill" : "person.2.fill")
-                        Text(role == .student ? "我是学生" : "我是家长")
+                        let textKey = role == .student ? "role.student" : "role.parent"
+                        Text(loc.tr(textKey))
                     }
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(selection == role ? .white : .secondary)
@@ -471,7 +505,7 @@ private struct GlassInput<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(label)
+            Text(label) // 这里的 label 已经被本地化了
                 .font(.footnote)
                 .foregroundColor(.secondary)
             HStack(spacing: 12) {
@@ -501,7 +535,7 @@ private struct SocialLoginButton: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: systemName)
-                Text(title)
+                Text(title) // 这里的 title 已经被本地化了
             }
             .font(.subheadline.weight(.semibold))
             .foregroundColor(foreground)
@@ -528,7 +562,7 @@ private struct QuickDemoChip: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: icon)
-                Text(title).font(.footnote.weight(.semibold))
+                Text(title).font(.footnote.weight(.semibold)) // 这里的 title 已经被本地化了
             }
             .foregroundColor(tint)
             .padding(.vertical, 10)
@@ -542,8 +576,10 @@ private struct QuickDemoChip: View {
 
 
 // MARK: - 集成示例
-// MARK: - 集成示例
 struct LoginCoordinator: View {
+    // 全局本地化服务
+    @StateObject private var loc = LocalizationService()
+    
     @State private var token: AuthToken? = nil
 
     var body: some View {
@@ -558,6 +594,8 @@ struct LoginCoordinator: View {
                 LoginView { tok in token = tok }
             }
         }
+        // 注入 LocalizationService 供界面使用
+        .environmentObject(loc)
     }
 }
 
@@ -567,9 +605,10 @@ private struct StudentHomePlaceholder: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
-                Text("学生端").font(.title).bold()
-                Text("登录成功！").foregroundColor(.secondary)
-                Button("退出登录", action: onLogout)
+                // 🔴【修改】使用本地化键
+                Text("home.student.title").font(.title).bold()
+                Text("home.success").foregroundColor(.secondary)
+                Button("home.logout", action: onLogout) // Button 标题会自动本地化
                     .padding()
                     .background(RoundedRectangle(cornerRadius: 10).fill(DS.Palette.primary))
                     .foregroundColor(.white)
@@ -584,9 +623,10 @@ private struct ParentHomePlaceholder: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
-                Text("家长端").font(.title).bold()
-                Text("登录成功！").foregroundColor(.secondary)
-                Button("退出登录", action: onLogout)
+                // 🔴【修改】使用本地化键
+                Text("home.parent.title").font(.title).bold()
+                Text("home.success").foregroundColor(.secondary)
+                Button("home.logout", action: onLogout) // Button 标题会自动本地化
                     .padding()
                     .background(RoundedRectangle(cornerRadius: 10).fill(DS.Palette.secondary))
                     .foregroundColor(.white)
@@ -598,7 +638,17 @@ private struct ParentHomePlaceholder: View {
 // MARK: - 预览
 struct LoginView_Previews: PreviewProvider {
     static var previews: some View {
+        // 预览 LoginCoordinator 会自动包含 languageSettings
         LoginCoordinator()
             .preferredColorScheme(.light)
+        
+        // 你也可以单独预览英文或中文
+        LoginCoordinator()
+            .environment(\.locale, .init(identifier: "en"))
+            .previewDisplayName("English Preview")
+        
+        LoginCoordinator()
+            .environment(\.locale, .init(identifier: "zh-Hans"))
+            .previewDisplayName("Chinese Preview")
     }
 }

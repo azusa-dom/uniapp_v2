@@ -27,58 +27,56 @@ struct StudentEmailView: View {
     }
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                LinearGradient(
-                    colors: [Color(hex: "F8FAFC"), Color(hex: "F1F5F9")],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+        ZStack {
+            LinearGradient(
+                colors: [Color(hex: "F8FAFC"), Color(hex: "F1F5F9")],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
+            VStack(alignment: .leading, spacing: 20) {
+                EmailStatsView(emails: mockEmails)
+                    .padding(.top, 16)
                 
-                VStack(alignment: .leading, spacing: 20) {
-                    EmailStatsView(emails: mockEmails)
-                        .padding(.top, 16)
-                    
-                    // ✅ 分类标签（中文）
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(categories, id:\.self) { cat in
-                                Text(cat)
-                                    .padding(.vertical, 8)
-                                    .padding(.horizontal, 16)
-                                    .background(selectedFilter == cat ? Color(hex:"6366F1") : Color.gray.opacity(0.15))
-                                    .foregroundColor(selectedFilter == cat ? .white : .black)
-                                    .cornerRadius(12)
-                                    .font(.system(size: 14, weight: .medium))
-                                    .onTapGesture { 
-                                        withAnimation(.spring(response: 0.3)) {
-                                            selectedFilter = cat 
-                                        }
+                // ✅ 分类标签（中文）
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(categories, id:\.self) { cat in
+                            Text(cat)
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 16)
+                                .background(selectedFilter == cat ? Color(hex:"6366F1") : Color.gray.opacity(0.15))
+                                .foregroundColor(selectedFilter == cat ? .white : .black)
+                                .cornerRadius(12)
+                                .font(.system(size: 14, weight: .medium))
+                                .onTapGesture { 
+                                    withAnimation(.spring(response: 0.3)) {
+                                        selectedFilter = cat 
                                     }
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                    }
-                    
-                    // ✅ 邮件列表
-                    ScrollView {
-                        VStack(spacing: 12) {
-                            ForEach(filteredEmails) { email in
-                                NavigationLink(destination: EmailDetailView(email: email)) {
-                                    EmailRow(email: email)
                                 }
-                                .buttonStyle(PlainButtonStyle())
-                            }
                         }
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 20)
                     }
+                    .padding(.horizontal, 20)
+                }
+                
+                // ✅ 邮件列表
+                ScrollView {
+                    VStack(spacing: 12) {
+                        ForEach(filteredEmails) { email in
+                            NavigationLink(destination: EmailDetailView(email: email)) {
+                                EmailRow(email: email)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 20)
                 }
             }
-            .navigationTitle("邮件")
-            .navigationBarTitleDisplayMode(.large)
         }
+        .navigationTitle("邮件")
+        .navigationBarTitleDisplayMode(.large)
     }
 }
 

@@ -38,31 +38,31 @@ class AppState: ObservableObject {
     @Published var shareCalendar: Bool = true
     
     // -- 管理器 --
-    // 直接在 AppState 中管理待办事项
-    @Published var todos: [TodoItem] = TodoManager.mockTodos
+    @StateObject var todoManager = TodoManager()
     
     // -- 日历事件 --
     @Published var calendarEvents: [UCLAPIViewModel.UCLAPIEvent]? = nil
     
-    // TodoManager 计算属性（只读，用于访问计算属性）
-    var todoManager: TodoManager {
-        let manager = TodoManager()
-        manager.todos = self.todos
-        return manager
+    // 兼容性：todos 作为 todoManager.todos 的代理
+    var todos: [TodoItem] {
+        get { todoManager.todos }
+        set { todoManager.todos = newValue }
     }
     
-    // ✅ 待办事项管理方法
+    // ✅ 待办事项管理方法（代理到 TodoManager）
     func addTodo(_ todo: TodoItem) {
-        todos.append(todo)
+        todoManager.addTodo(todo)
+    }
+    
+    func updateTodo(_ todo: TodoItem) {
+        todoManager.updateTodo(todo)
     }
     
     func toggleTodo(_ todo: TodoItem) {
-        if let index = todos.firstIndex(where: { $0.id == todo.id }) {
-            todos[index].isCompleted.toggle()
-        }
+        todoManager.toggleTodoStatus(todo)
     }
     
     func deleteTodo(_ todo: TodoItem) {
-        todos.removeAll { $0.id == todo.id }
+        todoManager.deleteTodo(todo)
     }
 }

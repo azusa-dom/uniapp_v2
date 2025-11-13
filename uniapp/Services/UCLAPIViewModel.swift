@@ -43,11 +43,18 @@ struct RecurrenceRule: Equatable {
     var frequency: RecurrenceFrequency
     var interval: Int
     var endDate: Date?
+    var weekdays: Set<Int>
     
-    init(frequency: RecurrenceFrequency, interval: Int = 1, endDate: Date? = nil) {
+    init(
+        frequency: RecurrenceFrequency,
+        interval: Int = 1,
+        endDate: Date? = nil,
+        weekdays: Set<Int> = []
+    ) {
         self.frequency = frequency
         self.interval = max(1, interval)
         self.endDate = endDate
+        self.weekdays = weekdays
     }
 }
 
@@ -83,7 +90,12 @@ class UCLAPIViewModel: ObservableObject {
                 location: "Cruciform Building, 4.18",
                 type: .api,
                 description: "教授: Dr. Johnson",
-                recurrenceRule: RecurrenceRule(frequency: .weekly, interval: 1, endDate: calendar.date(byAdding: .month, value: 2, to: now)),
+                recurrenceRule: RecurrenceRule(
+                    frequency: .weekly,
+                    interval: 1,
+                    endDate: calendar.date(byAdding: .month, value: 2, to: now),
+                    weekdays: [2, 4] // 周一、周三
+                ),
                 reminderTime: .fifteenMin
             ),
             .init(
@@ -94,7 +106,12 @@ class UCLAPIViewModel: ObservableObject {
                 location: "Foster Court, LT",
                 type: .api,
                 description: "教授: Prof. Smith",
-                recurrenceRule: RecurrenceRule(frequency: .weekly, interval: 1, endDate: calendar.date(byAdding: .month, value: 2, to: now)),
+                recurrenceRule: RecurrenceRule(
+                    frequency: .weekly,
+                    interval: 1,
+                    endDate: calendar.date(byAdding: .month, value: 2, to: now),
+                    weekdays: [3, 5] // 周二、周四
+                ),
                 reminderTime: .fifteenMin
             )
         ]

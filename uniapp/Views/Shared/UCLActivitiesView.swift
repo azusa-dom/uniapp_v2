@@ -193,7 +193,7 @@ struct ActivityCard: View {
 
                 Spacer()
 
-                Text(activity.type.uppercased())
+                Text(localizedTypeLabel(activity.type))
                     .font(.system(size: 10, weight: .bold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 8)
@@ -345,5 +345,35 @@ struct ActivityCard: View {
         }
 
         return Date()
+    }
+
+    private func localizedTypeLabel(_ raw: String) -> String {
+        let key = raw.lowercased()
+        let zh: [String: String] = [
+            "academic": "学术",
+            "workshop": "工作坊",
+            "seminar": "研讨会",
+            "lecture": "讲座",
+            "career": "职业发展",
+            "social": "社交活动",
+            "sports": "体育活动",
+            "cultural": "文化活动"
+        ]
+        if loc.language == .chinese {
+            return zh[key] ?? raw
+        } else {
+            // Title-case for English
+            switch key {
+            case "academic": return "Academic"
+            case "workshop": return "Workshop"
+            case "seminar": return "Seminar"
+            case "lecture": return "Lecture"
+            case "career": return "Career"
+            case "social": return "Social"
+            case "sports": return "Sports"
+            case "cultural": return "Cultural"
+            default: return raw.capitalized
+            }
+        }
     }
 }

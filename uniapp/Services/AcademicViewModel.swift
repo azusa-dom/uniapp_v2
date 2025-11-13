@@ -184,38 +184,8 @@ class AcademicViewModel: ObservableObject {
     }
     
     func loadMockData() {
-        modules = [
-            Module(
-                name: "Intro to Computer Science",
-                code: "COMP0010",
-                credits: 15,
-                isCompleted: true,
-                assessments: [
-                    Assessment(name: "Coursework 1", weight: 40, score: 78),
-                    Assessment(name: "Final Exam", weight: 60, score: 68)
-                ]
-            ),
-            Module(
-                name: "Database Systems",
-                code: "COMP0012",
-                credits: 15,
-                isCompleted: false,
-                assessments: [
-                    Assessment(name: "SQL Project", weight: 50, score: 85),
-                    Assessment(name: "Written Exam", weight: 50, score: nil)
-                ]
-            ),
-            Module(
-                name: "Financial Markets",
-                code: "FINA0001",
-                credits: 30,
-                isCompleted: true,
-                assessments: [
-                    Assessment(name: "Midterm", weight: 30, score: 65),
-                    Assessment(name: "Group Project", weight: 30, score: 80),
-                    Assessment(name: "Final Exam", weight: 40, score: 72)
-                ]
-            )
-        ]
+        // 使用 Student/MockData.swift 中的真实演示数据
+        modules = MockData.modules
+        upcomingAssignments = MockData.assignments
     }
 }

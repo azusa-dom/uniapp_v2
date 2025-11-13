@@ -76,7 +76,7 @@ struct StudentCalendarView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 // 背景渐变
                 LinearGradient(
@@ -96,19 +96,24 @@ struct StudentCalendarView: View {
                         topControlBar
                         
                         // 日历视图切换
-                        calendarViewSection
-                        
-                        // 今日概览卡片
-                        todayOverviewCard
-                        
-                        // 今日日程
-                        todayScheduleSection
-                        
-                        // UCL 校园活动
-                        uclActivitiesSection
-                        
-                        // 本周推荐
-                        weeklyRecommendationsSection
+                        if viewMode == .week {
+                            WeekTimetableView()
+                                .environmentObject(loc)
+                        } else {
+                            calendarViewSection
+                            
+                            // 今日概览卡片
+                            todayOverviewCard
+                            
+                            // 今日日程
+                            todayScheduleSection
+                            
+                            // UCL 校园活动
+                            uclActivitiesSection
+                            
+                            // 本周推荐
+                            weeklyRecommendationsSection
+                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 30)
@@ -130,6 +135,7 @@ struct StudentCalendarView: View {
             }
             .sheet(item: $showingActivityDetail) { activity in
                 ActivityDetailSheet(activity: activity, service: activitiesService)
+                    .environmentObject(loc)
             }
             .sheet(item: $showingEventDetail) { event in
                 EventDetailSheet(event: event)
@@ -172,7 +178,21 @@ struct StudentCalendarView: View {
                         .foregroundColor(Color(hex: "6366F1"))
                 }
             }
-            
+
+            // 导入课表到系统日历
+            Button(action: { Task { await importMockTimetableToSystemCalendar() } }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 44, height: 44)
+                        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 2)
+
+                    Image(systemName: "calendar.badge.plus")
+                        .font(.system(size: 18))
+                        .foregroundColor(Color(hex: "6366F1"))
+                }
+            }
+
             // 添加按钮
             Button(action: { showingAddEventSheet = true }) {
                 ZStack {
@@ -235,9 +255,13 @@ struct StudentCalendarView: View {
             Group {
                 switch viewMode {
                 case .month:
-                    ModernMonthView(selectedDate: $selectedDate)
+                    ModernMonthView(
+                        selectedDate: $selectedDate,
+                        eventsProvider: { date in events(on: date) }
+                    )
                 case .week:
-                    ModernWeekView(selectedDate: $selectedDate)
+                    WeekTimetableView()
+                        .environmentObject(loc)
                 case .day:
                     ModernDayView(selectedDate: $selectedDate)
                 }
@@ -399,10 +423,35 @@ struct StudentCalendarView: View {
     // MARK: - 辅助方法
     private func loadData() {
         if viewModel.events.isEmpty {
-            viewModel.fetchEvents()
+            // 使用 MockData 中的课程表填充日历事件
+            let mapped = MockData.timetableEvents.map { e in
+                UCLAPIViewModel.UCLAPIEvent(
+                    id: UUID(),
+                    title: "\(e.courseCode) · \(e.title)",
+                    startTime: e.startTime,
+                    endTime: e.endTime,
+                    location: e.location,
+                    type: .manual,
+                    description: "\(e.type) | Instructor: \(e.instructor)",
+                    recurrenceRule: nil,
+                    reminderTime: .fifteenMin
+                )
+            }
+            viewModel.events = mapped
         }
         if activitiesService.activities.isEmpty {
             activitiesService.loadActivities()
+        }
+    }
+
+    // 导入 Mock 课程表到系统日历
+    private func importMockTimetableToSystemCalendar() async {
+        do {
+            let count = try await CalendarImportService.shared.importTimetableEvents(MockData.timetableEvents, alarmMinutesBefore: 15)
+            // 简单反馈：用通知或打印；这里用print，UI已尽量简洁
+            print("Imported \(count) events into system calendar")
+        } catch {
+            print("Import failed: \(error.localizedDescription)")
         }
     }
     
@@ -464,7 +513,10 @@ struct StudentCalendarView: View {
             guard diff >= 0, diff % rule.interval == 0 else { return nil }
             return shiftedEvent(event, to: targetDay)
         case .weekly, .biweekly:
-            guard calendar.component(.weekday, from: event.startTime) == calendar.component(.weekday, from: date) else { return nil }
+            let allowedWeekdays = rule.weekdays.isEmpty
+                ? [calendar.component(.weekday, from: event.startTime)]
+                : Array(rule.weekdays)
+            guard allowedWeekdays.contains(calendar.component(.weekday, from: date)) else { return nil }
             let diff = calendar.dateComponents([.weekOfYear], from: originDay, to: targetDay).weekOfYear ?? 0
             guard diff >= 0, diff % rule.interval == 0 else { return nil }
             return shiftedEvent(event, to: targetDay)
@@ -674,10 +726,15 @@ struct ModernEventCard: View {
 
 // MARK: - 现代化活动卡片
 struct ModernActivityCard: View {
+    @EnvironmentObject var loc: LocalizationService
     let activity: UCLActivity
     let service: UCLActivitiesService
     let onTap: () -> Void
     @State private var showingAddSuccess = false
+    
+    private var isChinese: Bool {
+        loc.language == .chinese
+    }
     
     var body: some View {
         HStack(spacing: 16) {
@@ -701,12 +758,12 @@ struct ModernActivityCard: View {
             
             // 内容区域
             VStack(alignment: .leading, spacing: 8) {
-                Text(activity.title)
+                Text(activity.localizedTitle(isChinese: isChinese))
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
                     .lineLimit(2)
                 
-                if let location = activity.location {
+                if let location = activity.localizedLocation(isChinese: isChinese) {
                     HStack(spacing: 6) {
                         Image(systemName: "mappin.circle.fill")
                             .font(.system(size: 12))
@@ -721,7 +778,7 @@ struct ModernActivityCard: View {
                 
                 // 类型标签 + 加入日历按钮（校园活动可以选择是否加入）
                 HStack(spacing: 8) {
-                    Text(service.getTypeLabel(activity.type))
+                    Text(activity.localizedType(isChinese: isChinese))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.white)
                         .padding(.horizontal, 8)
@@ -785,9 +842,14 @@ struct ModernActivityCard: View {
 
 // MARK: - 本周推荐卡片
 struct WeeklyRecommendationCard: View {
+    @EnvironmentObject var loc: LocalizationService
     let activity: UCLActivity
     let service: UCLActivitiesService
     let onTap: () -> Void
+    
+    private var isChinese: Bool {
+        loc.language == .chinese
+    }
     
     var body: some View {
         Button(action: onTap) {
@@ -812,14 +874,14 @@ struct WeeklyRecommendationCard: View {
                 }
                 
                 // 标题
-                Text(activity.title)
+                Text(activity.localizedTitle(isChinese: isChinese))
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
                     .lineLimit(2)
                     .frame(height: 44, alignment: .topLeading)
                 
                 // 位置
-                if let location = activity.location {
+                if let location = activity.localizedLocation(isChinese: isChinese) {
                     HStack(spacing: 6) {
                         Image(systemName: "mappin.circle.fill")
                             .font(.system(size: 12))
@@ -833,7 +895,7 @@ struct WeeklyRecommendationCard: View {
                 }
                 
                 // 类型标签
-                Text(service.getTypeLabel(activity.type))
+                Text(activity.localizedType(isChinese: isChinese))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.white)
                     .padding(.horizontal, 8)
@@ -1026,16 +1088,31 @@ struct EventDetailSheet: View {
 // MARK: - 现代化月视图
 struct ModernMonthView: View {
     @Binding var selectedDate: Date
+    let eventsProvider: (Date) -> [UCLAPIViewModel.UCLAPIEvent]
+    
+    @State private var visibleMonth: Date
+    private let calendar = Calendar.current
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
+    
+    init(
+        selectedDate: Binding<Date>,
+        eventsProvider: @escaping (Date) -> [UCLAPIViewModel.UCLAPIEvent]
+    ) {
+        self._selectedDate = selectedDate
+        self.eventsProvider = eventsProvider
+        _visibleMonth = State(initialValue: Calendar.current.startOfMonth(for: selectedDate.wrappedValue))
+    }
     
     var body: some View {
-        VStack(spacing: 0) {
-            DatePicker(
-                "",
-                selection: $selectedDate,
-                displayedComponents: .date
-            )
-            .datePickerStyle(GraphicalDatePickerStyle())
-            .tint(Color(hex: "6366F1"))
+        VStack(spacing: 16) {
+            monthHeader
+            weekdayHeader
+            
+            LazyVGrid(columns: columns, spacing: 12) {
+                ForEach(daysInVisibleMonth) { day in
+                    dayCell(for: day)
+                }
+            }
         }
         .padding(20)
         .background(
@@ -1043,6 +1120,264 @@ struct ModernMonthView: View {
                 .fill(Color.white)
                 .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
         )
+        .onChange(of: selectedDate) { newValue in
+            let targetMonth = calendar.startOfMonth(for: newValue)
+            if !calendar.isDate(targetMonth, inSameDayAs: visibleMonth) {
+                visibleMonth = targetMonth
+            }
+        }
+    }
+    
+    private var monthHeader: some View {
+        HStack {
+            Button(action: { shiftMonth(-1) }) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(hex: "6366F1"))
+                    .padding(10)
+                    .background(Circle().fill(Color(hex: "6366F1").opacity(0.1)))
+            }
+            
+            Spacer()
+            
+            VStack(spacing: 4) {
+                Text(visibleMonth, format: .dateTime.year().month())
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Text("共 \(monthlyEventCount) 个安排")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            Button(action: { shiftMonth(1) }) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(hex: "6366F1"))
+                    .padding(10)
+                    .background(Circle().fill(Color(hex: "6366F1").opacity(0.1)))
+            }
+        }
+    }
+    
+    private var weekdayHeader: some View {
+        let symbols = orderedWeekdaySymbols
+        return HStack {
+            ForEach(symbols, id: \.value) { weekday in
+                Text(weekday.symbol.uppercased())
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+    }
+    
+    private func dayCell(for day: MonthDayItem) -> some View {
+        let isSelected = calendar.isDate(day.date, inSameDayAs: selectedDate)
+        let isToday = calendar.isDateInToday(day.date)
+        let events = eventsProvider(day.date)
+        
+        return Button {
+            withAnimation(.spring(response: 0.3)) {
+                selectedDate = day.date
+                visibleMonth = calendar.startOfMonth(for: day.date)
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("\(calendar.component(.day, from: day.date))")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(textColor(isSelected: isSelected, isWithinMonth: day.isWithinDisplayedMonth))
+                    
+                    if isToday {
+                        Circle()
+                            .fill(Color(hex: "F59E0B"))
+                            .frame(width: 6, height: 6)
+                    }
+                }
+                
+                eventPreview(events: events, isSelected: isSelected)
+            }
+            .frame(maxWidth: .infinity, minHeight: 72, alignment: .topLeading)
+            .padding(10)
+            .background(backgroundColor(isSelected: isSelected, isWithinMonth: day.isWithinDisplayedMonth))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(isSelected ? Color(hex: "6366F1") : Color.clear, lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+    
+    @ViewBuilder
+    private func eventPreview(events: [UCLAPIViewModel.UCLAPIEvent], isSelected: Bool) -> some View {
+        if events.isEmpty {
+            Spacer()
+        } else {
+            // Keep the earliest event as the hero indicator to avoid stacked pills.
+            let sortedEvents = events.sorted { $0.startTime < $1.startTime }
+            let primaryEvent = sortedEvents[0]
+            let extraCount = sortedEvents.count - 1
+            
+            let pillBackground = isSelected ? Color.white.opacity(0.15) : Color(hex: "F3F4F6")
+            let titleColor: Color = isSelected ? .white : .primary
+            
+            HStack(alignment: .center, spacing: 8) {
+                Circle()
+                    .fill(eventColor(for: primaryEvent))
+                    .frame(width: 7, height: 7)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(eventTimeLabel(for: primaryEvent))
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    Text(primaryEvent.title)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(titleColor)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                
+                Spacer(minLength: 4)
+                
+                if extraCount > 0 {
+                    Text("+\(extraCount)")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(Color(hex: "6366F1"))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(Color(hex: "6366F1").opacity(isSelected ? 0.25 : 0.12))
+                        )
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(pillBackground)
+            )
+        }
+    }
+    
+    private func textColor(isSelected: Bool, isWithinMonth: Bool) -> Color {
+        if isSelected {
+            return .white
+        }
+        return isWithinMonth ? .primary : .secondary.opacity(0.6)
+    }
+    
+    private func backgroundColor(isSelected: Bool, isWithinMonth: Bool) -> some View {
+        Group {
+            if isSelected {
+                LinearGradient(
+                    colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            } else if isWithinMonth {
+                Color.white
+            } else {
+                Color.white.opacity(0.7)
+            }
+        }
+    }
+    
+    private var orderedWeekdaySymbols: [(value: Int, symbol: String)] {
+        let symbols = calendar.shortStandaloneWeekdaySymbols
+        let firstWeekday = calendar.firstWeekday - 1
+        return (0..<symbols.count).map { offset in
+            let index = (offset + firstWeekday) % symbols.count
+            return (value: index + 1, symbol: symbols[index])
+        }
+    }
+    
+    private var daysInVisibleMonth: [MonthDayItem] {
+        guard let monthInterval = calendar.dateInterval(of: .month, for: visibleMonth) else { return [] }
+        var days: [MonthDayItem] = []
+        
+        let firstWeekdayOfMonth = calendar.component(.weekday, from: monthInterval.start)
+        let leadingPadding = (firstWeekdayOfMonth - calendar.firstWeekday + 7) % 7
+        
+        if leadingPadding > 0 {
+            for offset in stride(from: leadingPadding, to: 0, by: -1) {
+                let date = calendar.date(byAdding: .day, value: -offset, to: monthInterval.start)!
+                days.append(MonthDayItem(date: date, isWithinDisplayedMonth: false))
+            }
+        }
+        
+        var currentDate = monthInterval.start
+        while currentDate < monthInterval.end {
+            days.append(MonthDayItem(date: currentDate, isWithinDisplayedMonth: true))
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
+        }
+        
+        while days.count % 7 != 0 {
+            let nextDate = calendar.date(byAdding: .day, value: 1, to: days.last!.date)!
+            days.append(MonthDayItem(date: nextDate, isWithinDisplayedMonth: false))
+        }
+        
+        return days
+    }
+    
+    private var monthlyEventCount: Int {
+        daysInVisibleMonth
+            .filter { $0.isWithinDisplayedMonth }
+            .reduce(0) { $0 + eventsProvider($1.date).count }
+    }
+    
+    private func shiftMonth(_ value: Int) {
+        if let newMonth = calendar.date(byAdding: .month, value: value, to: visibleMonth) {
+            withAnimation(.spring(response: 0.3)) {
+                visibleMonth = newMonth
+                selectedDate = alignSelectedDate(to: newMonth)
+            }
+        }
+    }
+    
+    private func alignSelectedDate(to month: Date) -> Date {
+        let targetComponents = calendar.dateComponents([.year, .month], from: month)
+        let currentDay = calendar.component(.day, from: selectedDate)
+        var components = targetComponents
+        components.day = min(
+            currentDay,
+            calendar.range(of: .day, in: .month, for: month)?.count ?? currentDay
+        )
+        return calendar.date(from: components) ?? month
+    }
+    
+    private func eventColor(for event: UCLAPIViewModel.UCLAPIEvent) -> Color {
+        switch event.type {
+        case .api:
+            return Color(hex: "6366F1")
+        case .manual:
+            return Color(hex: "10B981")
+        }
+    }
+    
+    private func eventTimeLabel(for event: UCLAPIViewModel.UCLAPIEvent) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return "\(formatter.string(from: event.startTime))"
+    }
+}
+
+private struct MonthDayItem: Identifiable {
+    let date: Date
+    let isWithinDisplayedMonth: Bool
+    
+    var id: Date { date }
+}
+
+private extension Calendar {
+    func startOfMonth(for targetDate: Date) -> Date {
+        self.date(from: dateComponents([.year, .month], from: targetDate)) ?? targetDate
     }
 }
 
@@ -1216,6 +1551,8 @@ struct AddEventSheet: View {
     @State private var recurrenceEnabled = false
     @State private var recurrenceFrequency: RecurrenceFrequency = .weekly
     @State private var recurrenceEndDate: Date
+    @State private var hasRecurrenceEndDate = true
+    @State private var selectedWeekdays: Set<Int>
     
     init(viewModel: UCLAPIViewModel, selectedDate: Date, defaultReminderTime: ReminderTime) {
         self.viewModel = viewModel
@@ -1224,6 +1561,8 @@ struct AddEventSheet: View {
         _endDate = State(initialValue: initialEnd)
         _reminderTime = State(initialValue: defaultReminderTime)
         _recurrenceEndDate = State(initialValue: Calendar.current.date(byAdding: .month, value: 1, to: selectedDate) ?? initialEnd)
+        let defaultWeekday = Calendar.current.component(.weekday, from: selectedDate)
+        _selectedWeekdays = State(initialValue: [defaultWeekday])
     }
     
     var body: some View {
@@ -1281,16 +1620,46 @@ struct AddEventSheet: View {
                                 Text(frequency.rawValue).tag(frequency)
                             }
                         }
+                        .pickerStyle(.menu)
                         
-                        DatePicker("结束日期", selection: $recurrenceEndDate, in: startDate..., displayedComponents: .date)
+                        if requiresWeekdaySelection {
+                            WeekdaySelector(selection: $selectedWeekdays)
+                            
+                            if selectedWeekdays.isEmpty {
+                                Text("请选择至少一个上课日")
+                                    .font(.footnote)
+                                    .foregroundColor(.red)
+                            }
+                        }
+                        
+                        Toggle("设置结束日期", isOn: $hasRecurrenceEndDate.animation())
+                        
+                        if hasRecurrenceEndDate {
+                            DatePicker("结束日期", selection: $recurrenceEndDate, in: startDate..., displayedComponents: .date)
+                        }
                     }
                 }
             }
             .navigationTitle("添加事件")
             .navigationBarTitleDisplayMode(.inline)
-            .onChange(of: startDate) { _ in syncEndDateWithDuration() }
+            .onChange(of: startDate) { _ in
+                syncEndDateWithDuration()
+                if !recurrenceEnabled {
+                    selectedWeekdays = [Calendar.current.component(.weekday, from: startDate)]
+                }
+            }
             .onChange(of: durationOption) { _ in syncEndDateWithDuration() }
             .onChange(of: customDuration) { _ in syncEndDateWithDuration() }
+            .onChange(of: recurrenceEnabled) { enabled in
+                if enabled && requiresWeekdaySelection {
+                    ensureWeekdaySeed()
+                }
+            }
+            .onChange(of: recurrenceFrequency) { newValue in
+                if (newValue == .weekly || newValue == .biweekly) && recurrenceEnabled {
+                    ensureWeekdaySeed()
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("取消") { dismiss() }
@@ -1314,7 +1683,7 @@ struct AddEventSheet: View {
                         viewModel.events.append(newEvent)
                         dismiss()
                     }
-                    .disabled(eventTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(!canSave)
                 }
             }
         }
@@ -1341,7 +1710,88 @@ struct AddEventSheet: View {
         default:
             interval = 1
         }
-        return RecurrenceRule(frequency: recurrenceFrequency, interval: interval, endDate: recurrenceEndDate)
+        
+        let endDate = hasRecurrenceEndDate ? recurrenceEndDate : nil
+        let weekdays = requiresWeekdaySelection ? selectedWeekdays : []
+        
+        return RecurrenceRule(
+            frequency: recurrenceFrequency,
+            interval: interval,
+            endDate: endDate,
+            weekdays: weekdays
+        )
+    }
+    
+    private var requiresWeekdaySelection: Bool {
+        recurrenceFrequency == .weekly || recurrenceFrequency == .biweekly
+    }
+    
+    private var canSave: Bool {
+        let hasTitle = !eventTitle.trimmingCharacters(in: .whitespaces).isEmpty
+        let hasWeekday = !recurrenceEnabled || !requiresWeekdaySelection || !selectedWeekdays.isEmpty
+        return hasTitle && hasWeekday
+    }
+    
+    private func ensureWeekdaySeed() {
+        if selectedWeekdays.isEmpty {
+            let weekday = Calendar.current.component(.weekday, from: startDate)
+            selectedWeekdays.insert(weekday)
+        }
+    }
+}
+
+private struct WeekdaySelector: View {
+    @Binding var selection: Set<Int>
+    
+    private let calendar = Calendar.current
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
+    
+    var body: some View {
+        LazyVGrid(columns: columns, spacing: 8) {
+            ForEach(orderedWeekdays, id: \.value) { weekday in
+                let isSelected = selection.contains(weekday.value)
+                Button {
+                    toggle(weekday.value)
+                } label: {
+                    Text(label(for: weekday.symbol))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(isSelected ? .white : .primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(isSelected ? Color(hex: "6366F1") : Color.gray.opacity(0.15))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.top, 4)
+    }
+    
+    private var orderedWeekdays: [(value: Int, symbol: String)] {
+        let symbols = calendar.shortStandaloneWeekdaySymbols
+        let firstWeekday = calendar.firstWeekday - 1
+        return (0..<symbols.count).map { offset in
+            let index = (offset + firstWeekday) % symbols.count
+            return (value: index + 1, symbol: symbols[index])
+        }
+    }
+    
+    private func label(for symbol: String) -> String {
+        let localeCode = Locale.preferredLanguages.first ?? ""
+        if localeCode.contains("zh") {
+            return symbol
+        }
+        return symbol.prefix(3).uppercased()
+    }
+    
+    private func toggle(_ day: Int) {
+        if selection.contains(day) {
+            selection.remove(day)
+        } else {
+            selection.insert(day)
+        }
     }
 }
 
@@ -1379,12 +1829,17 @@ struct InfoRow: View {
 // MARK: - 活动详情弹窗
 struct ActivityDetailSheet: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var loc: LocalizationService
     let activity: UCLActivity
     let service: UCLActivitiesService
     
     @State private var eventStore = EKEventStore()
     @State private var showingAddSuccess = false
     @State private var showingAddError = false
+    
+    private var isChinese: Bool {
+        loc.language == .chinese
+    }
     
     var body: some View {
         NavigationView {
@@ -1406,7 +1861,7 @@ struct ActivityDetailSheet: View {
                             .frame(height: 200)
                         
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(service.getTypeLabel(activity.type))
+                            Text(activity.localizedType(isChinese: isChinese))
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 12)
@@ -1416,7 +1871,7 @@ struct ActivityDetailSheet: View {
                                         .fill(Color.white.opacity(0.3))
                                 )
                             
-                            Text(activity.title)
+                            Text(activity.localizedTitle(isChinese: isChinese))
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.white)
                         }
@@ -1427,7 +1882,7 @@ struct ActivityDetailSheet: View {
                         // 时间信息
                         InfoRow(
                             icon: "clock.fill",
-                            title: "时间",
+                            title: isChinese ? "时间" : "Time",
                             content: "\(service.formatTime(activity.startTime))\(activity.endTime.isEmpty ? "" : " - \(service.formatTime(activity.endTime))")",
                             color: "6366F1"
                         )
@@ -1435,30 +1890,30 @@ struct ActivityDetailSheet: View {
                         // 日期信息
                         InfoRow(
                             icon: "calendar",
-                            title: "日期",
+                            title: isChinese ? "日期" : "Date",
                             content: activity.date,
                             color: "8B5CF6"
                         )
                         
                         // 地点信息
-                        if let location = activity.location {
+                        if let location = activity.localizedLocation(isChinese: isChinese) {
                             InfoRow(
                                 icon: "mappin.circle.fill",
-                                title: "地点",
+                                title: isChinese ? "地点" : "Location",
                                 content: location,
                                 color: "8B5CF6"
                             )
                         }
                         
                         // 描述
-                        if let description = activity.description {
+                        if let description = activity.localizedDescription(isChinese: isChinese) {
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack(spacing: 8) {
                                     Image(systemName: "text.alignleft")
                                         .font(.system(size: 16))
                                         .foregroundColor(Color(hex: "10B981"))
                                     
-                                    Text("活动详情")
+                                    Text(isChinese ? "活动详情" : "Activity Details")
                                         .font(.system(size: 16, weight: .semibold))
                                         .foregroundColor(.primary)
                                 }

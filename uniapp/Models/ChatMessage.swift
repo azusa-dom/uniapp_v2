@@ -14,4 +14,9 @@ struct ChatMessage: Identifiable, Equatable {
     let text: String
     let isUser: Bool
     var timestamp: Date = Date()
+    
+    // 兼容性：content 作为 text 的别名
+    var content: String {
+        text
+    }
 }
