@@ -1,29 +1,50 @@
+//
+//  TodoModels.swift
+//  uniapp
+//
+//  Created by 748 on 12/11/2025.
+//
+
 import Foundation
 import SwiftUI
 
-// 该文件用于扩展待办事项相关的工具方法
+// MARK: - 待办事项
+struct TodoItem: Identifiable, Equatable {
+    let id = UUID()
+    var title: String
+    var dueDate: Date?
+    var priority: TodoPriority = .medium
+    var category: String
+    var notes: String?
+    var isCompleted: Bool = false
+    var createdDate: Date = Date()
+    var source: String = "学生" // "学生" 或 "学校"
+    
+    var isOverdue: Bool {
+        guard let dueDate = dueDate else { return false }
+        return !isCompleted && dueDate < Date()
+    }
+}
 
-extension TodoItem {
-    static var sampleData: [TodoItem] {
-        [
-            TodoItem(
-                title: "完成数学作业",
-                dueDate: Calendar.current.date(byAdding: .hour, value: 6, to: Date()),
-                priority: .high,
-                category: "作业"
-            ),
-            TodoItem(
-                title: "复习数据科学笔记",
-                dueDate: Calendar.current.date(byAdding: .day, value: 1, to: Date()),
-                priority: .medium,
-                category: "复习"
-            ),
-            TodoItem(
-                title: "准备英语演讲",
-                dueDate: Calendar.current.date(byAdding: .day, value: 3, to: Date()),
-                priority: .urgent,
-                category: "演讲"
-            )
-        ]
+enum TodoPriority: String, CaseIterable, Identifiable {
+    case low, medium, high, urgent
+    var id: String { rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .low: return "低"
+        case .medium: return "中"
+        case .high: return "高"
+        case .urgent: return "紧急"
+        }
+    }
+    
+    var color: String {
+        switch self {
+        case .low: return "10B981"
+        case .medium: return "F59E0B"
+        case .high: return "EF4444"
+        case .urgent: return "DC2626"
+        }
     }
 }

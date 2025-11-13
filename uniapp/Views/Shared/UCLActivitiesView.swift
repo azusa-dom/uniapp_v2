@@ -263,14 +263,14 @@ struct ActivityCard: View {
                         appState.calendarEvents = []
                     }
                     if var calendar = appState.calendarEvents {
-                        let newEvent = CalendarEvent(
+                        let newEvent = UCLAPIViewModel.UCLAPIEvent(
                             id: UUID(),
                             title: activity.title,
                             startTime: parseActivityDateTime(activity.date, activity.startTime),
                             endTime: parseActivityDateTime(activity.date, activity.endTime),
                             location: activity.location ?? "",
-                            type: .activity,
-                            isAddedToCalendar: true
+                            type: .manual,
+                            description: activity.description
                         )
                         calendar.append(newEvent)
                         appState.calendarEvents = calendar

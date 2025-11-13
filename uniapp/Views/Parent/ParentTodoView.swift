@@ -10,12 +10,22 @@ import SwiftUI
 
 // MARK: - Parent Todo View
 struct ParentTodoView: View {
+    enum Mode {
+        case parent
+        case student
+    }
+    
     @EnvironmentObject var loc: LocalizationService
     @EnvironmentObject var appState: AppState
+    
+    let mode: Mode
+    
+    init(mode: Mode = .parent) {
+        self.mode = mode
+    }
 
     @State private var showingAddTodoSheet = false
-    @State private var selectedTodo: TodoItem? = nil
-    @State private var showingTodoDetail = false
+    @State private var selectedTodo: TodoItem? = nil  // ✅ 只用这一个状态
     @State private var showingCompleted = false
 
     var incompleteTodos: [TodoItem] {
@@ -26,6 +36,10 @@ struct ParentTodoView: View {
     var completedTodos: [TodoItem] {
         appState.todoManager.todos.filter { $0.isCompleted }
             .sorted { $0.createdDate > $1.createdDate }
+    }
+    
+    private var navigationTitle: String {
+        mode == .student ? "我的待办" : "待办事项"
     }
 
     var body: some View {
@@ -80,13 +94,14 @@ struct ParentTodoView: View {
                                 }
                                 .padding(.horizontal)
                                 
-                                VStack(spacing: 12) {
+                                LazyVStack(spacing: 12) {
                                     ForEach(incompleteTodos) { todo in
-                                        ParentTodoRow(todo: todo)
-                                            .onTapGesture {
-                                                selectedTodo = todo
-                                                showingTodoDetail = true
-                                            }
+                                        Button(action: {
+                                            selectedTodo = todo  // ✅ 设置为选中的待办
+                                        }) {
+                                            ParentTodoRow(todo: todo)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
                                     }
                                 }
                                 .padding(.horizontal)
@@ -101,7 +116,7 @@ struct ParentTodoView: View {
                                     .foregroundColor(.primary)
                                     .padding(.horizontal)
                                 
-                                VStack(spacing: 12) {
+                                LazyVStack(spacing: 12) {
                                     ForEach(completedTodos.prefix(10)) { todo in
                                         ParentTodoRow(todo: todo, isCompleted: true)
                                             .opacity(0.7)
@@ -140,7 +155,7 @@ struct ParentTodoView: View {
                     .padding(.vertical)
                 }
             }
-            .navigationTitle("待办事项")
+            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -162,14 +177,35 @@ struct ParentTodoView: View {
                         category: category,
                         notes: notes
                     )
-                    appState.todoManager.addTodo(newTodo)
+                    appState.addTodo(newTodo)  // ✅ 直接添加到 appState
                     showingAddTodoSheet = false
                 }
             }
             .sheet(item: $selectedTodo) { todo in
-                TodoDetailView(todo: todo, isPresented: $showingTodoDetail)
+                NavigationStack {
+                    TodoDetailView(
+                        todo: todo,
+                        isPresented: Binding(
+                            get: { selectedTodo != nil },
+                            set: { if !$0 { selectedTodo = nil } }
+                        )
+                    )
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("关闭") {
+                                selectedTodo = nil  // ✅ 设置为 nil 关闭弹窗
+                            }
+                        }
+                    }
+                }
             }
         }
+    }
+}
+
+struct StudentTodoView: View {
+    var body: some View {
+        ParentTodoView(mode: .student)
     }
 }
 

@@ -3,7 +3,6 @@
 //  uniapp
 //
 //
-//
 
 import SwiftUI
 
@@ -104,6 +103,67 @@ struct ParentDashboardView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - 即将截止的任务卡片
+struct UpcomingDeadlinesCard: View {
+    @EnvironmentObject var appState: AppState
+    let onTodoTap: (TodoItem) -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("📅 即将截止")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.primary)
+            
+            if appState.todoManager.upcomingDeadlines.isEmpty {
+                Text("暂无即将截止的任务")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+            } else {
+                ForEach(appState.todoManager.upcomingDeadlines) { todo in
+                    Button(action: {
+                        onTodoTap(todo)
+                    }) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(todo.title)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                
+                                if let dueDate = todo.dueDate {
+                                    Text(dueDate, style: .relative)
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            Circle()
+                                .fill(Color(hex: todo.priority.color).opacity(0.2))
+                                .frame(width: 28, height: 28)
+                                .overlay(
+                                    Text(todo.priority.displayName)
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(Color(hex: todo.priority.color))
+                                )
+                        }
+                        .padding(12)
+                        .background(Color.white.opacity(0.6))
+                        .cornerRadius(10)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 2)
+        )
     }
 }
 
@@ -240,6 +300,9 @@ struct ParentStatusIndicator: View {
 struct AcademicOverviewCard: View {
     @EnvironmentObject var loc: LocalizationService
     
+    // ✅ 修复：
+    // 这个 highlights 数组现在会正确使用
+    // `共享数据模型.swift` 中定义的 `CourseSummary`
     private let highlights: [CourseSummary] = [
         .init(name: "数据方法与健康研究", grade: 87, trend: "up"),
         .init(name: "数据科学与统计", grade: 72, trend: "stable"),
@@ -335,33 +398,6 @@ struct AcademicOverviewCard: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
-    }
-    
-    private struct CourseSummary: Identifiable {
-        let id = UUID()
-        let name: String
-        let grade: Int
-        let trend: String
-        
-        var gradeColor: Color {
-            grade >= 70 ? Color(hex: "10B981") : Color(hex: "F59E0B")
-        }
-        
-        var trendIcon: String {
-            switch trend {
-            case "up": return "arrow.up.right"
-            case "down": return "arrow.down.right"
-            default: return "arrow.right"
-            }
-        }
-        
-        var trendColor: Color {
-            switch trend {
-            case "up": return Color(hex: "10B981")
-            case "down": return Color(hex: "EF4444")
-            default: return Color(hex: "6B7280")
-            }
-        }
     }
 }
 

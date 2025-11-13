@@ -6,22 +6,18 @@
 
 import SwiftUI
 
-struct ParentHealthOverview: Identifiable {
-    let id = UUID()
-    let title: String
-    let value: String
-    let unit: String
-    let icon: String
-    let status: String
-    let color: String
-    let progress: Double
-    let note: String
-}
+// ✅ 最重要修改：
+// 移除了这里定义的 `ParentHealthOverview` 结构体。
+// 它与 `共享数据模型.swift` 中的定义重复，会导致编译错误。
 
 struct ParentHealthView: View {
     @EnvironmentObject var loc: LocalizationService
     @EnvironmentObject var appState: AppState
     @State private var range: RangeFilter = .week
+    
+    // ✅ 修复：
+    // 这里的 `ParentHealthOverview` 现在会正确使用
+    // `共享数据模型.swift` 中定义的 `ParentHealthOverview`。
     @State private var selected: ParentHealthOverview? = nil
     
     enum RangeFilter: String, CaseIterable, Identifiable {
@@ -31,6 +27,8 @@ struct ParentHealthView: View {
         var id: String { rawValue }
     }
     
+    // ✅ 修复：
+    // 这里的 `ParentHealthOverview` 现在也会正确使用共享模型
     private func data(for range: RangeFilter) -> [ParentHealthOverview] {
         switch range {
         case .day:

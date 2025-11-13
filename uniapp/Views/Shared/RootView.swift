@@ -34,7 +34,7 @@ struct RootView: View {
         )
     }
 }
-// 学生端 Tab（5个）
+// 学生端 Tab（7个）
 struct StudentTabView: View {
     @EnvironmentObject var loc: LocalizationService
     @StateObject private var aiViewModel = StudentAIAssistantViewModel()
@@ -63,27 +63,34 @@ struct StudentTabView: View {
                 }
                 .tag(2)
             
-            // 4. AI
+            // 4. 待办事项
+            StudentTodoView()
+                .tabItem {
+                    Label("待办", systemImage: "checkmark.circle")
+                }
+                .tag(3)
+            
+            // 5. AI
             StudentAIAssistantView()
                 .environmentObject(aiViewModel)
                 .tabItem {
                     Label(loc.tr("tab_ai"), systemImage: "sparkles")
                 }
-                .tag(3)
+                .tag(4)
 
-            // 5+. 健康
+            // 6. 健康
             StudentHealthView()
                 .tabItem {
                     Label("健康", systemImage: "heart.text.square")
                 }
-                .tag(6)
+                .tag(5)
             
-            // 5. 邮箱
+            // 7. 邮箱
             StudentEmailView()
                 .tabItem {
                     Label(loc.tr("tab_email"), systemImage: "envelope.fill")
                 }
-                .tag(4)
+                .tag(6)
         }
         .accentColor(Color(hex: "8B5CF6"))
     }

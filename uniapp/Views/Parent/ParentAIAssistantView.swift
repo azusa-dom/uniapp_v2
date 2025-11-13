@@ -471,7 +471,7 @@ struct ParentAIAssistantView: View {
                                 }
                                 .padding()
                             }
-                            .onChange(of: viewModel.messages.count) { _ in
+                            .onChange(of: viewModel.messages.count) {
                                 if let lastMessage = viewModel.messages.last {
                                     withAnimation {
                                         proxy.scrollTo(lastMessage.id, anchor: .bottom)
@@ -484,12 +484,13 @@ struct ParentAIAssistantView: View {
                     // 输入栏
                     ChatInputBar(
                         text: $viewModel.inputText,
+                        placeholder: "问我关于 Zoya 的任何问题...",
+                        isProcessing: viewModel.isProcessing,
                         onSend: {
                             let text = viewModel.inputText
                             viewModel.inputText = ""
                             viewModel.sendMessage(text)
-                        },
-                        placeholder: "问我关于 Zoya 的任何问题..."
+                        }
                     )
                 }
             }
@@ -616,5 +617,13 @@ struct ParentQuickQuestionButton: View {
             .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
         }
         .buttonStyle(ScaleButtonStyle())
+    }
+}
+
+private extension Character {
+    var isEmoji: Bool {
+        unicodeScalars.contains { scalar in
+            scalar.properties.isEmojiPresentation || scalar.properties.isEmoji
+        }
     }
 }

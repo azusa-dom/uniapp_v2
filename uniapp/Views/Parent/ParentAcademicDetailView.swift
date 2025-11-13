@@ -30,7 +30,7 @@ struct ParentAcademicDetailView: View {
     private var overallSummary: some View {
         let averageScore = courses.isEmpty ? 0 : Double(courses.reduce(0) { $0 + $1.grade }) / Double(courses.count)
 
-        VStack(spacing: 16) {
+        return VStack(spacing: 16) {
             Text(String(format: "%.1f 分", averageScore))
                 .font(.system(size: 48, weight: .bold))
                 .foregroundColor(.primary)
@@ -88,22 +88,30 @@ private struct CourseSummaryRow: View {
                     Text(course.name)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
-                    Text(course.code)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                    Text("平均分: \(course.average)")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
+                    if let code = course.code {
+                        Text(code)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                    if let average = course.average {
+                        Text("平均分: \(average)")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
                 }
                 Spacer()
                 Text("\(course.grade) 分")
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(gradeColor(for: course.grade))
+                    .foregroundColor(course.gradeColor)
             }
             
             HStack(spacing: 16) {
-                metric(title: "作业完成度", value: "\(course.assignments)%", highlight: course.assignments >= 80)
-                metric(title: "课堂参与", value: "\(course.participation)%", highlight: course.participation >= 90)
+                if let assignments = course.assignments {
+                    metric(title: "作业完成度", value: "\(assignments)%", highlight: assignments >= 80)
+                }
+                if let participation = course.participation {
+                    metric(title: "课堂参与", value: "\(participation)%", highlight: participation >= 90)
+                }
             }
         }
         .padding(16)

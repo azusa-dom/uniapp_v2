@@ -1,4 +1,11 @@
 //
+//  学生日历.swift
+//  uniappv3
+//
+//  Created by 748 on 12/11/2025.
+//
+
+//
 //  StudentCalendarView.swift
 //  uniapp
 //
@@ -61,6 +68,7 @@ struct StudentCalendarView: View {
     @State private var showingAddEventSheet = false
     @State private var showingSettings = false  // ✅ 新增
     @State private var showingActivityDetail: UCLActivity?
+    @State private var showingEventDetail: UCLAPIViewModel.UCLAPIEvent?
     @State private var defaultReminderTime: ReminderTime = .fifteenMin  // ✅ 新增
     @State private var defaultViewMode: CalendarViewMode = .month  // ✅ 新增
     
@@ -115,6 +123,9 @@ struct StudentCalendarView: View {
             }
             .sheet(item: $showingActivityDetail) { activity in
                 ActivityDetailSheet(activity: activity, service: activitiesService)
+            }
+            .sheet(item: $showingEventDetail) { event in
+                EventDetailSheet(event: event)
             }
             .onAppear {
                 loadData()
@@ -284,7 +295,9 @@ struct StudentCalendarView: View {
                 
                 VStack(spacing: 12) {
                     ForEach(todayEvents) { event in
-                        ModernEventCard(event: event, viewModel: viewModel)
+                        ModernEventCard(event: event) {
+                            showingEventDetail = event
+                        }
                     }
                 }
             }
@@ -507,76 +520,73 @@ struct OverviewStatCard: View {
 // MARK: - 现代化事件卡片
 struct ModernEventCard: View {
     let event: UCLAPIViewModel.UCLAPIEvent
-    @ObservedObject var viewModel: UCLAPIViewModel
-    @State private var showingAddSuccess = false
+    let onTap: () -> Void
     
     var body: some View {
-        HStack(spacing: 16) {
-            // 时间指示器
-            VStack(spacing: 4) {
-                Text(event.startTime, style: .time)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(Color(hex: "6366F1"))
-                
-                Rectangle()
-                    .fill(Color(hex: "6366F1").opacity(0.3))
-                    .frame(width: 2, height: 30)
-                
-                Text(event.endTime, style: .time)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
-            }
-            .frame(width: 60)
-            
-            // 内容区域
-            VStack(alignment: .leading, spacing: 8) {
-                Text(event.title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                HStack(spacing: 6) {
-                    Image(systemName: "mappin.circle.fill")
-                        .font(.system(size: 12))
+        Button(action: onTap) {
+            HStack(spacing: 16) {
+                // 时间指示器
+                VStack(spacing: 4) {
+                    Text(event.startTime, style: .time)
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundColor(Color(hex: "6366F1"))
                     
-                    Text(event.location)
-                        .font(.system(size: 14))
+                    Rectangle()
+                        .fill(Color(hex: "6366F1").opacity(0.3))
+                        .frame(width: 2, height: 30)
+                    
+                    Text(event.endTime, style: .time)
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
                 }
+                .frame(width: 60)
                 
-                // 类型标签 - 课程和日程不显示"加入日历"按钮
-                HStack(spacing: 8) {
-                    Text(event.type == .api ? "课程" : "手动添加")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(event.type == .api ? Color(hex: "6366F1") : Color(hex: "8B5CF6"))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            Capsule()
-                                .fill((event.type == .api ? Color(hex: "6366F1") : Color(hex: "8B5CF6")).opacity(0.15))
-                        )
+                // 内容区域
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(event.title)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
                     
-                    // 课程不需要"加入日历"按钮，因为已经在日历中
+                    HStack(spacing: 6) {
+                        Image(systemName: "mappin.circle.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "6366F1"))
+                        
+                        Text(event.location)
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // 类型标签 - 课程和日程不显示"加入日历"按钮
+                    HStack(spacing: 8) {
+                        Text(event.type == .api ? "课程" : "手动添加")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(event.type == .api ? Color(hex: "6366F1") : Color(hex: "8B5CF6"))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                Capsule()
+                                    .fill((event.type == .api ? Color(hex: "6366F1") : Color(hex: "8B5CF6")).opacity(0.15))
+                            )
+                        
+                        // 课程不需要"加入日历"按钮，因为已经在日历中
+                    }
                 }
+                
+                Spacer()
             }
-            
-            Spacer()
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color(hex: "6366F1").opacity(0.2), lineWidth: 1)
+            )
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color(hex: "6366F1").opacity(0.2), lineWidth: 1)
-        )
-        .alert("已添加", isPresented: $showingAddSuccess) {
-            Button("确定", role: .cancel) { }
-        } message: {
-            Text("活动已成功添加到您的日历")
-        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -660,12 +670,9 @@ struct ModernActivityCard: View {
             }
             
             Spacer()
-            
-            Button(action: onTap) {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-            }
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
         }
         .padding(16)
         .background(
@@ -677,6 +684,10 @@ struct ModernActivityCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(service.getTypeColor(activity.type).opacity(0.3), lineWidth: 1)
         )
+        .contentShape(RoundedRectangle(cornerRadius: 16))
+        .onTapGesture {
+            onTap()
+        }
         .alert("已添加", isPresented: $showingAddSuccess) {
             Button("确定", role: .cancel) { }
         } message: {
@@ -770,6 +781,127 @@ struct WeeklyRecommendationCard: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - 日程详情 Sheet
+struct EventDetailSheet: View {
+    let event: UCLAPIViewModel.UCLAPIEvent
+    @Environment(\.dismiss) private var dismiss
+    
+    private var timeFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }
+    
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .full
+        return formatter
+    }
+    
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    detailHeader
+                    infoCard
+                    if let description = event.description {
+                        descriptionCard(description)
+                    }
+                }
+                .padding(20)
+            }
+            .navigationTitle("日程详情")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("完成") { dismiss() }
+                }
+            }
+        }
+    }
+    
+    private var detailHeader: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(event.title)
+                .font(.system(size: 24, weight: .bold))
+            
+            Text(dateFormatter.string(from: event.startTime))
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
+        }
+    }
+    
+    private var infoCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 12) {
+                iconCircle("clock")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("时间")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("\(timeFormatter.string(from: event.startTime)) - \(timeFormatter.string(from: event.endTime))")
+                        .font(.system(size: 15))
+                }
+            }
+            
+            Divider()
+            
+            HStack(alignment: .top, spacing: 12) {
+                iconCircle("mappin.circle.fill", color: "F97316")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("地点")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text(event.location)
+                        .font(.system(size: 15))
+                }
+            }
+            
+            Divider()
+            
+            HStack(alignment: .top, spacing: 12) {
+                iconCircle("book.fill", color: "8B5CF6")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("类型")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text(event.type == .api ? "课程" : "个人安排")
+                        .font(.system(size: 15))
+                }
+            }
+        }
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
+        )
+    }
+    
+    private func descriptionCard(_ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("备注")
+                .font(.system(size: 16, weight: .semibold))
+            Text(text)
+                .font(.system(size: 15))
+                .foregroundColor(.secondary)
+        }
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
+        )
+    }
+    
+    private func iconCircle(_ name: String, color: String = "6366F1") -> some View {
+        Circle()
+            .fill(Color(hex: color).opacity(0.15))
+            .frame(width: 40, height: 40)
+            .overlay(
+                Image(systemName: name)
+                    .foregroundColor(Color(hex: color))
+            )
     }
 }
 
@@ -1198,16 +1330,7 @@ struct ActivityDetailSheet: View {
     
     // 添加到日历方法
     func addToCalendar() async {
-        // 请求日历访问权限
-        let status = EKEventStore.authorizationStatus(for: .event)
-        
-        if status == .notDetermined {
-            let granted = try? await eventStore.requestAccess(to: .event)
-            if granted != true {
-                showingAddError = true
-                return
-            }
-        } else if status != .authorized {
+        guard await ensureCalendarPermission() else {
             showingAddError = true
             return
         }
@@ -1269,5 +1392,37 @@ struct ActivityDetailSheet: View {
             showingAddError = true
         }
     }
-}
 
+    private func ensureCalendarPermission() async -> Bool {
+        if #available(iOS 17, *) {
+            let status = EKEventStore.authorizationStatus(for: .event)
+            switch status {
+            case .notDetermined:
+                return await requestWriteAccess()
+            case .writeOnly, .fullAccess:
+                return true
+            default:
+                return false
+            }
+        } else {
+            let status = EKEventStore.authorizationStatus(for: .event)
+            switch status {
+            case .notDetermined:
+                return (try? await eventStore.requestAccess(to: .event)) ?? false
+            case .authorized:
+                return true
+            default:
+                return false
+            }
+        }
+    }
+
+    @available(iOS 17, *)
+    private func requestWriteAccess() async -> Bool {
+        await withCheckedContinuation { continuation in
+            eventStore.requestWriteOnlyAccessToEvents { granted, _ in
+                continuation.resume(returning: granted)
+            }
+        }
+    }
+}

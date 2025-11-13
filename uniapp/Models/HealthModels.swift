@@ -1,89 +1,57 @@
 //
-//  HealthModels.swift
+//  健康数据管理.swift
 //  uniapp
 //
-//  健康档案数据模型
+//  Created by 748 on 12/11/2025.
 //
 
-import SwiftUI
 import Foundation
+import Combine
 
-// MARK: - 就诊记录
-struct MedicalRecord: Identifiable {
+// MARK: - 预约时间段
+struct AppointmentTimeSlot: Identifiable {
     let id = UUID()
-    let date: Date
-    let type: String
-    let doctor: String?
+    let time: String
+    let isAvailable: Bool
+    let isRecommended: Bool
+}
+
+// MARK: - 医生
+struct Doctor: Identifiable {
+    let id = UUID()
+    let name: String
+    let title: String
     let department: String
-    let location: String
-    let chiefComplaint: String?
-    let diagnosis: String
-    let prescription: [String]
-    let advice: String
-    let nextAppointment: Date?
-    let checkResults: [String: String]?
-    
-    var formattedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy年MM月dd日"
-        return formatter.string(from: date)
-    }
+    let specialization: String
+    let experience: Int
+    let available: Bool
 }
 
-// MARK: - 处方记录
-struct Prescription: Identifiable {
+// MARK: - 科室
+struct Department: Identifiable {
     let id = UUID()
-    let medicationName: String
-    let specification: String
-    let dosage: String
-    let prescriptionDate: Date
-    let validUntil: Date
-    let prescribedBy: String
-    let remainingQuantity: Int
-    let totalQuantity: Int
-    let reminderEnabled: Bool
-    let reminderTime: Date?
-    let notes: String
-    let status: PrescriptionStatus
-    let completionDate: Date?
+    let name: String
+    let icon: String
+    let color: String
     
-    enum PrescriptionStatus: String {
-        case active = "使用中"
-        case completed = "已完成"
-        case expired = "已过期"
-    }
-    
-    var progressPercentage: Double {
-        Double(remainingQuantity) / Double(totalQuantity)
-    }
+    static let allDepartments = [
+        Department(name: "全科", icon: "heart.text.square", color: "6366F1"),
+        Department(name: "骨科", icon: "figure.walk", color: "10B981"),
+        Department(name: "内科", icon: "cross.case", color: "F59E0B"),
+        Department(name: "皮肤科", icon: "hand.raised", color: "EC4899"),
+        Department(name: "眼科", icon: "eye", color: "8B5CF6")
+    ]
 }
 
-// MARK: - 过敏史
-struct AllergyRecord: Identifiable {
-    let id = UUID()
-    let allergen: String
-    let allergyType: AllergyType
-    let severity: AllergySeverity
-    let reaction: String
-    let recordedDate: Date
-    let notes: String
-    
-    enum AllergyType: String {
-        case medication = "药物过敏"
-        case food = "食物过敏"
-        case environment = "环境过敏"
-        case other = "其他"
-    }
-    
-    enum AllergySeverity: String {
-        case mild = "轻度"
-        case moderate = "中度"
-        case severe = "重度"
-    }
+// MARK: - 紧急联系人
+struct EmergencyContact {
+    let name: String
+    let phone: String
+    let relationship: String
 }
 
-// MARK: - 预约记录
-struct MedicalAppointment: Identifiable {
+// MARK: - 医疗预约
+struct MedicalAppointment {
     let id = UUID()
     let appointmentNumber: String
     let doctor: Doctor
@@ -92,275 +60,97 @@ struct MedicalAppointment: Identifiable {
     let location: String
     let appointmentType: AppointmentType
     let reason: [String]
-    let description: String?
+    let description: String
     let needsTranslation: Bool
     let attachments: [String]
     let emergencyContact: EmergencyContact
-    let status: AppointmentStatus
-    let remindersSent: [Date]
+    var status: AppointmentStatus
+    var remindersSent: [String]
     
-    enum AppointmentType: String {
-        case followUp = "常规复诊"
-        case newSymptom = "新症状咨询"
-        case testReview = "检查结果解读"
-        case urgent = "紧急预约"
-    }
-    
-    enum AppointmentStatus: String {
-        case scheduled = "已预约"
-        case confirmed = "已确认"
-        case completed = "已完成"
-        case cancelled = "已取消"
-        case noShow = "未到"
-    }
-    
-    var formattedDateTime: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy年MM月dd日 EEEE"
-        return formatter.string(from: date) + " " + timeSlot
-    }
+    enum AppointmentType { case newSymptom, followUp }
+    enum AppointmentStatus { case scheduled, completed, cancelled }
 }
 
-// MARK: - 医生信息
-struct Doctor: Identifiable {
+// MARK: - 医疗记录
+struct MedicalRecord: Identifiable {
     let id = UUID()
-    let name: String
-    let title: String  // 添加职称
+    let date: Date
+    let type: String // e.g., "全科门诊", "专科复诊"
+    let location: String
     let department: String
-    let specialization: String  // 添加专长
-    let experience: Int  // 添加经验年限
-    let available: Bool  // 添加可预约状态
-    let specialties: [String]
-    let languages: [String]
-    let consultationCount: Int
-    let nextAvailableDate: Date?
-    let photoURL: String?
+    let doctor: String?
+    let chiefComplaint: String? // 主诉
+    let diagnosis: String // 诊断
+    let prescription: [String] // 处方药品
+    let checkResults: [String: String]? // 检查结果 e.g., ["血常规": "正常"]
+    let advice: String // 医嘱
+    let nextAppointment: Date? // 下次复诊
     
-    var supportsChineseDescription: String {
-        languages.contains("中文") ? "🇨🇳 可提供中文服务" : ""
+    var formattedDate: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy年MM月dd日"
+        return formatter.string(from: date)
     }
 }
 
-// MARK: - 紧急联系人
-struct EmergencyContact: Codable {
-    let name: String
-    let phone: String
-    let relationship: String
-}
-
-// MARK: - 可用时间段
-struct TimeSlot: Identifiable {
+// MARK: - 处方
+struct Prescription: Identifiable {
     let id = UUID()
-    let time: String
-    let isAvailable: Bool
-    let isRecommended: Bool
+    let medicationName: String // 药品名称
+    let specification: String // 规格 e.g., "10mg / 片"
+    let dosage: String // 用法用量 e.g., "每日1次，每次1片，饭后"
+    let totalQuantity: Int // 总量
+    var remainingQuantity: Int // 剩余量
+    let prescribedBy: String // 开具医生
+    let prescriptionDate: Date
+    let validUntil: Date
+    var status: PrescriptionStatus
+    let reminderEnabled: Bool
+    let reminderTime: Date?
+    let notes: String // 注意事项
+    
+    enum PrescriptionStatus: String {
+        case active = "使用中"
+        case completed = "已完成"
+        case expired = "已过期"
+    }
+    
+    var progressPercentage: Double {
+        return Double(remainingQuantity) / Double(totalQuantity)
+    }
 }
 
-// MARK: - 健康数据管理器
+// MARK: - 数据管理器 (单例)
 class HealthDataManager: ObservableObject {
-    static let shared = HealthDataManager()  // 添加单例
+    static let shared = HealthDataManager()
     
-    @Published var medicalRecords: [MedicalRecord] = []
-    @Published var prescriptions: [Prescription] = []
-    @Published var allergies: [AllergyRecord] = []
-    @Published var appointments: [MedicalAppointment] = []
-    @Published var doctors: [Doctor] = []
+    @Published var doctors: [Doctor]
+    @Published var medicalRecords: [MedicalRecord]
+    @Published var prescriptions: [Prescription]
+    @Published var appointments: [MedicalAppointment]
+    @Published var allergies: [String]
     
     init() {
-        loadSampleData()
-    }
-    
-    private func loadSampleData() {
-        // 加载示例数据
-        loadSampleMedicalRecords()
-        loadSamplePrescriptions()
-        loadSampleAllergies()
-        loadSampleDoctors()
-        loadSampleAppointments()
-    }
-    
-    private func loadSampleMedicalRecords() {
-        medicalRecords = [
-            MedicalRecord(
-                date: Date().addingTimeInterval(-86400 * 0),
-                type: "强直性脊柱炎复查",
-                doctor: "Dr. Sarah Johnson",
-                department: "风湿免疫科",
-                location: "Rheumatology Clinic, Room 2.15",
-                chiefComplaint: "晨僵症状，腰背疼痛评估",
-                diagnosis: "强直性脊柱炎病情稳定",
-                prescription: ["阿达木单抗", "塞来昔布", "乌帕替尼"],
-                advice: "继续规律用药，注意保暖，适度运动",
-                nextAppointment: Date().addingTimeInterval(86400 * 92),
-                checkResults: nil
-            ),
-            MedicalRecord(
-                date: Date().addingTimeInterval(-86400 * 11),
-                type: "心电图检查",
-                doctor: nil,
-                department: "心脏科检查室",
-                location: "Cardiology Lab",
-                chiefComplaint: nil,
-                diagnosis: "窦性心律，心率72次/分，各项指标正常",
-                prescription: [],
-                advice: "无心脏异常，可继续使用生物制剂",
-                nextAppointment: nil,
-                checkResults: [
-                    "心率": "72 bpm",
-                    "节律": "窦性心律",
-                    "PR间期": "正常",
-                    "QRS波": "正常"
-                ]
-            ),
-            MedicalRecord(
-                date: Date().addingTimeInterval(-86400 * 17),
-                type: "血常规检查",
-                doctor: nil,
-                department: "实验室检查",
-                location: "Laboratory",
-                chiefComplaint: nil,
-                diagnosis: "炎症指标控制良好",
-                prescription: [],
-                advice: "继续目前治疗方案",
-                nextAppointment: nil,
-                checkResults: [
-                    "白细胞": "6.8 x10^9/L（正常）",
-                    "血红蛋白": "138g/L（正常）",
-                    "血小板": "245 x10^9/L（正常）",
-                    "ESR": "15mm/h（轻度升高）",
-                    "CRP": "8mg/L（正常范围内）"
-                ]
-            )
+        // 模拟数据
+        let drSmith = Doctor(name: "Dr. Smith", title: "GP", department: "全科", specialization: "全科医学", experience: 10, available: true)
+        let drJones = Doctor(name: "Dr. Jones", title: "专家", department: "骨科", specialization: "运动损伤", experience: 15, available: true)
+        
+        self.doctors = [drSmith, drJones]
+        
+        self.medicalRecords = [
+            .init(date: Date().addingTimeInterval(-86400 * 10), type: "全科门诊", location: "UCL Health Centre", department: "全科", doctor: "Dr. Smith", chiefComplaint: "咳嗽，喉咙痛", diagnosis: "上呼吸道感染", prescription: ["布洛芬 200mg", "止咳糖浆"], checkResults: nil, advice: "多喝水，休息。如发烧不退请复诊。", nextAppointment: nil),
+            .init(date: Date().addingTimeInterval(-86400 * 30), type: "专科复诊", location: "UCLH", department: "骨科", doctor: "Dr. Jones", chiefComplaint: "膝盖疼痛复查", diagnosis: "膝盖扭伤恢复中", prescription: ["物理治疗"], checkResults: ["X光": "未见骨折"], advice: "继续康复训练", nextAppointment: Date().addingTimeInterval(86400 * 60))
         ]
-    }
-    
-    private func loadSamplePrescriptions() {
-        let now = Date()
-        prescriptions = [
-            Prescription(
-                medicationName: "阿达木单抗注射液",
-                specification: "40mg/0.8ml 预充式注射器",
-                dosage: "每周一次，皮下注射",
-                prescriptionDate: now,
-                validUntil: now.addingTimeInterval(86400 * 92),
-                prescribedBy: "Dr. Sarah Johnson",
-                remainingQuantity: 10,
-                totalQuantity: 12,
-                reminderEnabled: true,
-                reminderTime: Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: now),
-                notes: "注射前检查有无感染症状，注射后观察过敏反应",
-                status: .active,
-                completionDate: nil
-            ),
-            Prescription(
-                medicationName: "塞来昔布胶囊",
-                specification: "200mg",
-                dosage: "每日一次，餐后服用",
-                prescriptionDate: now,
-                validUntil: now.addingTimeInterval(86400 * 92),
-                prescribedBy: "Dr. Sarah Johnson",
-                remainingQuantity: 60,
-                totalQuantity: 90,
-                reminderEnabled: true,
-                reminderTime: Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: now),
-                notes: "如有胃部不适及时就医",
-                status: .active,
-                completionDate: nil
-            ),
-            Prescription(
-                medicationName: "乌帕替尼片",
-                specification: "15mg",
-                dosage: "每日一粒，固定时间服用",
-                prescriptionDate: now.addingTimeInterval(-86400 * 49),
-                validUntil: now.addingTimeInterval(86400 * 134),
-                prescribedBy: "Dr. James Smith",
-                remainingQuantity: 120,
-                totalQuantity: 180,
-                reminderEnabled: true,
-                reminderTime: Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: now),
-                notes: "定期监测肝功能",
-                status: .active,
-                completionDate: nil
-            )
+        
+        self.prescriptions = [
+            .init(medicationName: "布洛芬 200mg", specification: "200mg / 片", dosage: "需要时服用，每日不超过3次", totalQuantity: 20, remainingQuantity: 15, prescribedBy: "Dr. Smith", prescriptionDate: Date().addingTimeInterval(-86400 * 10), validUntil: Date().addingTimeInterval(86400 * 20), status: .active, reminderEnabled: false, reminderTime: nil, notes: "可能引起肠胃不适，饭后服用。"),
+            .init(medicationName: "氯雷他定", specification: "10mg / 片", dosage: "每日1次，每次1片", totalQuantity: 30, remainingQuantity: 0, prescribedBy: "Dr. Smith", prescriptionDate: Date().addingTimeInterval(-86400 * 60), validUntil: Date().addingTimeInterval(-86400 * 30), status: .completed, reminderEnabled: false, reminderTime: nil, notes: "用于季节性过敏。")
         ]
-    }
-    
-    private func loadSampleAllergies() {
-        allergies = [
-            AllergyRecord(
-                allergen: "无已知药物过敏",
-                allergyType: .medication,
-                severity: .mild,
-                reaction: "无",
-                recordedDate: Date().addingTimeInterval(-86400 * 63),
-                notes: "入学体检记录"
-            )
+        
+        self.appointments = [
+            .init(appointmentNumber: "UCL-12345", doctor: drSmith, date: Date().addingTimeInterval(86400 * 3), timeSlot: "10:30", location: "全科诊室", appointmentType: .followUp, reason: ["复诊"], description: "咳嗽复诊", needsTranslation: false, attachments: [], emergencyContact: .init(name: "Zoya Huo", phone: "12345", relationship: "本人"), status: .scheduled, remindersSent: [])
         ]
-    }
-    
-    private func loadSampleDoctors() {
-        let now = Date()
-        doctors = [
-            Doctor(
-                name: "Dr. Sarah Johnson",
-                title: "主任医师",
-                department: "全科",
-                specialization: "强直性脊柱炎、类风湿关节炎",
-                experience: 15,
-                available: true,
-                specialties: ["强直性脊柱炎", "类风湿关节炎", "系统性红斑狼疮"],
-                languages: ["English"],
-                consultationCount: 5,
-                nextAvailableDate: now.addingTimeInterval(86400 * 7),
-                photoURL: nil
-            ),
-            Doctor(
-                name: "Dr. James Smith",
-                title: "副主任医师",
-                department: "骨科",
-                specialization: "骨关节疾病、运动损伤",
-                experience: 10,
-                available: true,
-                specialties: ["自身免疫性疾病", "关节炎"],
-                languages: ["English"],
-                consultationCount: 3,
-                nextAvailableDate: now.addingTimeInterval(86400 * 10),
-                photoURL: nil
-            ),
-            Doctor(
-                name: "Dr. Emily Chen",
-                title: "主治医师",
-                department: "全科",
-                specialization: "全科医疗、慢性病管理",
-                experience: 8,
-                available: true,
-                specialties: ["全科医疗", "慢性病管理"],
-                languages: ["English", "中文"],
-                consultationCount: 0,
-                nextAvailableDate: now.addingTimeInterval(86400 * 4),
-                photoURL: nil
-            )
-        ]
-    }
-    
-    private func loadSampleAppointments() {
-        let now = Date()
-        appointments = [
-            MedicalAppointment(
-                appointmentNumber: "UCL-20251115-143",
-                doctor: doctors[0],
-                date: now.addingTimeInterval(86400 * 7),
-                timeSlot: "14:30-15:00",
-                location: "Rheumatology Clinic, Room 2.15",
-                appointmentType: .followUp,
-                reason: ["定期复查"],
-                description: "强直性脊柱炎常规复诊",
-                needsTranslation: false,
-                attachments: [],
-                emergencyContact: EmergencyContact(name: "妈妈", phone: "+86 138 xxxx xxxx", relationship: "母亲"),
-                status: .scheduled,
-                remindersSent: []
-            )
-        ]
+        
+        self.allergies = ["青霉素", "花粉"]
     }
 }

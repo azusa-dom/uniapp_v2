@@ -2,7 +2,7 @@
 //  AddTodoView.swift
 //  uniapp
 //
-//  用户添加自定义待办事项
+//  用户添加自定义待办事项（已修复 toolbar 重载歧义，跨平台稳定）
 //
 
 import SwiftUI
@@ -21,7 +21,7 @@ struct AddTodoView: View {
     @State private var showingValidationAlert = false
     @State private var validationMessage = ""
     
-    let categories = ["作业", "考试", "项目", "阅读", "实验", "论文", "其他"]
+    private let categories = ["作业", "考试", "项目", "阅读", "实验", "论文", "其他"]
     
     var body: some View {
         NavigationView {
@@ -42,9 +42,13 @@ struct AddTodoView: View {
                 }
             }
             .navigationTitle("添加待办事项")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            #endif
+            // ✅ 关键：按平台拆分 toolbar，避免重载歧义
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                #if os(iOS)
+                ToolbarItem(placement: .cancellationAction) {
                     Button {
                         dismiss()
                     } label: {
@@ -53,6 +57,16 @@ struct AddTodoView: View {
                             .foregroundColor(.secondary)
                     }
                 }
+                #else
+                ToolbarItem(placement: .automatic) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 18))
+                    }
+                }
+                #endif
             }
             .alert("提示", isPresented: $showingValidationAlert) {
                 Button("确定", role: .cancel) {}
@@ -60,6 +74,9 @@ struct AddTodoView: View {
                 Text(validationMessage)
             }
         }
+        #if os(iOS)
+        .navigationViewStyle(.stack)
+        #endif
     }
     
     // MARK: - 标题输入区域
@@ -166,26 +183,25 @@ struct AddTodoView: View {
             
             if hasDueDate {
                 DatePicker(
-                    "",
+                    "请选择截止时间",
                     selection: $dueDate,
-                    in: Date()...,
                     displayedComponents: [.date, .hourAndMinute]
                 )
-                .datePickerStyle(.graphical)
-                .padding(16)
+                .datePickerStyle(.compact)
+                .labelsHidden()
+                .padding(14)
                 .background(Color.white.opacity(0.9))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-                .transition(.scale.combined(with: .opacity))
             }
         }
     }
     
-    // MARK: - 备注区域
+    // MARK: - 备注
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                Image(systemName: "note.text")
+                Image(systemName: "square.and.pencil")
                     .font(.system(size: 16))
                     .foregroundColor(Color(hex: "6366F1"))
                 
@@ -195,154 +211,129 @@ struct AddTodoView: View {
             }
             
             TextEditor(text: $notes)
-                .font(.system(size: 15))
-                .frame(height: 120)
+                .frame(minHeight: 120)
                 .padding(12)
                 .background(Color.white.opacity(0.9))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                )
         }
     }
     
     // MARK: - 添加按钮
     private var addButton: some View {
         Button {
-            addTodoItem()
+            validateAndSave()
         } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 20))
-                
-                Text("添加待办事项")
-                    .font(.system(size: 18, weight: .semibold))
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                Text("添加到待办")
             }
+            .font(.system(size: 16, weight: .semibold))
             .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
             .background(
-                LinearGradient(
-                    colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
+                LinearGradient(colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
             )
             .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: Color(hex: "6366F1").opacity(0.3), radius: 10, x: 0, y: 5)
+            .shadow(color: Color(hex: "6366F1").opacity(0.3), radius: 10, x: 0, y: 4)
         }
-        .padding(.top, 20)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.top, 8)
     }
     
-    // MARK: - 添加待办事项逻辑
-    private func addTodoItem() {
-        // 验证标题
-        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            validationMessage = "请输入待办事项标题"
+    // MARK: - 校验并保存
+    private func validateAndSave() {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            validationMessage = "请输入标题"
             showingValidationAlert = true
             return
         }
         
-        // 创建新的待办事项
         let newTodo = TodoItem(
-            title: title,
+            title: trimmed,
             dueDate: hasDueDate ? dueDate : nil,
             priority: priority,
             category: category,
-            notes: notes.isEmpty ? nil : notes,
-            isCompleted: false,
-            createdDate: Date(),
-            source: "用户创建"
+            notes: notes.trimmingCharacters(in: .whitespacesAndNewlines)
         )
         
-        // 添加到管理器
-        appState.todoManager.addTodo(newTodo)
-        
-        // 关闭视图
+        appState.addTodo(newTodo)  // ✅ 直接添加到 appState
         dismiss()
     }
 }
 
-// MARK: - 分类芯片组件
-struct CategoryChip: View {
+// MARK: - 小组件
+
+private struct CategoryChip: View {
     let title: String
     let isSelected: Bool
-    let action: () -> Void
+    let onTap: () -> Void
     
     var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(isSelected ? .white : Color(hex: "6366F1"))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(
-                    isSelected
-                        ? LinearGradient(
+        Text(title)
+            .font(.system(size: 14, weight: .medium))
+            .foregroundColor(isSelected ? .white : Color(hex: "374151"))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(
+                Group {
+                    if isSelected {
+                        LinearGradient(
                             colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
-                        : LinearGradient(
-                            colors: [Color(hex: "6366F1").opacity(0.1), Color(hex: "6366F1").opacity(0.1)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                )
-                .clipShape(Capsule())
-                .shadow(
-                    color: isSelected ? Color(hex: "6366F1").opacity(0.3) : .clear,
-                    radius: 8,
-                    x: 0,
-                    y: 2
-                )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
-// MARK: - 优先级芯片组件
-struct PriorityChip: View {
-    let priority: TodoPriority
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: "flag.fill")
-                    .font(.system(size: 12))
-                
-                Text(priority.displayName)
-                    .font(.system(size: 14, weight: .medium))
-            }
-            .foregroundColor(isSelected ? .white : Color(hex: priority.color))
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(
-                isSelected
-                    ? Color(hex: priority.color)
-                    : Color(hex: priority.color).opacity(0.15)
+                    } else {
+                        Color.white.opacity(0.9)
+                    }
+                }
             )
             .clipShape(Capsule())
-            .shadow(
-                color: isSelected ? Color(hex: priority.color).opacity(0.3) : .clear,
-                radius: 8,
-                x: 0,
-                y: 2
+            .overlay(
+                Capsule().stroke(Color(hex: "6366F1").opacity(isSelected ? 0 : 0.2), lineWidth: 1)
             )
-        }
-        .buttonStyle(PlainButtonStyle())
+            .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+            .onTapGesture(perform: onTap)
     }
 }
 
-// MARK: - 预览
-struct AddTodoView_Previews: PreviewProvider {
-    static var previews: some View {
-        AddTodoView()
-            .environmentObject(AppState())
-            .environmentObject(LocalizationService())
+private struct PriorityChip: View {
+    let priority: TodoPriority
+    let isSelected: Bool
+    let onTap: () -> Void
+    
+    private var title: String {
+        switch priority {
+        case .low: return "低"
+        case .medium: return "中"
+        case .high: return "高"
+        case .urgent: return "急"
+        }
+    }
+    
+    private var color: Color {
+        switch priority {
+        case .low: return Color(hex: "10B981")
+        case .medium: return Color(hex: "F59E0B")
+        case .high: return Color(hex: "EF4444")
+        case .urgent: return Color(hex: "DC2626")
+        }
+    }
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle().fill(color).frame(width: 8, height: 8)
+            Text(title).font(.system(size: 14, weight: .semibold))
+        }
+        .foregroundColor(isSelected ? .white : color)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(isSelected ? color : Color.white.opacity(0.9))
+        .clipShape(Capsule())
+        .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+        .onTapGesture(perform: onTap)
     }
 }

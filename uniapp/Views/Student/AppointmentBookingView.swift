@@ -385,7 +385,7 @@ struct TimeSelectionStep: View {
             .tint(Color(hex: "6366F1"))
             .background(Color.white)
             .cornerRadius(12)
-            .onChange(of: selectedDate) { _ in
+            .onChange(of: selectedDate) { _, _ in
                 loadAvailableSlots()
             }
             
@@ -740,28 +740,7 @@ struct BottomButtons: View {
 }
 
 // MARK: - 数据模型
-struct Department: Identifiable {
-    let id = UUID()
-    let name: String
-    let icon: String
-    let color: String
-    
-    static let allDepartments = [
-        Department(name: "全科", icon: "heart.text.square", color: "6366F1"),
-        Department(name: "骨科", icon: "figure.walk", color: "10B981"),
-        Department(name: "内科", icon: "cross.case", color: "F59E0B"),
-        Department(name: "皮肤科", icon: "hand.raised", color: "EC4899"),
-        Department(name: "眼科", icon: "eye", color: "8B5CF6")
-    ]
-}
-
-// 预约专用时间段（避免与 HealthModels 中的 TimeSlot 冲突）
-struct AppointmentTimeSlot: Identifiable {
-    let id = UUID()
-    let time: String
-    let isAvailable: Bool
-    let isRecommended: Bool
-}
+// ✅ Department 和 AppointmentTimeSlot 现在定义在 HealthModels.swift 中
 
 #Preview {
     AppointmentBookingView()

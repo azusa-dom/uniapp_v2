@@ -3,7 +3,7 @@ import Combine
 
 // MARK: - Design (内嵌简版设计变量，避免外部依赖)
 private enum DS {
-    enum Color {
+    enum Palette {
         static let primary = Color(hex: "6366F1")
         static let secondary = Color(hex: "8B5CF6")
         static let success = Color(hex: "10B981")
@@ -18,19 +18,8 @@ private enum DS {
     enum Shadow { static let soft = Color.black.opacity(0.08) }
 }
 
-extension LinearGradient {
-    static var appBackground: LinearGradient {
-        .init(colors: [DS.Color.bgTop, DS.Color.bgMid, DS.Color.bgBot], startPoint: .top, endPoint: .bottom)
-    }
-}
-
 // MARK: - 角色 & 凭证
-enum UserRole: String, CaseIterable, Identifiable {
-    case student = "学生"
-    case parent = "家长"
-
-    var id: String { rawValue }
-}
+// ✅ UserRole 现在定义在 AppState.swift 中
 
 struct Credentials: Equatable {
     var email: String = ""
@@ -52,7 +41,6 @@ struct AuthToken {
     let role: UserRole
 }
 
-@MainActor
 final class MockAuthService: AuthProviding {
     private let storageKey = "login.saved.email"
 
@@ -207,12 +195,12 @@ struct LoginView: View {
                         VStack(spacing: 10) {
                             ZStack {
                                 Circle()
-                                    .fill(DS.Color.surface)
+                                    .fill(DS.Palette.surface)
                                     .frame(width: 76, height: 76)
                                     .shadow(color: DS.Shadow.soft, radius: 12, x: 0, y: 6)
                                 Image(systemName: "graduationcap.fill")
                                     .font(.system(size: 30, weight: .bold))
-                                    .foregroundColor(DS.Color.primary)
+                                    .foregroundColor(DS.Palette.primary)
                             }
                             Text("UCL 学业与健康")
                                 .font(.system(size: 24, weight: .bold))
@@ -267,23 +255,21 @@ struct LoginView: View {
                                     // TODO: 跳转到找回密码（占位）
                                 }
                                 .font(.footnote)
-                                .foregroundColor(DS.Color.primary)
+                                .foregroundColor(DS.Palette.primary)
                                 .accessibilityHint("跳转到找回密码")
                             }
                             .padding(.horizontal, 4)
                             .padding(.top, 4)
                         }
-                        .padding(.horizontal)
 
                         if let msg = vm.errorMessage {
                             HStack(spacing: 8) {
                                 Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundColor(DS.Color.warning)
+                                    .foregroundColor(DS.Palette.warning)
                                 Text(msg)
                                     .foregroundColor(.secondary)
                             }
                             .font(.footnote)
-                            .padding(.horizontal)
                         }
 
                         Button(action: { vm.signIn(onSuccess: onAuthenticated) }) {
@@ -294,21 +280,32 @@ struct LoginView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(vm.isValid ? LinearGradient(colors: [DS.Color.primary, DS.Color.secondary], startPoint: .leading, endPoint: .trailing) : Color.gray.opacity(0.2))
+                            .background(
+                                Group {
+                                    if vm.isValid {
+                                        LinearGradient(
+                                            colors: [DS.Palette.primary, DS.Palette.secondary],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    } else {
+                                        Color.gray.opacity(0.2)
+                                    }
+                                }
+                            )
                             .foregroundColor(vm.isValid ? .white : .secondary)
                             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.l))
-                            .shadow(color: vm.isValid ? DS.Color.primary.opacity(0.25) : .clear, radius: 12, x: 0, y: 6)
+                            .shadow(color: vm.isValid ? DS.Palette.primary.opacity(0.25) : .clear, radius: 12, x: 0, y: 6)
                         }
                         .buttonStyle(.plain)
                         .disabled(!vm.isValid || vm.isLoading)
-                        .padding(.horizontal)
 
                         VStack(spacing: 12) {
                             HStack {
                                 Rectangle().fill(Color.gray.opacity(0.25)).frame(height: 1)
                                 Text("或").foregroundColor(.secondary).font(.footnote)
                                 Rectangle().fill(Color.gray.opacity(0.25)).frame(height: 1)
-                            }.padding(.horizontal)
+                            }
 
                             HStack(spacing: 12) {
                                 OAuthButton(title: "使用 Apple 登录", system: "apple.logo", bg: .black) {
@@ -318,7 +315,6 @@ struct LoginView: View {
                                     vm.signInWithGoogle(onSuccess: onAuthenticated)
                                 }
                             }
-                            .padding(.horizontal)
                         }
 
                         Text("登录即表示同意我们的《服务条款》和《隐私政策》")
@@ -327,15 +323,15 @@ struct LoginView: View {
                             .padding(.top, 6)
                             .padding(.bottom, 24)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal)
                     }
+                    .padding(.horizontal, 24)
                 }
 
                 if vm.isLoading {
                     Color.black.opacity(0.05).ignoresSafeArea()
                     ProgressView("正在登录…")
                         .padding(16)
-                        .background(RoundedRectangle(cornerRadius: 12).fill(DS.Color.surface))
+                        .background(RoundedRectangle(cornerRadius: 12).fill(DS.Palette.surface))
                         .shadow(color: DS.Shadow.soft, radius: 10, x: 0, y: 6)
                 }
             }
@@ -358,11 +354,11 @@ private struct RoleChip: View {
                 Text(role.rawValue).fontWeight(.semibold)
             }
             .font(.subheadline)
-            .foregroundColor(selected == role ? .white : DS.Color.primary)
+            .foregroundColor(selected == role ? .white : DS.Palette.primary)
             .padding(.horizontal, 14).padding(.vertical, 10)
-            .background(selected == role ? DS.Color.primary : DS.Color.primary.opacity(0.12))
+            .background(selected == role ? DS.Palette.primary : DS.Palette.primary.opacity(0.12))
             .clipShape(Capsule())
-            .shadow(color: selected == role ? DS.Color.primary.opacity(0.25) : .clear, radius: 8, x: 0, y: 2)
+            .shadow(color: selected == role ? DS.Palette.primary.opacity(0.25) : .clear, radius: 8, x: 0, y: 2)
             .accessibilityLabel(Text("身份：\(role.rawValue)"))
             .accessibilityAddTraits(selected == role ? .isSelected : [])
         }
@@ -378,7 +374,7 @@ private struct LabeledField<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                Image(systemName: systemImage).foregroundColor(DS.Color.secondary)
+                Image(systemName: systemImage).foregroundColor(DS.Palette.secondary)
                 Text(label).font(.footnote).foregroundColor(.secondary)
             }
             .accessibilityElement(children: .combine)
@@ -387,7 +383,7 @@ private struct LabeledField<Content: View>: View {
                 content
             }
             .padding(14)
-            .background(RoundedRectangle(cornerRadius: DS.Radius.m).fill(DS.Color.surface))
+            .background(RoundedRectangle(cornerRadius: DS.Radius.m).fill(DS.Palette.surface))
             .overlay(RoundedRectangle(cornerRadius: DS.Radius.m).stroke(Color.black.opacity(0.05)))
             .shadow(color: DS.Shadow.soft, radius: 10, x: 0, y: 4)
         }
@@ -445,7 +441,7 @@ private struct StudentHomePlaceholder: View {
                 Text("登录成功！").foregroundColor(.secondary)
                 Button("退出登录", action: onLogout)
                     .padding()
-                    .background(RoundedRectangle(cornerRadius: 10).fill(DS.Color.primary))
+                    .background(RoundedRectangle(cornerRadius: 10).fill(DS.Palette.primary))
                     .foregroundColor(.white)
             }
         }
@@ -462,7 +458,7 @@ private struct ParentHomePlaceholder: View {
                 Text("登录成功！").foregroundColor(.secondary)
                 Button("退出登录", action: onLogout)
                     .padding()
-                    .background(RoundedRectangle(cornerRadius: 10).fill(DS.Color.secondary))
+                    .background(RoundedRectangle(cornerRadius: 10).fill(DS.Palette.secondary))
                     .foregroundColor(.white)
             }
         }
@@ -476,5 +472,3 @@ struct LoginView_Previews: PreviewProvider {
             .preferredColorScheme(.light)
     }
 }
-
-
