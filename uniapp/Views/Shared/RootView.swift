@@ -63,34 +63,27 @@ struct StudentTabView: View {
                 }
                 .tag(2)
             
-            // 4. 待办事项
-            StudentTodoView()
-                .tabItem {
-                    Label("待办", systemImage: "checkmark.circle")
-                }
-                .tag(3)
-            
-            // 5. AI
+            // 4. AI
             StudentAIAssistantView()
                 .environmentObject(aiViewModel)
                 .tabItem {
                     Label(loc.tr("tab_ai"), systemImage: "sparkles")
                 }
-                .tag(4)
+                .tag(3)
 
-            // 6. 健康
+            // 5. 健康
             StudentHealthView()
                 .tabItem {
                     Label("健康", systemImage: "heart.text.square")
                 }
-                .tag(5)
+                .tag(4)
             
-            // 7. 邮箱
+            // 6. 邮箱
             StudentEmailView()
                 .tabItem {
                     Label(loc.tr("tab_email"), systemImage: "envelope.fill")
                 }
-                .tag(6)
+                .tag(5)
         }
         .accentColor(Color(hex: "8B5CF6"))
     }

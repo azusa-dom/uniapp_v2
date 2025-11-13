@@ -98,6 +98,8 @@ struct AddTodoView: View {
             
             TextField("请输入待办事项标题", text: $title)
                 .font(.system(size: 16))
+                .textInputAutocapitalization(.sentences)
+                .autocorrectionDisabled(false)
                 .padding(16)
                 .background(Color.white.opacity(0.9))
                 .clipShape(RoundedRectangle(cornerRadius: 12))

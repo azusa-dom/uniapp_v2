@@ -18,27 +18,6 @@ import EventKit
 
 // MARK: - 枚举定义（在文件顶部）
 
-/// 提醒时间枚举
-enum ReminderTime: String, CaseIterable, Identifiable {
-    case fiveMin = "5分钟前"
-    case fifteenMin = "15分钟前"
-    case thirtyMin = "30分钟前"
-    case oneHour = "1小时前"
-    case oneDay = "1天前"
-    
-    var id: String { rawValue }
-    
-    var minutes: Int {
-        switch self {
-        case .fiveMin: return 5
-        case .fifteenMin: return 15
-        case .thirtyMin: return 30
-        case .oneHour: return 60
-        case .oneDay: return 1440
-        }
-    }
-}
-
 /// 日历视图模式枚举
 enum CalendarViewMode: String, CaseIterable, Identifiable {
     case month = "月视图"
@@ -52,6 +31,26 @@ enum CalendarViewMode: String, CaseIterable, Identifiable {
         case .month: return "calendar"
         case .week: return "calendar.day.timeline.left"
         case .day: return "calendar.badge.clock"
+        }
+    }
+}
+
+enum DurationOption: String, CaseIterable, Identifiable {
+    case halfHour = "30 分钟"
+    case oneHour = "1 小时"
+    case oneAndHalf = "90 分钟"
+    case twoHours = "2 小时"
+    case custom = "自定义"
+    
+    var id: String { rawValue }
+    
+    var minutes: Int? {
+        switch self {
+        case .halfHour: return 30
+        case .oneHour: return 60
+        case .oneAndHalf: return 90
+        case .twoHours: return 120
+        case .custom: return nil
         }
     }
 }
@@ -71,6 +70,10 @@ struct StudentCalendarView: View {
     @State private var showingEventDetail: UCLAPIViewModel.UCLAPIEvent?
     @State private var defaultReminderTime: ReminderTime = .fifteenMin  // ✅ 新增
     @State private var defaultViewMode: CalendarViewMode = .month  // ✅ 新增
+    
+    private var eventsForSelectedDate: [UCLAPIViewModel.UCLAPIEvent] {
+        events(on: selectedDate)
+    }
     
     var body: some View {
         NavigationView {
@@ -113,7 +116,11 @@ struct StudentCalendarView: View {
             }
             .navigationBarHidden(true)
             .sheet(isPresented: $showingAddEventSheet) {
-                AddEventSheet(viewModel: viewModel)
+                AddEventSheet(
+                    viewModel: viewModel,
+                    selectedDate: selectedDate,
+                    defaultReminderTime: defaultReminderTime
+                )
             }
             .sheet(isPresented: $showingSettings) {  // ✅ 新增
                 CalendarSettingsView(
@@ -128,7 +135,11 @@ struct StudentCalendarView: View {
                 EventDetailSheet(event: event)
             }
             .onAppear {
+                viewMode = defaultViewMode
                 loadData()
+            }
+            .onChange(of: defaultViewMode) { newMode in
+                viewMode = newMode
             }
         }
     }
@@ -237,7 +248,7 @@ struct StudentCalendarView: View {
     
     // MARK: - 今日概览卡片
     private var todayOverviewCard: some View {
-        let todayEvents = viewModel.events.filter { Calendar.current.isDate($0.startTime, inSameDayAs: selectedDate) }
+        let todayEvents = eventsForSelectedDate
         let todayActivities = activitiesService.activities.filter { activity in
             guard let activityDate = parseActivityDate(activity.date) else { return false }
             return Calendar.current.isDate(activityDate, inSameDayAs: selectedDate)
@@ -273,7 +284,7 @@ struct StudentCalendarView: View {
     
     // MARK: - 今日日程
     private var todayScheduleSection: some View {
-        let todayEvents = viewModel.events.filter { Calendar.current.isDate($0.startTime, inSameDayAs: selectedDate) }
+        let todayEvents = eventsForSelectedDate
         
         return VStack(alignment: .leading, spacing: 16) {
             if !todayEvents.isEmpty {
@@ -300,6 +311,12 @@ struct StudentCalendarView: View {
                         }
                     }
                 }
+            } else {
+                StudentEmptyStateCard(
+                    icon: "calendar.badge.exclamationmark",
+                    message: "今天还没有安排，来添加一个吧。",
+                    color: "6366F1"
+                )
             }
         }
     }
@@ -417,6 +434,71 @@ struct StudentCalendarView: View {
             guard let activityDate = parseActivityDate(activity.date) else { return false }
             return activityDate >= startOfWeek && activityDate < endOfWeek
         }.prefix(5).map { $0 }
+    }
+    
+    private func events(on date: Date) -> [UCLAPIViewModel.UCLAPIEvent] {
+        viewModel.events
+            .compactMap { occurrence(for: $0, on: date) }
+            .sorted { $0.startTime < $1.startTime }
+    }
+    
+    private func occurrence(for event: UCLAPIViewModel.UCLAPIEvent, on date: Date) -> UCLAPIViewModel.UCLAPIEvent? {
+        let calendar = Calendar.current
+        if calendar.isDate(event.startTime, inSameDayAs: date) {
+            return event
+        }
+        
+        guard let rule = event.recurrenceRule else { return nil }
+        let targetDay = calendar.startOfDay(for: date)
+        let originDay = calendar.startOfDay(for: event.startTime)
+        guard targetDay >= originDay else { return nil }
+        if let endDate = rule.endDate, targetDay > calendar.startOfDay(for: endDate) {
+            return nil
+        }
+        
+        switch rule.frequency {
+        case .none:
+            return nil
+        case .daily:
+            let diff = calendar.dateComponents([.day], from: originDay, to: targetDay).day ?? 0
+            guard diff >= 0, diff % rule.interval == 0 else { return nil }
+            return shiftedEvent(event, to: targetDay)
+        case .weekly, .biweekly:
+            guard calendar.component(.weekday, from: event.startTime) == calendar.component(.weekday, from: date) else { return nil }
+            let diff = calendar.dateComponents([.weekOfYear], from: originDay, to: targetDay).weekOfYear ?? 0
+            guard diff >= 0, diff % rule.interval == 0 else { return nil }
+            return shiftedEvent(event, to: targetDay)
+        case .monthly:
+            guard calendar.component(.day, from: event.startTime) == calendar.component(.day, from: date) else { return nil }
+            let diff = calendar.dateComponents([.month], from: originDay, to: targetDay).month ?? 0
+            guard diff >= 0, diff % rule.interval == 0 else { return nil }
+            return shiftedEvent(event, to: targetDay)
+        }
+    }
+    
+    private func shiftedEvent(_ event: UCLAPIViewModel.UCLAPIEvent, to date: Date) -> UCLAPIViewModel.UCLAPIEvent {
+        let calendar = Calendar.current
+        let startComponents = calendar.dateComponents([.hour, .minute, .second], from: event.startTime)
+        let duration = event.endTime.timeIntervalSince(event.startTime)
+        let newStart = calendar.date(
+            bySettingHour: startComponents.hour ?? 0,
+            minute: startComponents.minute ?? 0,
+            second: startComponents.second ?? 0,
+            of: date
+        ) ?? date
+        let newEnd = newStart.addingTimeInterval(duration)
+        
+        return UCLAPIViewModel.UCLAPIEvent(
+            id: event.id,
+            title: event.title,
+            startTime: newStart,
+            endTime: newEnd,
+            location: event.location,
+            type: event.type,
+            description: event.description,
+            recurrenceRule: event.recurrenceRule,
+            reminderTime: event.reminderTime
+        )
     }
 }
 
@@ -869,6 +951,32 @@ struct EventDetailSheet: View {
                         .font(.system(size: 15))
                 }
             }
+            
+            if let recurrence = event.recurrenceRule {
+                Divider()
+                
+                HStack(alignment: .top, spacing: 12) {
+                    iconCircle("repeat", color: "0EA5E9")
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("重复")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text(recurrenceDescription(recurrence))
+                            .font(.system(size: 15))
+                    }
+                }
+            }
+            
+            Divider()
+            
+            HStack(alignment: .top, spacing: 12) {
+                iconCircle("bell.badge.fill", color: "F97316")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("提醒")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text(event.reminderTime.rawValue)
+                        .font(.system(size: 15))
+                }
+            }
         }
         .padding(18)
         .background(
@@ -902,6 +1010,16 @@ struct EventDetailSheet: View {
                 Image(systemName: name)
                     .foregroundColor(Color(hex: color))
             )
+    }
+    
+    private func recurrenceDescription(_ rule: RecurrenceRule) -> String {
+        var base = rule.frequency.rawValue
+        if let endDate = rule.endDate {
+            base += " · 至 " + endDate.formatted(date: .abbreviated, time: .omitted)
+        } else {
+            base += " · 持续进行"
+        }
+        return base
     }
 }
 
@@ -1090,9 +1208,23 @@ struct AddEventSheet: View {
     
     @State private var eventTitle = ""
     @State private var eventLocation = ""
-    @State private var startDate = Date()
-    @State private var endDate = Date().addingTimeInterval(3600)
-    @State private var reminderTime: ReminderTime = .fifteenMin
+    @State private var startDate: Date
+    @State private var endDate: Date
+    @State private var reminderTime: ReminderTime
+    @State private var durationOption: DurationOption = .oneHour
+    @State private var customDuration: Double = 60
+    @State private var recurrenceEnabled = false
+    @State private var recurrenceFrequency: RecurrenceFrequency = .weekly
+    @State private var recurrenceEndDate: Date
+    
+    init(viewModel: UCLAPIViewModel, selectedDate: Date, defaultReminderTime: ReminderTime) {
+        self.viewModel = viewModel
+        let initialEnd = selectedDate.addingTimeInterval(3600)
+        _startDate = State(initialValue: selectedDate)
+        _endDate = State(initialValue: initialEnd)
+        _reminderTime = State(initialValue: defaultReminderTime)
+        _recurrenceEndDate = State(initialValue: Calendar.current.date(byAdding: .month, value: 1, to: selectedDate) ?? initialEnd)
+    }
     
     var body: some View {
         NavigationView {
@@ -1103,8 +1235,33 @@ struct AddEventSheet: View {
                 }
                 
                 Section(header: Text("时间")) {
-                    DatePicker("开始时间", selection: $startDate)
-                    DatePicker("结束时间", selection: $endDate)
+                    DatePicker("开始时间", selection: $startDate, displayedComponents: [.date, .hourAndMinute])
+                    
+                    if durationOption == .custom {
+                        DatePicker("结束时间", selection: $endDate, in: startDate..., displayedComponents: [.date, .hourAndMinute])
+                    } else {
+                        HStack {
+                            Text("结束时间")
+                            Spacer()
+                            Text(endDate.formatted(date: .omitted, time: .shortened))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                
+                Section(header: Text("持续时间")) {
+                    Picker("持续时间", selection: $durationOption) {
+                        ForEach(DurationOption.allCases) { option in
+                            Text(option.rawValue).tag(option)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    
+                    if durationOption == .custom {
+                        Stepper(value: $customDuration, in: 15...240, step: 15) {
+                            Text("自定义：\(Int(customDuration)) 分钟")
+                        }
+                    }
                 }
                 
                 Section(header: Text("提醒")) {
@@ -1114,34 +1271,77 @@ struct AddEventSheet: View {
                         }
                     }
                 }
+                
+                Section(header: Text("重复")) {
+                    Toggle("开启重复", isOn: $recurrenceEnabled.animation())
+                    
+                    if recurrenceEnabled {
+                        Picker("频率", selection: $recurrenceFrequency) {
+                            ForEach(RecurrenceFrequency.allCases.filter { $0 != .none }) { frequency in
+                                Text(frequency.rawValue).tag(frequency)
+                            }
+                        }
+                        
+                        DatePicker("结束日期", selection: $recurrenceEndDate, in: startDate..., displayedComponents: .date)
+                    }
+                }
             }
             .navigationTitle("添加事件")
             .navigationBarTitleDisplayMode(.inline)
+            .onChange(of: startDate) { _ in syncEndDateWithDuration() }
+            .onChange(of: durationOption) { _ in syncEndDateWithDuration() }
+            .onChange(of: customDuration) { _ in syncEndDateWithDuration() }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") {
-                        dismiss()
-                    }
+                    Button("取消") { dismiss() }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("保存") {
+                        let rule = buildRecurrenceRule()
                         let newEvent = UCLAPIViewModel.UCLAPIEvent(
                             id: UUID(),
                             title: eventTitle,
                             startTime: startDate,
                             endTime: endDate,
                             location: eventLocation,
-                            type: .manual
+                            type: .manual,
+                            description: nil,
+                            recurrenceRule: rule,
+                            reminderTime: reminderTime
                         )
                         
                         viewModel.events.append(newEvent)
                         dismiss()
                     }
-                    .disabled(eventTitle.isEmpty)
+                    .disabled(eventTitle.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
         }
+    }
+    
+    private func syncEndDateWithDuration() {
+        guard durationOption != .custom else {
+            endDate = startDate.addingTimeInterval(customDuration * 60)
+            return
+        }
+        if let minutes = durationOption.minutes {
+            endDate = startDate.addingTimeInterval(Double(minutes) * 60)
+        }
+    }
+    
+    private func buildRecurrenceRule() -> RecurrenceRule? {
+        guard recurrenceEnabled else { return nil }
+        let interval: Int
+        switch recurrenceFrequency {
+        case .biweekly:
+            interval = 2
+        case .none:
+            return nil
+        default:
+            interval = 1
+        }
+        return RecurrenceRule(frequency: recurrenceFrequency, interval: interval, endDate: recurrenceEndDate)
     }
 }
 

@@ -184,234 +184,364 @@ final class LoginViewModel: ObservableObject {
 struct LoginView: View {
     @StateObject private var vm = LoginViewModel()
     var onAuthenticated: (AuthToken) -> Void
+    @State private var animateHero = false
 
     var body: some View {
         NavigationStack {
             ZStack {
-                LinearGradient.appBackground.ignoresSafeArea()
+                backgroundLayer
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 26) {
-                        VStack(spacing: 10) {
-                            ZStack {
-                                Circle()
-                                    .fill(DS.Palette.surface)
-                                    .frame(width: 76, height: 76)
-                                    .shadow(color: DS.Shadow.soft, radius: 12, x: 0, y: 6)
-                                Image(systemName: "graduationcap.fill")
-                                    .font(.system(size: 30, weight: .bold))
-                                    .foregroundColor(DS.Palette.primary)
-                            }
-                            Text("UCL 学业与健康")
-                                .font(.system(size: 24, weight: .bold))
-                            Text("请登录以继续")
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.top, 40)
-
-                        HStack(spacing: 10) {
-                            RoleChip(role: .student, selected: vm.role) { vm.toggleRole(.student) }
-                            RoleChip(role: .parent, selected: vm.role) { vm.toggleRole(.parent) }
-                        }
-                        .padding(.top, 6)
-
-                        VStack(spacing: 14) {
-                            LabeledField(label: "邮箱", systemImage: "envelope.fill") {
-                                TextField("student@demo.edu / parent@demo.edu", text: $vm.email)
-                                    .keyboardType(.emailAddress)
-                                    .textInputAutocapitalization(.none)
-                                    .autocorrectionDisabled()
-                                    .textContentType(.username)
-                                    .submitLabel(.next)
-                                    .accessibilityLabel("邮箱")
-                            }
-
-                            LabeledField(label: "密码", systemImage: "lock.fill") {
-                                HStack {
-                                    Group {
-                                        if vm.showPassword {
-                                            TextField("至少 8 位字符（示例：password123）", text: $vm.password)
-                                        } else {
-                                            SecureField("至少 8 位字符（示例：password123）", text: $vm.password)
-                                        }
-                                    }
-                                    .textContentType(.password)
-                                    .submitLabel(.go)
-
-                                    Button {
-                                        vm.showPassword.toggle()
-                                    } label: {
-                                        Image(systemName: vm.showPassword ? "eye.slash.fill" : "eye.fill")
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .accessibilityLabel(vm.showPassword ? "隐藏密码" : "显示密码")
-                                }
-                            }
-
-                            HStack {
-                                Toggle("记住我", isOn: $vm.rememberMe)
-                                Spacer()
-                                Button("忘记密码？") {
-                                    // TODO: 跳转到找回密码（占位）
-                                }
-                                .font(.footnote)
-                                .foregroundColor(DS.Palette.primary)
-                                .accessibilityHint("跳转到找回密码")
-                            }
-                            .padding(.horizontal, 4)
-                            .padding(.top, 4)
-                        }
-
-                        if let msg = vm.errorMessage {
-                            HStack(spacing: 8) {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundColor(DS.Palette.warning)
-                                Text(msg)
-                                    .foregroundColor(.secondary)
-                            }
-                            .font(.footnote)
-                        }
-
-                        Button(action: { vm.signIn(onSuccess: onAuthenticated) }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "arrow.right.circle.fill")
-                                Text("登录")
-                                    .fontWeight(.semibold)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(
-                                Group {
-                                    if vm.isValid {
-                                        LinearGradient(
-                                            colors: [DS.Palette.primary, DS.Palette.secondary],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    } else {
-                                        Color.gray.opacity(0.2)
-                                    }
-                                }
-                            )
-                            .foregroundColor(vm.isValid ? .white : .secondary)
-                            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.l))
-                            .shadow(color: vm.isValid ? DS.Palette.primary.opacity(0.25) : .clear, radius: 12, x: 0, y: 6)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(!vm.isValid || vm.isLoading)
-
-                        VStack(spacing: 12) {
-                            HStack {
-                                Rectangle().fill(Color.gray.opacity(0.25)).frame(height: 1)
-                                Text("或").foregroundColor(.secondary).font(.footnote)
-                                Rectangle().fill(Color.gray.opacity(0.25)).frame(height: 1)
-                            }
-
-                            HStack(spacing: 12) {
-                                OAuthButton(title: "使用 Apple 登录", system: "apple.logo", bg: .black) {
-                                    vm.signInWithApple(onSuccess: onAuthenticated)
-                                }
-                                OAuthButton(title: "使用 Google 登录", system: "g.circle.fill", bg: Color(hex: "FEE2E2")) {
-                                    vm.signInWithGoogle(onSuccess: onAuthenticated)
-                                }
-                            }
-                        }
-
-                        Text("登录即表示同意我们的《服务条款》和《隐私政策》")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 6)
-                            .padding(.bottom, 24)
-                            .multilineTextAlignment(.center)
+                    VStack(spacing: 28) {
+                        headerSection
+                        loginCard
                     }
                     .padding(.horizontal, 24)
+                    .padding(.vertical, 36)
                 }
 
-                if vm.isLoading {
-                    Color.black.opacity(0.05).ignoresSafeArea()
-                    ProgressView("正在登录…")
-                        .padding(16)
-                        .background(RoundedRectangle(cornerRadius: 12).fill(DS.Palette.surface))
-                        .shadow(color: DS.Shadow.soft, radius: 10, x: 0, y: 6)
+                if vm.isLoading { loadingOverlay }
+            }
+            .onAppear {
+                withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {
+                    animateHero = true
                 }
             }
-            .navigationTitle("")
             .navigationBarHidden(true)
         }
+    }
+
+    private var backgroundLayer: some View {
+        LinearGradient(
+            colors: [Color(hex: "EEF2FF"), Color(hex: "FDF2F8"), Color.white],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
+        .overlay(
+            ZStack {
+                Circle()
+                    .fill(Color(hex: "A5B4FC").opacity(0.35))
+                    .blur(radius: animateHero ? 110 : 80)
+                    .frame(width: animateHero ? 320 : 260, height: animateHero ? 320 : 260)
+                    .offset(x: -140, y: -220)
+                Circle()
+                    .fill(Color(hex: "FBCFE8").opacity(0.35))
+                    .blur(radius: animateHero ? 140 : 90)
+                    .frame(width: animateHero ? 360 : 280, height: animateHero ? 360 : 280)
+                    .offset(x: 160, y: -180)
+                Circle()
+                    .fill(Color(hex: "C7D2FE").opacity(0.35))
+                    .blur(radius: animateHero ? 120 : 60)
+                    .frame(width: animateHero ? 300 : 220, height: animateHero ? 300 : 220)
+                    .offset(x: 130, y: 280)
+            }
+        )
+    }
+
+    private var headerSection: some View {
+        VStack(spacing: 12) {
+            Text("UniApp")
+                .font(.system(size: 34, weight: .bold))
+            Text("连接校园与家庭，用一个入口完成课程、健康与沟通。")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.vertical, 12)
+    }
+
+    private var loginCard: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("安全登录")
+                    .font(.system(size: 22, weight: .semibold))
+                Text("使用学校统一认证，或快速体验学生 / 家长场景。")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+            }
+
+            RoleSegmentedControl(selection: vm.role) { role in
+                vm.toggleRole(role)
+            }
+
+            VStack(spacing: 16) {
+                GlassInput(label: vm.role == .student ? "学号 / 邮箱" : "家长账号 / 手机号", icon: "person.crop.circle.fill") {
+                    TextField(vm.role == .student ? "student@demo.edu" : "parent@demo.edu", text: $vm.email)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.none)
+                        .autocorrectionDisabled()
+                        .textContentType(.username)
+                        .submitLabel(.next)
+                }
+
+                GlassInput(label: "密码", icon: "lock.fill") {
+                    HStack(spacing: 12) {
+                        Group {
+                            if vm.showPassword {
+                                TextField("至少 8 位字符（示例：password123）", text: $vm.password)
+                            } else {
+                                SecureField("至少 8 位字符（示例：password123）", text: $vm.password)
+                            }
+                        }
+                        .textContentType(.password)
+                        .submitLabel(.go)
+
+                        Button {
+                            vm.showPassword.toggle()
+                        } label: {
+                            Image(systemName: vm.showPassword ? "eye.slash" : "eye")
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(vm.showPassword ? "隐藏密码" : "显示密码")
+                    }
+                }
+            }
+
+            HStack {
+                Toggle("记住我", isOn: $vm.rememberMe)
+                    .toggleStyle(SwitchToggleStyle(tint: DS.Palette.primary))
+                Spacer()
+                Button {
+                    // TODO: Forgot password flow
+                } label: {
+                    Text("忘记密码？")
+                        .font(.footnote)
+                        .fontWeight(.semibold)
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(DS.Palette.primary)
+            }
+
+            if let msg = vm.errorMessage {
+                HStack(spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(DS.Palette.warning)
+                    Text(msg)
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 4)
+            }
+
+            VStack(spacing: 14) {
+                Button {
+                    vm.signIn(onSuccess: onAuthenticated)
+                } label: {
+                    HStack {
+                        Spacer()
+                        Text("安全登录")
+                            .fontWeight(.semibold)
+                        Image(systemName: "arrow.right.circle.fill")
+                        Spacer()
+                    }
+                    .padding(.vertical, 16)
+                    .background(
+                        LinearGradient(
+                            colors: vm.role == .student
+                                ? [Color(hex: "6366F1"), Color(hex: "8B5CF6")]
+                                : [Color(hex: "F472B6"), Color(hex: "EC4899")],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .shadow(color: DS.Palette.primary.opacity(vm.role == .student ? 0.35 : 0.15), radius: 14, x: 0, y: 10)
+                }
+                .disabled(!vm.isValid)
+                .opacity(vm.isValid ? 1 : 0.6)
+
+                HStack {
+                    Rectangle().fill(Color.secondary.opacity(0.2)).frame(height: 1)
+                    Text("或继续")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Rectangle().fill(Color.secondary.opacity(0.2)).frame(height: 1)
+                }
+
+                VStack(spacing: 10) {
+                    HStack(spacing: 12) {
+                        SocialLoginButton(title: "Apple", systemName: "apple.logo", background: .black, foreground: .white) {
+                            vm.signInWithApple(onSuccess: onAuthenticated)
+                        }
+                        SocialLoginButton(title: "Google", systemName: "g.circle.fill", background: Color.white, foreground: .primary) {
+                            vm.signInWithGoogle(onSuccess: onAuthenticated)
+                        }
+                    }
+
+                    HStack(spacing: 12) {
+                        QuickDemoChip(title: "学生演示", icon: "graduationcap.fill", tint: Color(hex: "6366F1")) {
+                            fillDemo(for: .student)
+                        }
+                        QuickDemoChip(title: "家长演示", icon: "heart.fill", tint: Color(hex: "EC4899")) {
+                            fillDemo(for: .parent)
+                        }
+                    }
+                }
+            }
+
+            Text("登录即表示你同意《服务条款》与《隐私政策》")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.top, 4)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity)
+        .background(.thinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 32)
+                .stroke(Color.white.opacity(0.25), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.08), radius: 30, x: 0, y: 20)
+    }
+
+    private var loadingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.05).ignoresSafeArea()
+            ProgressView("正在登录…")
+                .padding(18)
+                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 6)
+        }
+    }
+
+    private func fillDemo(for role: UserRole) {
+        vm.toggleRole(role)
+        vm.email = role == .student ? "student@demo.edu" : "parent@demo.edu"
+        vm.password = "password123"
+        vm.errorMessage = nil
     }
 }
 
 // MARK: - 子组件
-private struct RoleChip: View {
-    let role: UserRole
-    let selected: UserRole
-    let action: () -> Void
+private struct RoleSegmentedControl: View {
+    let selection: UserRole
+    let onSelect: (UserRole) -> Void
 
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: role == .student ? "person.fill" : "figure.2.and.child.holdinghands")
-                Text(role.rawValue).fontWeight(.semibold)
+        HStack(spacing: 6) {
+            ForEach(UserRole.allCases, id: \.self) { role in
+                Button {
+                    onSelect(role)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: role == .student ? "graduationcap.fill" : "person.2.fill")
+                        Text(role == .student ? "我是学生" : "我是家长")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(selection == role ? .white : .secondary)
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        ZStack {
+                            if selection == role {
+                                LinearGradient(
+                                    colors: role == .student
+                                        ? [Color(hex: "6366F1"), Color(hex: "8B5CF6")]
+                                        : [Color(hex: "F472B6"), Color(hex: "EC4899")],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            } else {
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .fill(Color.white.opacity(0.6))
+                            }
+                        }
+                    )
+                }
+                .buttonStyle(.plain)
+                .shadow(color: selection == role ? Color.black.opacity(0.15) : .clear, radius: 10, x: 0, y: 6)
             }
-            .font(.subheadline)
-            .foregroundColor(selected == role ? .white : DS.Palette.primary)
-            .padding(.horizontal, 14).padding(.vertical, 10)
-            .background(selected == role ? DS.Palette.primary : DS.Palette.primary.opacity(0.12))
-            .clipShape(Capsule())
-            .shadow(color: selected == role ? DS.Palette.primary.opacity(0.25) : .clear, radius: 8, x: 0, y: 2)
-            .accessibilityLabel(Text("身份：\(role.rawValue)"))
-            .accessibilityAddTraits(selected == role ? .isSelected : [])
         }
-        .buttonStyle(.plain)
+        .padding(6)
+        .background(Color.white.opacity(0.4))
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 }
 
-private struct LabeledField<Content: View>: View {
+private struct GlassInput<Content: View>: View {
     let label: String
-    let systemImage: String
+    let icon: String
     @ViewBuilder var content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: systemImage).foregroundColor(DS.Palette.secondary)
-                Text(label).font(.footnote).foregroundColor(.secondary)
-            }
-            .accessibilityElement(children: .combine)
-
-            HStack {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(.footnote)
+                .foregroundColor(.secondary)
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .foregroundColor(Color(hex: "6366F1"))
                 content
+                    .foregroundColor(.primary)
             }
-            .padding(14)
-            .background(RoundedRectangle(cornerRadius: DS.Radius.m).fill(DS.Palette.surface))
-            .overlay(RoundedRectangle(cornerRadius: DS.Radius.m).stroke(Color.black.opacity(0.05)))
-            .shadow(color: DS.Shadow.soft, radius: 10, x: 0, y: 4)
+            .padding(16)
+            .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color.white.opacity(0.9)))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(Color.black.opacity(0.05), lineWidth: 1)
+            )
         }
     }
 }
 
-private struct OAuthButton: View {
+private struct SocialLoginButton: View {
     let title: String
-    let system: String
-    let bg: Color
+    let systemName: String
+    let background: Color
+    let foreground: Color
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Image(systemName: system)
-                Text(title).fontWeight(.semibold)
+                Image(systemName: systemName)
+                Text(title)
             }
-            .foregroundColor(system == "apple.logo" ? .white : .primary)
+            .font(.subheadline.weight(.semibold))
+            .foregroundColor(foreground)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
-            .background(system == "apple.logo" ? Color.black : bg)
-            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.m))
+            .background(background.opacity(0.9))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.black.opacity(0.05), lineWidth: background == .black ? 0 : 1)
+            )
         }
         .buttonStyle(.plain)
     }
 }
 
+private struct QuickDemoChip: View {
+    let title: String
+    let icon: String
+    let tint: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                Text(title).font(.footnote.weight(.semibold))
+            }
+            .foregroundColor(tint)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity)
+            .background(tint.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+
+// MARK: - 集成示例
 // MARK: - 集成示例
 struct LoginCoordinator: View {
     @State private var token: AuthToken? = nil

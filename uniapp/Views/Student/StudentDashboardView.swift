@@ -1,28 +1,46 @@
 //
-//  学生首页.swift
-//  uniappv3
-//
-//  Created by 748 on 12/11/2025.
-//
-
-//
-//  StudentDashboardView.swift (完整修复版)
+//  StudentDashboardView.swift (极致美观版)
 //  uniapp
 //
-//  修复版本：EmptyStateCard统一，移除重复定义
+//  重新设计：参考最佳移动应用设计，打造精致美观的首页
 //
+
 import SwiftUI
+
+// MARK: - Consistent Purple Palette
+enum DashboardPalette {
+    static let deep = Color(hex: "5B21B6")
+    static let medium = Color(hex: "7C3AED")
+    static let bright = Color(hex: "9F7AEA")
+    static let soft = Color(hex: "C4B5FD")
+    static let pastel = Color(hex: "E9D5FF")
+}
+
+enum DashboardPaletteHex {
+    static let deep = "5B21B6"
+    static let medium = "7C3AED"
+    static let bright = "9F7AEA"
+    static let soft = "C4B5FD"
+    static let pastel = "E9D5FF"
+}
+
 // MARK: - 学生首页主视图
 struct StudentDashboardView: View {
     @EnvironmentObject var loc: LocalizationService
     @EnvironmentObject var appState: AppState
     @StateObject private var activitiesService = UCLActivitiesService()
+    
     @Binding var selectedTab: Int
+    
     @State private var activeModal: DashboardModal?
     @State private var showingLogoutAlert = false
+    @State private var selectedActivity: UCLActivity?
+    @State private var showingActivityDetail = false
+    
     private var pinnedActivities: [UCLActivity] {
-        activitiesService.activities.prefix(3).map { $0 }
+        Array(activitiesService.activities.prefix(3))
     }
+    
     private enum DashboardModal: Identifiable {
         case todo(TodoItem)
         case profile
@@ -31,33 +49,20 @@ struct StudentDashboardView: View {
         case todoList
         case addTodo
         case courseDetail
-        case campusActivities  // 添加活动入口
-        case activityDetail(UCLActivity)
+        
         var id: String {
             switch self {
-            case .todo(let todo):
-                return "todo-\(todo.id.uuidString)"
-            case .profile:
-                return "profile"
-            case .avatar:
-                return "avatar"
-            case .settings:
-                return "settings"
-            case .todoList:
-                return "todoList"
-            case .addTodo:
-                return "addTodo"
-            case .courseDetail:
-                return "courseDetail"
-            case .campusActivities:
-                return "campusActivities"
-            case .activityDetail(let activity):
-                return "activity-\(activity.id)"
+            case .todo(let todo): return "todo-\(todo.id.uuidString)"
+            case .profile: return "profile"
+            case .avatar: return "avatar"
+            case .settings: return "settings"
+            case .todoList: return "todoList"
+            case .addTodo: return "addTodo"
+            case .courseDetail: return "courseDetail"
             }
         }
     }
     
-    // 今日课程数据
     private var todayClasses: [TodayClass] {
         return [
             TodayClass(
@@ -76,6 +81,7 @@ struct StudentDashboardView: View {
             )
         ]
     }
+    
     private var highlightedTodos: [TodoItem] {
         let active = appState.todoManager.todos.filter { !$0.isCompleted }
         let sorted = active.sorted { lhs, rhs in
@@ -89,85 +95,74 @@ struct StudentDashboardView: View {
         }
         return Array(source.prefix(3))
     }
+    
     var body: some View {
         NavigationView {
             ZStack {
-                DesignSystem.backgroundGradient.ignoresSafeArea()
+                // 更柔和的背景渐变
+                LinearGradient(
+                    colors: [
+                        Color(hex: "F8F9FF"),
+                        Color(hex: "EEF2FF")
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+                
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 24) {
-                        heroCard
-                        quickActionsRow
-                        statsRow
+                    VStack(spacing: 16) {
+                        // 欢迎卡片
+                        welcomeCard
+                        
+                        // 2x2 快速入口网格
+                        quickActionsGrid
+                        
+                        // 今日课程
                         todayClassesSection
+                        
+                        // 即将截止
+                        upcomingDeadlinesSection
+                        
+                        // 推荐活动
                         recommendationsSection
                     }
-                    .padding(.horizontal)
-                    .padding(.vertical, 30)
-                    .frame(maxWidth: 520) // keep a consistent column width on large devices
-                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 20)
                 }
                 .sheet(item: $activeModal) { modal in
-                    switch modal {
-                    case .todo(let todo):
-                        TodoDetailView(
-                            todo: todo,
-                            isPresented: Binding(
-                                get: {
-                                    if case .todo(let currentTodo) = activeModal {
-                                        return currentTodo.id == todo.id
-                                    }
-                                    return false
-                                },
-                                set: { newValue in
-                                    if !newValue {
-                                        activeModal = nil
-                                    }
-                                }
-                            )
-                        )
-                        .environmentObject(loc)
-                        .environmentObject(appState)
-                    case .profile:
-                        StudentProfileView()
-                            .environmentObject(appState)
-                            .environmentObject(loc)
-                    case .avatar:
-                        AvatarPickerView(selectedIcon: $appState.avatarIcon)
-                            .environmentObject(loc)
-                    case .settings:
-                        StudentSettingsView()
-                            .environmentObject(appState)
-                            .environmentObject(loc)
-                    case .addTodo:
-                        AddTodoView()
-                            .environmentObject(appState)
-                            .environmentObject(loc)
-                    case .todoList:
-                        StudentTodoListSheet()
-                            .environmentObject(appState)
-                    case .courseDetail:
-                        EmptyView()  // 或者您的课程详情视图
-                    case .campusActivities:
-                        CampusActivitiesView()
-                            .environmentObject(loc)
-                    case .activityDetail(let activity):
-                        ActivityDetailSheet(activity: activity, service: activitiesService)
-                    }
+                    modalView(for: modal)
                 }
             }
-            .navigationTitle(loc.tr("tab_home"))
-            .navigationBarTitleDisplayMode(.large)
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Text("首页")
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundColor(.primary)
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 16) {
+                    HStack(spacing: 12) {
+                        // 设置按钮
                         Button {
                             activeModal = .settings
                         } label: {
-                            Image(systemName: "gearshape.fill")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(Color(hex: "6366F1"))
+                            ZStack {
+                                Circle()
+                                    .fill(Color.white)
+                                    .frame(width: 36, height: 36)
+                                    .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+                                
+                                Image(systemName: "gearshape.fill")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(Color(hex: "6366F1"))
+                            }
                         }
                         
+                        // 用户菜单
                         Menu {
                             Button {
                                 activeModal = .profile
@@ -197,15 +192,19 @@ struct StudentDashboardView: View {
                         } label: {
                             ZStack {
                                 Circle()
-                                    .fill(Color.white.opacity(0.9))
-                                    .frame(width: 38, height: 38)
-                                    .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
-                                Circle()
-                                    .stroke(Color(hex: "6366F1").opacity(0.3), lineWidth: 1)
-                                    .frame(width: 38, height: 38)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .frame(width: 36, height: 36)
+                                    .shadow(color: Color(hex: "6366F1").opacity(0.25), radius: 8, x: 0, y: 2)
+                                
                                 Image(systemName: appState.avatarIcon)
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(Color(hex: "6366F1"))
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white)
                             }
                         }
                     }
@@ -227,156 +226,311 @@ struct StudentDashboardView: View {
                 }
             }
         }
-        .navigationViewStyle(.stack)
     }
-    // MARK: - Hero Card & Quick Actions
-    private var heroCard: some View {
+    
+    // MARK: - Modal View Builder
+    @ViewBuilder
+    private func modalView(for modal: DashboardModal) -> some View {
+        switch modal {
+        case .todo(let todo):
+            TodoDetailView(
+                todo: todo,
+                isPresented: Binding(
+                    get: {
+                        if case .todo(let currentTodo) = activeModal {
+                            return currentTodo.id == todo.id
+                        }
+                        return false
+                    },
+                    set: { newValue in
+                        if !newValue {
+                            activeModal = nil
+                        }
+                    }
+                )
+            )
+            .environmentObject(loc)
+            .environmentObject(appState)
+        case .profile:
+            StudentProfileView()
+                .environmentObject(appState)
+                .environmentObject(loc)
+        case .avatar:
+            AvatarPickerView(selectedIcon: $appState.avatarIcon)
+                .environmentObject(loc)
+        case .settings:
+            StudentSettingsView()
+                .environmentObject(appState)
+                .environmentObject(loc)
+        case .todoList:
+            StudentTodoListSheet()
+                .environmentObject(appState)
+        case .addTodo:
+            AddTodoView()
+                .environmentObject(appState)
+                .environmentObject(loc)
+        case .courseDetail:
+            EmptyView()
+        }
+    }
+    
+    // MARK: - Welcome Card (精致版)
+    private var welcomeCard: some View {
         ZStack {
+            // 渐变背景
             LinearGradient(
-                colors: [Color(hex: "4F46E5"), Color(hex: "7C3AED")],
+                colors: [
+                    Color(hex: "6366F1"),
+                    Color(hex: "8B5CF6")
+                ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .clipShape(RoundedRectangle(cornerRadius: 24))
-            .shadow(color: Color.black.opacity(0.12), radius: 20, x: 0, y: 10)
-            VStack(alignment: .leading, spacing: 18) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(loc.tr("home_welcome") + " Zoya")
-                            .font(.system(size: 24, weight: .bold))
+            
+            VStack(alignment: .leading, spacing: 14) {
+                // 问候语
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Hello, Zoya 👋")
+                            .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.white)
-                        Text("MSc Health Data Science · Year 1")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.white.opacity(0.9))
+                        
+                        Text("MSc Health Data Science")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.white.opacity(0.85))
                     }
+                    
                     Spacer()
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("本周学习时长")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.75))
-                        Text("18 h")
-                            .font(.title2.bold())
-                            .foregroundColor(.white)
-                    }
+                }
+                
+                // 快速统计
+                HStack(spacing: 10) {
+                    miniStatChip(
+                        icon: "book.fill",
+                        value: "\(todayClasses.count)",
+                        label: "课程"
+                    )
+                    
+                    miniStatChip(
+                        icon: "checkmark.circle.fill",
+                        value: "\(appState.todoManager.todos.filter { !$0.isCompleted }.count)",
+                        label: "待办"
+                    )
+                    
+                    miniStatChip(
+                        icon: "sparkles",
+                        value: "\(pinnedActivities.count)",
+                        label: "活动"
+                    )
                 }
             }
-            .padding(24)
+            .padding(20)
         }
+        .frame(height: 140)
+        .shadow(color: Color(hex: "6366F1").opacity(0.2), radius: 12, x: 0, y: 6)
     }
-    private var quickActionsRow: some View {
-        HStack(spacing: 16) {
-            QuickActionTile(
-                icon: "envelope.badge.fill",
-                title: loc.tr("home_qa_email"),
-                subtitle: "查看最新邮件",
-                tint: Color(hex: "0EA5E9")
-            ) { selectedTab = 6 }
+    
+    private func miniStatChip(icon: String, value: String, label: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.white.opacity(0.9))
             
-            QuickActionTile(
-                icon: "sparkles",
-                title: loc.tr("home_qa_activities"),
-                subtitle: "浏览活动与日程",
-                tint: Color(hex: "F97316")
-            ) { activeModal = .campusActivities }
-            
-            QuickActionTile(
-                icon: "heart.text.square",
-                title: "健康中心",
-                subtitle: "查看健康数据",
-                tint: Color(hex: "10B981")
-            ) { selectedTab = 5 }
+            VStack(alignment: .leading, spacing: -2) {
+                Text(value)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                
+                Text(label)
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundColor(.white.opacity(0.8))
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.white.opacity(0.18))
+        )
     }
-    // MARK: - 统计卡片行
-    private var statsRow: some View {
-        HStack(spacing: 12) {
-            DashboardStatCard(
-                title: loc.tr("home_deadlines"),
-                value: "\(highlightedTodos.count)",
-                icon: "clock.fill",
-                color: Color(hex: "F59E0B"),
-                action: {
-                    activeModal = .todoList
-                }
-            )
-            
-            DashboardStatCard(
-                title: loc.tr("home_today_classes"),
-                value: "\(todayClasses.count)",
-                icon: "book.fill",
-                color: Color(hex: "6366F1"),
-                action: {
-                    selectedTab = 1
-                }
-            )
-            
-            DashboardStatCard(
-                title: loc.tr("home_todo"),
-                value: "\(appState.todoManager.todos.filter { !$0.isCompleted }.count)",
-                icon: "checkmark.circle.fill",
-                color: Color(hex: "10B981"),
-                action: {
+    
+    // MARK: - Quick Actions Grid (2x2精致网格)
+    private var quickActionsGrid: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                PremiumQuickActionCard(
+                    icon: "sparkles",
+                    title: "AI助手",
+                    subtitle: "智能学习助理",
+                    gradient: [DashboardPalette.deep, DashboardPalette.medium],
+                    iconColor: .white
+                ) {
                     selectedTab = 3
                 }
-            )
+                
+                PremiumQuickActionCard(
+                    icon: "envelope.fill",
+                    title: "邮箱",
+                    subtitle: "查看最新邮件",
+                    gradient: [DashboardPalette.medium, DashboardPalette.bright],
+                    iconColor: .white
+                ) {
+                    selectedTab = 5
+                }
+            }
+            .frame(height: 100)
+            
+            HStack(spacing: 10) {
+                PremiumQuickActionCard(
+                    icon: "heart.text.square.fill",
+                    title: "健康",
+                    subtitle: "预约GP问诊",
+                    gradient: [DashboardPalette.bright, DashboardPalette.soft],
+                    iconColor: .white
+                ) {
+                    selectedTab = 4
+                }
+                
+                PremiumQuickActionCard(
+                    icon: "calendar.badge.plus",
+                    title: "活动",
+                    subtitle: "发现精彩活动",
+                    gradient: [DashboardPalette.soft, DashboardPalette.pastel],
+                    iconColor: .white
+                ) {
+                    selectedTab = 1
+                }
+            }
+            .frame(height: 100)
         }
     }
-    // MARK: - 今日课程区域
+    
+    // MARK: - Today's Classes Section
     private var todayClassesSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("📚 " + loc.tr("home_today_classes"))
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.primary)
+                HStack(spacing: 8) {
+                    Image(systemName: "book.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Color(hex: "6366F1"))
+                    
+                    Text("今日课程")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.primary)
+                }
                 
                 Spacer()
                 
-                Button(action: {
-                    selectedTab = 1
-                }) {
+                Button(action: { selectedTab = 1 }) {
                     Text("查看全部")
-                        .font(.system(size: 14))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color(hex: "6366F1"))
                 }
             }
+            
             if todayClasses.isEmpty {
                 StudentEmptyStateCard(
                     icon: "checkmark.circle.fill",
                     message: "今天没有课程，好好利用这段时间！",
-                    color: "10B981"
+                    color: DashboardPaletteHex.soft
                 )
             } else {
-                VStack(spacing: 12) {
+                VStack(spacing: 10) {
                     ForEach(todayClasses) { classItem in
-                        TodayClassCard(classItem: classItem) {
-                            selectedTab = 1
-                        }
+                        PremiumClassCard(classItem: classItem)
+                            .onTapGesture { selectedTab = 1 }
                     }
                 }
             }
         }
     }
-    // MARK: - 推荐活动区域
-    private var recommendationsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+    
+    // MARK: - Upcoming Deadlines Section
+    private var upcomingDeadlinesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("🎯 " + loc.tr("home_recommendations"))
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.primary)
+                HStack(spacing: 8) {
+                    Image(systemName: "clock.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(DashboardPalette.bright)
+                    
+                    Text("即将截止")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.primary)
+                }
+                
+                Spacer()
+                
+                Button {
+                    activeModal = .addTodo
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("添加")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(
+                        LinearGradient(
+                            colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .clipShape(Capsule())
+                    .shadow(color: Color(hex: "6366F1").opacity(0.25), radius: 6, x: 0, y: 3)
+                }
+            }
+            
+            if highlightedTodos.isEmpty {
+                StudentEmptyStateCard(
+                    icon: "checkmark.circle.fill",
+                    message: "暂无待办事项，所有任务都已完成！",
+                    color: DashboardPaletteHex.soft
+                )
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(highlightedTodos) { todo in
+                        PremiumDeadlineCard(todo: todo)
+                            .onTapGesture {
+                                activeModal = .todo(todo)
+                            }
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Recommendations Section
+    private var recommendationsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(DashboardPalette.bright)
+                    
+                    Text("推荐活动")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.primary)
+                }
                 
                 Spacer()
                 
                 if !pinnedActivities.isEmpty {
-                    Button(action: {
-                        selectedTab = 1 // 跳转到活动日历
-                    }) {
+                    Button(action: { selectedTab = 1 }) {
                         Text("查看全部")
-                            .font(.system(size: 14))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(Color(hex: "6366F1"))
                     }
                 }
             }
+            
             if activitiesService.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity)
@@ -385,384 +539,292 @@ struct StudentDashboardView: View {
                 StudentEmptyStateCard(
                     icon: "sparkles",
                     message: "暂无活动，稍后再来看看吧",
-                    color: "F59E0B"
+                    color: "9F7AEA"
                 )
             } else {
-                VStack(spacing: 12) {
+                VStack(spacing: 10) {
                     ForEach(pinnedActivities) { activity in
-                        RecommendationActivityCard(activity: activity)
-                            .onTapGesture {
-                                activeModal = .activityDetail(activity)
-                            }
+                        PremiumActivityCard(activity: activity)
+                            .onTapGesture { selectedTab = 1 }
                     }
                 }
             }
         }
     }
 }
-// MARK: - Quick Action Tile
-private struct QuickActionTile: View {
+
+// MARK: - Premium Quick Action Card (精致版)
+private struct PremiumQuickActionCard: View {
     let icon: String
     let title: String
     let subtitle: String
-    let tint: Color
-    let action: () -> Void
-    var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(tint.opacity(0.15))
-                        .frame(width: 46, height: 46)
-                    Image(systemName: icon)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(tint)
-                }
-                Text(title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-                Text(subtitle)
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-            .frame(minHeight: 150)
-            .padding(18)
-            .background(Color.white.opacity(0.9))
-            .clipShape(RoundedRectangle(cornerRadius: 18))
-            .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
-        }
-        .buttonStyle(.plain)
-    }
-}
-// MARK: - 今日课程数据模型
-struct TodayClass: Identifiable {
-    let id = UUID()
-    let name: String
-    let code: String
-    let time: String
-    let location: String
-    let lecturer: String
-}
-// MARK: - 今日课程卡片
-struct TodayClassCard: View {
-    let classItem: TodayClass
+    let gradient: [Color]
+    let iconColor: Color
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 16) {
-                // 左侧时间指示器
-                VStack(spacing: 4) {
-                    Text(classItem.time.split(separator: "-").first?.trimmingCharacters(in: .whitespaces) ?? "")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(Color(hex: "6366F1"))
-                    
-                    Rectangle()
-                        .fill(Color(hex: "6366F1").opacity(0.3))
-                        .frame(width: 2, height: 20)
-                    
-                    Text(classItem.time.split(separator: "-").last?.trimmingCharacters(in: .whitespaces) ?? "")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                }
-                .frame(width: 70)
+            ZStack(alignment: .bottomLeading) {
+                // 渐变背景
+                LinearGradient(
+                    colors: gradient,
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 18))
                 
-                // 课程信息
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(classItem.name)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .lineLimit(2)
-                    
-                    Text(classItem.code)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(hex: "6366F1"))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(Color(hex: "6366F1").opacity(0.1))
-                        .clipShape(Capsule())
-                    
-                    HStack(spacing: 6) {
-                        Image(systemName: "mappin.circle.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color(hex: "F59E0B"))
-                           
-                        Text(classItem.location)
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
+                // 内容
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        Spacer()
+                        Image(systemName: icon)
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundColor(iconColor.opacity(0.3))
                     }
                     
-                    HStack(spacing: 6) {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color(hex: "10B981"))
-                           
-                        Text(classItem.lecturer)
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-            }
-            .padding(16)
-            .background(Color.white.opacity(0.8))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-        }
-        .buttonStyle(.plain)
-    }
-}
-// MARK: - 空状态卡片（统一版本）
-struct StudentEmptyStateCard: View {
-    let icon: String
-    let message: String
-    let color: String
-    
-    var body: some View {
-        VStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(Color(hex: color).opacity(0.2))
-                    .frame(width: 80, height: 80)
+                    Spacer()
                     
-                Image(systemName: icon)
-                    .font(.system(size: 36))
-                    .foregroundColor(Color(hex: color))
-            }
-            
-            Text(message)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
-        .background(Color.white.opacity(0.8))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-    }
-}
-// MARK: - 待办列表 Sheet
-private struct StudentTodoListSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject var appState: AppState
-    private var activeTodos: [TodoItem] {
-        appState.todoManager.todos
-            .filter { !$0.isCompleted }
-            .sorted { ($0.dueDate ?? .distantFuture) < ($1.dueDate ?? .distantFuture) }
-    }
-    private var completedTodos: [TodoItem] {
-        appState.todoManager.todos
-            .filter { $0.isCompleted }
-            .sorted { $0.createdDate > $1.createdDate }
-    }
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("未完成") {
-                    if activeTodos.isEmpty {
-                        Text("暂无未完成任务").foregroundColor(.secondary)
-                    } else {
-                        ForEach(activeTodos) { todo in
-                            TodoListRow(todo: todo, toggle: toggle, delete: delete)
-                        }
-                    }
-                }
-                if !completedTodos.isEmpty {
-                    Section("已完成") {
-                        ForEach(completedTodos) { todo in
-                            TodoListRow(todo: todo, toggle: toggle, delete: delete)
-                        }
-                    }
-                }
-            }
-            .listStyle(.insetGrouped)
-            .navigationTitle("待办事项")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { dismiss() }
-                }
-            }
-        }
-    }
-    private func toggle(_ todo: TodoItem) {
-        if let idx = appState.todos.firstIndex(where: { $0.id == todo.id }) {
-            appState.todos[idx].isCompleted.toggle()
-        }
-    }
-    private func delete(_ todo: TodoItem) {
-        appState.todos.removeAll { $0.id == todo.id }
-    }
-}
-private struct TodoListRow: View {
-    let todo: TodoItem
-    let toggle: (TodoItem) -> Void
-    let delete: (TodoItem) -> Void
-    var body: some View {
-        HStack {
-            Button(action: { toggle(todo) }) {
-                Image(systemName: todo.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(todo.isCompleted ? Color(hex: "10B981") : .secondary)
-            }
-            .buttonStyle(.plain)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(todo.title)
-                    .font(.subheadline.weight(.semibold))
-                    .strikethrough(todo.isCompleted)
-                Text(todo.category)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                if let due = todo.dueDate {
-                    Text(due.formatted(date: .abbreviated, time: .shortened))
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-            }
-            Spacer()
-            if let due = todo.dueDate {
-                Text(due, style: .time)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            } else {
-                Text("无截止")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .swipeActions {
-            Button(role: .destructive) {
-                delete(todo)
-            } label: {
-                Label("删除", systemImage: "trash")
-            }
-        }
-    }
-}
-// MARK: - 统计卡片
-struct DashboardStatCard: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(color.opacity(0.15))
-                        .frame(width: 48, height: 48)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title)
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.white)
                         
-                    Image(systemName: icon)
-                        .font(.system(size: 20))
-                        .foregroundColor(color)
+                        Text(subtitle)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.white.opacity(0.85))
+                    }
                 }
-                
-                VStack(spacing: 4) {
-                    Text(value)
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.primary)
-                    
-                    Text(title)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                }
+                .padding(14)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 20)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white.opacity(0.8))
-                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-            )
+            .shadow(color: gradient[0].opacity(0.25), radius: 8, x: 0, y: 4)
         }
         .buttonStyle(.plain)
     }
 }
-// MARK: - 推荐活动卡片
-struct RecommendationActivityCard: View {
-    let activity: UCLActivity
+
+// MARK: - Premium Class Card
+private struct PremiumClassCard: View {
+    let classItem: TodayClass
     
     var body: some View {
-        HStack(spacing: 16) {
-            // 左侧时间指示器
+        HStack(spacing: 12) {
+            // 时间指示器
             VStack(spacing: 4) {
-                if !activity.startTime.isEmpty {
-                    Text(formatTime(activity.startTime))
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(Color(hex: "F59E0B"))
-                    
-                    if !activity.endTime.isEmpty {
-                        Rectangle()
-                            .fill(Color(hex: "F59E0B").opacity(0.3))
-                            .frame(width: 2, height: 20)
-                        
-                        Text(formatTime(activity.endTime))
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
-                    }
-                } else {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 24))
-                        .foregroundColor(Color(hex: "F59E0B"))
-                }
+                Text(classItem.time.split(separator: "-").first?.trimmingCharacters(in: .whitespaces) ?? "")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(Color(hex: "6366F1"))
+                
+                Circle()
+                    .fill(Color(hex: "6366F1"))
+                    .frame(width: 4, height: 4)
+                
+                Text(classItem.time.split(separator: "-").last?.trimmingCharacters(in: .whitespaces) ?? "")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary)
             }
             .frame(width: 60)
             
-            // 内容区域
-            VStack(alignment: .leading, spacing: 8) {
-                Text(activity.title)
-                    .font(.system(size: 16, weight: .semibold))
+            // 课程信息
+            VStack(alignment: .leading, spacing: 6) {
+                Text(classItem.name)
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.primary)
-                    .lineLimit(2)
+                    .lineLimit(1)
                 
-                if let location = activity.location {
-                    HStack(spacing: 6) {
-                        Image(systemName: "mappin.circle.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color(hex: "F59E0B"))
-                           
-                        Text(location)
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    }
+                HStack(spacing: 6) {
+                    Text(classItem.code)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(Color(hex: "6366F1"))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(Color(hex: "6366F1").opacity(0.1))
+                        .clipShape(Capsule())
+                    
+                    Text("·")
+                        .foregroundColor(.secondary)
+                    
+                    Text(classItem.lecturer)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
                 
-                // 类型标签
-                Text(getTypeLabel(activity.type))
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule()
-                            .fill(getTypeColor(activity.type))
-                    )
+                HStack(spacing: 5) {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(DashboardPalette.bright)
+                    
+                    Text(classItem.location)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
             }
             
             Spacer()
             
             Image(systemName: "chevron.right")
-                .font(.system(size: 14))
-                .foregroundColor(.secondary)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.secondary.opacity(0.4))
         }
-        .padding(16)
-        .background(Color.white.opacity(0.8))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 2)
+        )
+    }
+}
+
+// MARK: - Premium Deadline Card
+private struct PremiumDeadlineCard: View {
+    let todo: TodoItem
+    
+    private var timeRemaining: String {
+        guard let dueDate = todo.dueDate else { return "无截止" }
+        
+        let now = Date()
+        let interval = dueDate.timeIntervalSince(now)
+        
+        if interval < 0 {
+            return "已逾期"
+        } else if interval < 3600 {
+            return "\(Int(interval / 60))分钟后"
+        } else if interval < 86400 {
+            return "\(Int(interval / 3600))小时后"
+        } else {
+            return "\(Int(interval / 86400))天后"
+        }
+    }
+    
+    private var urgencyColor: Color {
+        guard let dueDate = todo.dueDate else { return DashboardPalette.soft }
+        
+        let interval = dueDate.timeIntervalSince(Date())
+        
+        if interval < 0 {
+            return DashboardPalette.deep
+        } else if interval < 86400 {
+            return DashboardPalette.bright
+        } else if interval < 259200 {
+            return DashboardPalette.medium
+        } else {
+            return DashboardPalette.soft
+        }
+    }
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // 优先级指示
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(urgencyColor.opacity(0.12))
+                    .frame(width: 44, height: 44)
+                
+                Image(systemName: "clock.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(urgencyColor)
+            }
+            
+            // 任务信息
+            VStack(alignment: .leading, spacing: 4) {
+                Text(todo.title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                
+                HStack(spacing: 6) {
+                    Text(todo.category)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                    
+                    Text("·")
+                        .foregroundColor(.secondary)
+                    
+                    Text(timeRemaining)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(urgencyColor)
+                }
+            }
+            
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.secondary.opacity(0.4))
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
+        )
+    }
+}
+
+// MARK: - Premium Activity Card
+private struct PremiumActivityCard: View {
+    let activity: UCLActivity
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // 活动图标
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(getTypeColor(activity.type).opacity(0.12))
+                    .frame(width: 44, height: 44)
+                
+                Image(systemName: getTypeIcon(activity.type))
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(getTypeColor(activity.type))
+            }
+            
+            // 活动信息
+            VStack(alignment: .leading, spacing: 4) {
+                Text(activity.title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                
+                if let location = activity.location {
+                    HStack(spacing: 5) {
+                        Image(systemName: "mappin.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(DashboardPalette.bright)
+                        
+                        Text(location)
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                
+                if !activity.startTime.isEmpty {
+                    HStack(spacing: 5) {
+                        Image(systemName: "clock.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color(hex: "6366F1"))
+                        
+                        Text(formatTime(activity.startTime))
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.secondary.opacity(0.4))
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
+        )
     }
     
     private func formatTime(_ timeString: String) -> String {
@@ -782,29 +844,200 @@ struct RecommendationActivityCard: View {
         return "时间待定"
     }
     
-    private func getTypeLabel(_ type: String) -> String {
+    private func getTypeIcon(_ type: String) -> String {
         switch type.lowercased() {
-        case "workshop": return "工作坊"
-        case "seminar": return "研讨会"
-        case "lecture": return "讲座"
-        case "social": return "社交活动"
-        case "sports": return "体育活动"
-        case "career": return "职业发展"
-        case "cultural": return "文化活动"
-        default: return "活动"
+        case "workshop": return "hammer.fill"
+        case "seminar": return "person.3.fill"
+        case "lecture": return "book.fill"
+        case "social": return "party.popper.fill"
+        case "sports": return "figure.run"
+        case "career": return "briefcase.fill"
+        case "cultural": return "theatermasks.fill"
+        default: return "star.fill"
         }
     }
     
     private func getTypeColor(_ type: String) -> Color {
         switch type.lowercased() {
-        case "workshop": return Color(hex: "8B5CF6")
-        case "seminar": return Color(hex: "6366F1")
-        case "lecture": return Color(hex: "3B82F6")
-        case "social": return Color(hex: "EC4899")
-        case "sports": return Color(hex: "10B981")
-        case "career": return Color(hex: "F59E0B")
-        case "cultural": return Color(hex: "A855F7")
-        default: return Color(hex: "6B7280")
+        case "workshop": return DashboardPalette.deep
+        case "seminar": return DashboardPalette.medium
+        case "lecture": return DashboardPalette.bright
+        case "social": return DashboardPalette.soft
+        case "sports": return DashboardPalette.medium
+        case "career": return DashboardPalette.bright
+        case "cultural": return DashboardPalette.pastel
+        default: return DashboardPalette.medium
         }
+    }
+}
+
+// MARK: - Supporting Models & Views
+struct TodayClass: Identifiable {
+    let id = UUID()
+    let name: String
+    let code: String
+    let time: String
+    let location: String
+    let lecturer: String
+}
+
+struct StudentEmptyStateCard: View {
+    let icon: String
+    let message: String
+    let color: String
+    
+    var body: some View {
+        VStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(Color(hex: color).opacity(0.12))
+                    .frame(width: 64, height: 64)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundColor(Color(hex: color))
+            }
+            
+            Text(message)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
+        )
+    }
+}
+
+// MARK: - Todo List Sheet
+private struct StudentTodoListSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var appState: AppState
+    
+    private var activeTodos: [TodoItem] {
+        appState.todoManager.todos
+            .filter { !$0.isCompleted }
+            .sorted { ($0.dueDate ?? .distantFuture) < ($1.dueDate ?? .distantFuture) }
+    }
+    
+    private var completedTodos: [TodoItem] {
+        appState.todoManager.todos
+            .filter { $0.isCompleted }
+            .sorted { $0.createdDate > $1.createdDate }
+    }
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("未完成") {
+                    if activeTodos.isEmpty {
+                        Text("暂无未完成任务")
+                            .foregroundColor(.secondary)
+                    } else {
+                        ForEach(activeTodos) { todo in
+                            TodoListRow(
+                                todo: todo,
+                                toggle: toggle,
+                                delete: delete
+                            )
+                        }
+                    }
+                }
+                
+                if !completedTodos.isEmpty {
+                    Section("已完成") {
+                        ForEach(completedTodos) { todo in
+                            TodoListRow(
+                                todo: todo,
+                                toggle: toggle,
+                                delete: delete
+                            )
+                        }
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("待办事项")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("完成") { dismiss() }
+                }
+            }
+        }
+    }
+    
+    private func toggle(_ todo: TodoItem) {
+        if let idx = appState.todoManager.todos.firstIndex(where: { $0.id == todo.id }) {
+            appState.todoManager.todos[idx].isCompleted.toggle()
+        }
+    }
+    
+    private func delete(_ todo: TodoItem) {
+        appState.todoManager.todos.removeAll { $0.id == todo.id }
+    }
+}
+
+private struct TodoListRow: View {
+    let todo: TodoItem
+    let toggle: (TodoItem) -> Void
+    let delete: (TodoItem) -> Void
+    
+    var body: some View {
+        HStack {
+            Button(action: { toggle(todo) }) {
+                Image(systemName: todo.isCompleted ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(todo.isCompleted ? DashboardPalette.medium : .secondary)
+            }
+            .buttonStyle(.plain)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(todo.title)
+                    .font(.subheadline.weight(.semibold))
+                    .strikethrough(todo.isCompleted)
+                
+                Text(todo.category)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                if let due = todo.dueDate {
+                    Text(due.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+            
+            if let due = todo.dueDate {
+                Text(due, style: .time)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            } else {
+                Text("无截止")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .swipeActions {
+            Button(role: .destructive) {
+                delete(todo)
+            } label: {
+                Label("删除", systemImage: "trash")
+            }
+        }
+    }
+}
+
+// MARK: - Preview
+struct StudentDashboardView_Previews: PreviewProvider {
+    static var previews: some View {
+        StudentDashboardView(selectedTab: .constant(0))
+            .environmentObject(AppState())
+            .environmentObject(LocalizationService())
     }
 }

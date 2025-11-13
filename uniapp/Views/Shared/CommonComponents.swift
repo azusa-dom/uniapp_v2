@@ -110,3 +110,26 @@ extension View {
         modifier(GlassCardModifier())
     }
 }
+
+// MARK: - onChange 兼容处理
+private struct OnChangeCompatibilityModifier<Value: Equatable>: ViewModifier {
+    let value: Value
+    let action: (Value) -> Void
+    
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 17.0, *) {
+            content.onChange(of: value) { _, newValue in
+                action(newValue)
+            }
+        } else {
+            content.onChange(of: value, perform: action)
+        }
+    }
+}
+
+extension View {
+    func onChangeCompat<Value: Equatable>(_ value: Value, perform action: @escaping (Value) -> Void) -> some View {
+        modifier(OnChangeCompatibilityModifier(value: value, action: action))
+    }
+}

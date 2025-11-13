@@ -1,767 +1,970 @@
-//
-//  学生学业.swift
-//  uniappv3
-//
-//  Created by 748 on 12/11/2025.
-//
-
-//
-//  StudentAcademicsView.swift
-//  uniapp
-//
-//  Created on 2024.
-//
-//  ✅ 已修复：
-//  - 移除了内部的数据模型（Module, Assignment）定义，
-//    因为它们现在位于 `共享数据模型.swift`
-//  - 移除了内部的 ViewModel（AcademicViewModel）定义，
-//    因为它现在位于 `AcademicViewModel.swift`
-//
-
 import SwiftUI
+import Foundation // 需要用于 UUID 和 Date
 
-// MARK: - 主视图
+// MARK: - 3. 主视图 (StudentAcademicsView)
+// (这是你的主文件)
 
 struct StudentAcademicsView: View {
-    @EnvironmentObject var loc: LocalizationService
+    // 假设 LocalizationService 存在于你的项目中
+    // @EnvironmentObject var loc: LocalizationService
     
-    // ✅ 更改：
-    // AcademicViewModel 现在是从 `AcademicViewModel.swift` 文件中加载的
+    // 使用 @StateObject 在这里创建和持有 ViewModel 实例
     @StateObject private var viewModel = AcademicViewModel()
     
-    @State private var selectedTab: AcademicsTab = .modules
-    
+    @State private var selectedTab: AcademicsTab = .overview
     @State private var showingAddModule = false
-    @State private var showingAddAssignment = false
     
     enum AcademicsTab {
-        case modules, assignments
+        case overview, inProgress, completed
     }
     
     var body: some View {
-        // ✅ 保持：
-        // 这里的 NavigationView 是必需的，因为它允许
-        // `NavigationLink` (例如 EnhancedModuleCard)
-        // 正确地跳转到 `ModuleDetailView`
         NavigationView {
             ZStack {
-                DesignSystem.backgroundGradient.ignoresSafeArea()
-                VStack(spacing: 0) {
-                    Picker("Academics", selection: $selectedTab) {
-                        Text(loc.tr("academics_modules")).tag(AcademicsTab.modules)
-                        Text(loc.tr("academics_assignments")).tag(AcademicsTab.assignments)
+                // 背景
+                LinearGradient(
+                    colors: [Color(hex: "F8F9FF"), Color(hex: "EEF2FF")],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+                
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 16) {
+                        // GPA 总览卡片 (自动使用 viewModel.currentGPA)
+                        gpaOverviewCard
+                        
+                        // 分段控制器
+                        segmentedControl
+                        
+                        // 内容区域
+                        switch selectedTab {
+                        case .overview:
+                            overviewSection
+                        case .inProgress:
+                            inProgressSection
+                        case .completed:
+                            completedSection
+                        }
                     }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .padding()
-                    .background(.ultraThinMaterial)
-                    
-                    if selectedTab == .modules {
-                        ModuleGradesView(viewModel: viewModel)
-                    } else {
-                        AssignmentScoresView(viewModel: viewModel)
-                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
                 }
             }
-            .navigationTitle(loc.tr("tab_academics"))
+            .navigationTitle("学业")
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
-                Button(action: {
-                    if selectedTab == .modules {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
                         showingAddModule = true
-                    } else {
-                        showingAddAssignment = true
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(Color(hex: "6366F1"))
                     }
-                }) {
-                    Image(systemName: "plus")
                 }
             }
             .sheet(isPresented: $showingAddModule) {
-                AddModuleView { name, code, mark in
-                    viewModel.addModule(name: name, code: code, mark: mark, assignments: 0, participation: 0, midterm: 0, final: 0)
-                    showingAddModule = false
-                }
-            }
-            .sheet(isPresented: $showingAddAssignment) {
-                AddAssignmentView { title, course, score, total, completed in
-                    viewModel.addAssignment(title: title, course: course, score: score, total: total, isCompleted: completed)
-                    showingAddAssignment = false
-                }
+                // 使用全新的 AddModuleView
+                AddModuleView(viewModel: viewModel)
             }
         }
-    }
-}
-
-// MARK: - 课程成绩视图
-
-struct ModuleGradesView: View {
-    @EnvironmentObject var loc: LocalizationService
-    @ObservedObject var viewModel: AcademicViewModel
-    
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // 总平均分概览
-                OverallAverageGauge(average: viewModel.overallAverage)
-                
-                // 课程列表
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("我的课程")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.primary)
-                        .padding(.horizontal)
-                    
-                    ForEach(viewModel.modules) { module in
-                        EnhancedModuleCard(module: module)
-                            .padding(.horizontal)
-                    }
-                }
-            }
-            .padding(.vertical)
-        }
-    }
-}
-
-// MARK: - 增强版课程卡片
-
-struct EnhancedModuleCard: View {
-    let module: Module
-    
-    var body: some View {
-        NavigationLink(destination: ModuleDetailView(module: module)) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white.opacity(0.9))
-                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-                
-                VStack(alignment: .leading, spacing: 16) {
-                    // 课程标题和成绩
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(module.name)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.primary)
-                                .lineLimit(2)
-                            
-                            Text(module.code)
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        VStack(alignment: .trailing, spacing: 4) {
-                            Text("\(Int(module.mark))")
-                                .font(.system(size: 28, weight: .bold))
-                                .foregroundColor(markColor(module.mark))
-                            
-                            Text(gradeLabel(module.mark))
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(markColor(module.mark))
-                                .clipShape(Capsule())
-                        }
-                    }
-                    
-                    // 统计信息
-                    HStack(spacing: 16) {
-                        StatBadge(
-                            icon: "chart.line.uptrend.xyaxis",
-                            label: "比平均",
-                            value: "+\(Int(module.mark) - module.moduleAverage)",
-                            color: Color(hex: "10B981")
-                        )
-                        
-                        StatBadge(
-                            icon: "person.3",
-                            label: "班级平均",
-                            value: "\(module.moduleAverage)",
-                            color: Color(hex: "6B7280")
-                        )
-                        
-                        if !module.assignmentList.isEmpty {
-                            let completed = module.assignmentList.filter { $0.submitted }.count
-                            StatBadge(
-                                icon: "doc.text",
-                                label: "作业",
-                                value: "\(completed)/\(module.assignmentList.count)",
-                                color: completed == module.assignmentList.count ? Color(hex: "10B981") : Color(hex: "F59E0B")
-                            )
-                        }
-                    }
-                    
-                    // 进度条
-                    GeometryReader { geometry in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.gray.opacity(0.2))
-                            
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [markColor(module.mark), markColor(module.mark).opacity(0.7)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .frame(width: geometry.size.width * CGFloat(module.mark) / 100)
-                        }
-                    }
-                    .frame(height: 6)
-                }
-                .padding(20)
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
+        // !! 重要：为 NavigationView 注入 viewModel，
+        // 这样所有 NavigationLink 都能访问到它
+        .environmentObject(viewModel)
     }
     
-    func markColor(_ mark: Double) -> Color {
-        if mark >= 80 { return Color(hex: "10B981") }
-        if mark >= 70 { return Color(hex: "8B5CF6") }
-        if mark >= 60 { return Color(hex: "F59E0B") }
-        return Color(hex: "EF4444")
-    }
-    
-    func gradeLabel(_ mark: Double) -> String {
-        if mark >= 70 { return "First" }
-        if mark >= 60 { return "2:1" }
-        if mark >= 50 { return "2:2" }
-        if mark >= 40 { return "Third" }
-        return "Fail"
-    }
-}
-
-// MARK: - 统计徽章
-
-struct StatBadge: View {
-    let icon: String
-    let label: String
-    let value: String
-    let color: Color
-    
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 12))
-                .foregroundColor(color)
+    // MARK: - GPA Overview Card
+    private var gpaOverviewCard: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 20))
             
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label)
-                    .font(.system(size: 9))
-                    .foregroundColor(.secondary)
-                Text(value)
+            VStack(spacing: 16) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("当前 GPA")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white.opacity(0.85))
+                        
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            // **自动更新**
+                            Text(String(format: "%.2f", viewModel.currentGPA))
+                                .font(.system(size: 42, weight: .bold))
+                                .foregroundColor(.white)
+                            
+                            Text("/ 4.0")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.white.opacity(0.7))
+                        }
+                        
+                        // ... (gpaChange 模拟数据) ...
+                        HStack(spacing: 6) {
+                            Image(systemName: viewModel.gpaChange >= 0 ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
+                                .font(.system(size: 12))
+                            Text(String(format: "%+.2f", viewModel.gpaChange))
+                                .font(.system(size: 12, weight: .semibold))
+                            Text("vs 上学期")
+                                .font(.system(size: 12))
+                        }
+                        .foregroundColor(.white.opacity(0.9))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.15))
+                        .clipShape(Capsule())
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: 12) {
+                        gpaStatPill(label: "学分", value: "\(viewModel.completedCredits)")
+                        gpaStatPill(label: "课程", value: "\(viewModel.completedCourses)/\(viewModel.totalCourses)")
+                        gpaStatPill(label: "等级", value: viewModel.gradeLevel) // 自动计算
+                    }
+                }
+            }
+            .padding(20)
+        }
+        .frame(height: 160)
+        .shadow(color: Color(hex: "6366F1").opacity(0.2), radius: 12, x: 0, y: 6)
+    }
+    
+    private func gpaStatPill(label: String, value: String) -> some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.white.opacity(0.8))
+            
+            Text(value)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.white)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(Color.white.opacity(0.18))
+        .clipShape(Capsule())
+    }
+    
+    // MARK: - Segmented Control
+    private var segmentedControl: some View {
+        HStack(spacing: 0) {
+            segmentButton(tab: .overview, title: "总览", icon: "chart.bar.fill")
+            segmentButton(tab: .inProgress, title: "进行中", icon: "clock.fill")
+            segmentButton(tab: .completed, title: "已完成", icon: "checkmark.circle.fill")
+        }
+        .padding(4)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
+    }
+    
+    private func segmentButton(tab: AcademicsTab, title: String, icon: String) -> some View {
+        Button {
+            withAnimation(.spring(response: 0.3)) {
+                selectedTab = tab
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
                     .font(.system(size: 12, weight: .semibold))
+                
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+            }
+            .foregroundColor(selectedTab == tab ? .white : Color(hex: "6B7280"))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(
+                selectedTab == tab ?
+                    LinearGradient(
+                        colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                : nil
+            )
+        }
+        .buttonStyle(.plain)
+    }
+    
+    // MARK: - Overview Section
+    private var overviewSection: some View {
+        VStack(spacing: 16) {
+            quickStatsGrid
+            moduleStatusSummary
+            upcomingAssignmentsSection
+        }
+    }
+    
+    private var quickStatsGrid: some View {
+        HStack(spacing: 10) {
+            quickStatCard(
+                icon: "star.fill",
+                title: "最高分",
+                value: "\(Int(viewModel.highestGrade.rounded()))%", // 自动计算
+                color: Color(hex: "10B981")
+            )
+            
+            quickStatCard(
+                icon: "chart.bar.fill",
+                title: "平均分",
+                value: "\(Int(viewModel.averageGrade.rounded()))%", // 自动计算
+                color: Color(hex: "6366F1")
+            )
+            
+            quickStatCard(
+                icon: "clock.badge.exclamationmark.fill",
+                title: "待交",
+                value: "\(viewModel.pendingAssignments)", // 自动计算
+                color: Color(hex: "F59E0B")
+            )
+        }
+    }
+    
+    private var moduleStatusSummary: some View {
+        HStack(spacing: 12) {
+            statusCard(
+                title: "进行中",
+                value: "\(viewModel.inProgressModules.count)",
+                detail: "课程",
+                colors: [Color(hex: "7C3AED"), Color(hex: "A78BFA")]
+            )
+            statusCard(
+                title: "已结课",
+                value: "\(viewModel.completedModules.count)",
+                detail: "课程",
+                colors: [Color(hex: "C084FC"), Color(hex: "E0C3FC")]
+            )
+        }
+    }
+    
+    private func statusCard(title: String, value: String, detail: String, colors: [Color]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.white.opacity(0.85))
+            Text(value)
+                .font(.system(size: 28, weight: .bold))
+                .foregroundColor(.white)
+            Text(detail)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.white.opacity(0.85))
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+        )
+    }
+    
+    private func quickStatCard(icon: String, title: String, value: String, color: Color) -> some View {
+        VStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.12))
+                    .frame(width: 40, height: 40)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(color)
             }
-        }
-    }
-}
-
-// MARK: - 课程详情视图
-
-struct ModuleDetailView: View {
-    @EnvironmentObject var loc: LocalizationService
-    let module: Module
-    
-    var body: some View {
-        ZStack {
-            DesignSystem.backgroundGradient.ignoresSafeArea()
             
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // 课程基本信息
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(module.name)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                        
-                        HStack {
-                            Text(module.code)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            
-                            Spacer()
-                            
-                            HStack(spacing: 4) {
-                                Text("\(Int(module.mark))")
-                                    .font(.title)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(markColor(module.mark))
-                                Text("/100")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        
-                        HStack {
-                            Text(gradeLevel(module.mark))
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(markColor(module.mark))
-                                .clipShape(Capsule())
-                            
-                            Text(gradeDescription(module.mark))
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
+            Text(value)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.primary)
+            
+            Text(title)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
+        )
+    }
+    
+    private var upcomingAssignmentsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "doc.text.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(hex: "F59E0B"))
+                
+                Text("即将截止")
+                    .font(.system(size: 16, weight: .bold))
+                
+                Spacer()
+                
+                Text("\(viewModel.upcomingAssignments.count) 项")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+            
+            if viewModel.upcomingAssignments.isEmpty {
+                emptyStateView(
+                    icon: "checkmark.circle.fill",
+                    message: "暂无待交作业",
+                    color: Color(hex: "10B981")
+                )
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(viewModel.upcomingAssignments.prefix(3)) { assignment in
+                        UpcomingAssignmentCard(assignment: assignment)
                     }
-                    .padding()
-                    .glassCard()
-                    
-                    // 成绩构成
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("📊 成绩构成")
-                            .font(.headline)
-                        
-                        ForEach(module.gradeBreakdown) { component in
-                            GradeBreakdownRow(
-                                title: component.component,
-                                score: component.grade,
-                                weight: component.weight
-                            )
-                        }
-                    }
-                    .padding()
-                    .glassCard()
-                    
-                    // 作业列表
-                    if !module.assignmentList.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("📝 作业列表")
-                                .font(.headline)
-                            
-                            ForEach(module.assignmentList) { assignment in
-                                ModuleAssignmentRow(assignment: assignment)
-                            }
-                        }
-                        .padding()
-                        .glassCard()
-                    }
-                    
-                    // 学习建议
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("💡 学习建议")
-                            .font(.headline)
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            if module.mark >= 70 {
-                                SuggestionRow(icon: "checkmark.circle.fill", text: "继续保持优秀表现", color: .green)
-                                SuggestionRow(icon: "star.fill", text: "可以尝试更有挑战性的内容", color: .green)
-                            } else if module.mark >= 60 {
-                                SuggestionRow(icon: "arrow.up.circle.fill", text: "再努力一点可以达到一等", color: .orange)
-                                SuggestionRow(icon: "book.fill", text: "重点复习薄弱环节", color: .orange)
-                            } else {
-                                SuggestionRow(icon: "exclamationmark.triangle.fill", text: "需要加强学习", color: .red)
-                                SuggestionRow(icon: "person.2.fill", text: "建议寻求导师帮助", color: .red)
-                            }
-                        }
-                    }
-                    .padding()
-                    .glassCard()
                 }
-                .padding()
             }
         }
-        .navigationTitle("课程详情")
-        .navigationBarTitleDisplayMode(.inline)
     }
     
-    func markColor(_ mark: Double) -> Color {
-        if mark >= 80 { return Color(hex: "10B981") }
-        if mark >= 70 { return Color(hex: "8B5CF6") }
-        if mark >= 60 { return Color(hex: "F59E0B") }
-        return Color(hex: "EF4444")
-    }
-    
-    func gradeLevel(_ score: Double) -> String {
-        switch score {
-        case 70...100: return "一等学位 First Class"
-        case 60..<70: return "二等一 Upper Second"
-        case 50..<60: return "二等二 Lower Second"
-        case 40..<50: return "三等 Third Class"
-        default: return "不及格 Fail"
+    // MARK: - In Progress Section
+    private var inProgressSection: some View {
+        VStack(spacing: 12) {
+            ForEach(viewModel.inProgressModules) { module in
+                // **重要**：
+                // 1. NavigationLink 在这里
+                // 2. 目标是 ModuleDetailView
+                // 3. .environmentObject(viewModel) 已经由顶层 NavigationView 注入
+                NavigationLink(destination: ModuleDetailView(module: module)) {
+                    InProgressModuleCard(module: module) {
+                        viewModel.markModule(module, completed: true)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            
+            if viewModel.inProgressModules.isEmpty {
+                emptyStateView(
+                    icon: "graduationcap.fill",
+                    message: "当前没有进行中的课程",
+                    color: Color(hex: "6366F1")
+                )
+            }
         }
     }
     
-    func gradeDescription(_ score: Double) -> String {
-        switch score {
-        case 70...100: return "优秀 - 一等学位水平!"
-        case 60..<70: return "良好 - 二等一水平"
-        case 50..<60: return "中等 - 二等二水平"
-        case 40..<50: return "及格 - 三等学位"
-        default: return "不及格 - 需要重修"
+    // MARK: - Completed Section
+    private var completedSection: some View {
+        VStack(spacing: 12) {
+            ForEach(viewModel.completedModules) { module in
+                // **崩溃修复**：
+                // 1. NavigationLink 在这里
+                // 2. 目标是 ModuleDetailView
+                // 3. .environmentObject(viewModel) 已经由顶层 NavigationView 注入
+                NavigationLink(destination: ModuleDetailView(module: module)) {
+                    // 4. CompletedModuleCard (修复版) 只负责显示 UI
+                    CompletedModuleCard(module: module) {
+                        viewModel.markModule(module, completed: false)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            
+            if viewModel.completedModules.isEmpty {
+                emptyStateView(
+                    icon: "books.vertical.fill",
+                    message: "暂无已完成课程",
+                    color: Color(hex: "6B7280")
+                )
+            }
         }
+    }
+    
+    // MARK: - Empty State View
+    private func emptyStateView(icon: String, message: String, color: Color) -> some View {
+        VStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.12))
+                    .frame(width: 60, height: 60)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundColor(color)
+            }
+            
+            Text(message)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
+        )
     }
 }
 
-// MARK: - 模块作业行
 
-struct ModuleAssignmentRow: View {
-    let assignment: Module.ModuleAssignment
+// MARK: - 4. 卡片视图 (Cards)
+
+struct InProgressModuleCard: View {
+    let module: Module
+    let markComplete: () -> Void
     
     var body: some View {
-        HStack {
-            Image(systemName: assignment.submitted ? "checkmark.circle.fill" : "circle")
-                .foregroundColor(assignment.submitted ? Color(hex: "10B981") : Color(hex: "F59E0B"))
-                .font(.system(size: 20))
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(assignment.name)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(module.name)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                    
+                    Text(module.code)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
                 
-                Text(assignment.submitted ? "已提交 · \(assignment.dueDate)" : "截止 · \(assignment.dueDate)")
-                    .font(.caption)
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    // **适配**：使用 predictedMark
+                    let predictedMark = module.predictedMark
+                    if predictedMark > 0 {
+                        Text("\(Int(predictedMark.rounded()))%")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(Color(hex: "8B5CF6"))
+                        
+                        Text("预估")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("进行中")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color(hex: "F59E0B"))
+                    }
+                }
+            }
+            
+            // 进度条 (使用自动计算的 progressPercentage)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.gray.opacity(0.15))
+                    
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: geo.size.width * module.progressPercentage) // **适配**
+                }
+            }
+            .frame(height: 5)
+            
+            HStack {
+                Text("\(Int(module.progressPercentage * 100))% 完成") // **适配**
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
+                Spacer()
+                Text("已出分: \(module.completedAssignments)/\(module.totalAssignments)")
+                     .font(.system(size: 11, weight: .medium))
+                     .foregroundColor(.secondary)
+            }
+                
+            Button {
+                markComplete()
+            } label: {
+                Text("标记为已结课")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Color(hex: "7C3AED"))
+                    .padding(.vertical, 6)
+                    .frame(maxWidth: .infinity)
+                    .background(Color(hex: "7C3AED").opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
+        )
+    }
+}
+
+
+struct CompletedModuleCard: View {
+    let module: Module
+    let markInProgress: () -> Void
+    
+    var body: some View {
+        // **崩溃修复**：
+        // 删除了此处的 NavigationLink。
+        // 它现在只是一个普通的 HStack，由外部的 NavigationLink 包裹。
+        HStack(spacing: 14) {
+            // 成绩显示
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(gradeColor(module.finalMark).opacity(0.12)) // **适配**
+                    .frame(width: 60, height: 60)
+                
+                VStack(spacing: 2) {
+                    Text("\(Int(module.finalMark.rounded()))") // **适配**
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(gradeColor(module.finalMark)) // **适配**
+                    
+                    Text(gradeLabel(module.finalMark)) // **适配**
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(gradeColor(module.finalMark)) // **适配**
+                }
+            }
+            
+            // 课程信息
+            VStack(alignment: .leading, spacing: 6) {
+                Text(module.name)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                
+                HStack(spacing: 8) {
+                    Text(module.code)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    Text("•")
+                        .foregroundColor(.secondary)
+                    
+                    Text("\(module.credits) 学分")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                
+                // (移除了 "vs 平均" 的对比，因为新模型中默认没有班级平均分)
             }
             
             Spacer()
             
-            if assignment.submitted && assignment.grade > 0 {
-                Text("\(assignment.grade)")
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .foregroundColor(assignment.grade >= 70 ? Color(hex: "10B981") : Color(hex: "F59E0B"))
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.secondary.opacity(0.4))
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
+        )
+        .contextMenu {
+            Button("移回进行中") {
+                markInProgress()
             }
         }
-        .padding(.vertical, 8)
     }
-}
-
-// MARK: - 建议行
-
-struct SuggestionRow: View {
-    let icon: String
-    let text: String
-    let color: Color
     
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .foregroundColor(color)
-                .font(.system(size: 14))
-            
-            Text(text)
-                .font(.subheadline)
-                .foregroundColor(.primary)
-        }
+    // (辅助函数)
+    private func gradeColor(_ mark: Double) -> Color {
+        if mark >= 70 { return Color(hex: "10B981") }
+        if mark >= 60 { return Color(hex: "8B5CF6") }
+        if mark >= 50 { return Color(hex: "F59E0B") }
+        return Color(hex: "EF4444")
     }
-}
-
-// MARK: - 成绩构成行
-
-struct GradeBreakdownRow: View {
-    let title: String
-    let score: Int
-    let weight: Int
     
-    var body: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text(title)
-                    .font(.subheadline)
-                Spacer()
-                Text("\(score)% (\(weight)%)")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-            }
-            
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.gray.opacity(0.2))
-                    
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(DesignSystem.primaryGradient)
-                        .frame(width: geometry.size.width * CGFloat(score) / 100)
-                }
-            }
-            .frame(height: 8)
-        }
+    private func gradeLabel(_ mark: Double) -> String {
+        if mark >= 70 { return "FIRST" }
+        if mark >= 60 { return "2:1" }
+        if mark >= 50 { return "2:2" }
+        if mark >= 40 { return "THIRD" }
+        return "FAIL"
     }
 }
 
-// MARK: - 作业分数视图
 
-struct AssignmentScoresView: View {
-    @EnvironmentObject var loc: LocalizationService
-    @ObservedObject var viewModel: AcademicViewModel
-    
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(loc.tr("academics_assignments"))
-                        .font(.headline)
-                        .padding(.horizontal)
-                    
-                    ForEach(viewModel.assignments) { assignment in
-                        AssignmentGaugeRowView(assignment: assignment)
-                            .padding(.horizontal)
-                    }
-                }
-            }
-            .padding(.vertical)
-        }
-    }
-}
-
-// MARK: - 作业环形图行
-
-struct AssignmentGaugeRowView: View {
+struct UpcomingAssignmentCard: View {
     let assignment: Assignment
     
+    // (这部分视图和逻辑与你的原始代码保持一致)
+    private var daysUntilDue: Int {
+        let calendar = Calendar.current
+        let now = Date()
+        return calendar.dateComponents([.day], from: now, to: assignment.dueDate).day ?? 0
+    }
+    
+    private var urgencyColor: Color {
+        if daysUntilDue <= 2 { return Color(hex: "EF4444") }
+        if daysUntilDue <= 5 { return Color(hex: "F59E0B") }
+        return Color(hex: "6366F1")
+    }
+    
     var body: some View {
-        HStack {
-            if assignment.isCompleted {
-                Gauge(value: assignment.score, in: 0...assignment.total) { }
-                    .gaugeStyle(.accessoryCircular)
-                    .tint(markColor(assignment.score / assignment.total * 100))
-                    .frame(width: 50, height: 50)
-            } else {
-                ZStack {
-                    Circle()
-                        .stroke(Color.gray.opacity(0.3), lineWidth: 6)
-                    Image(systemName: "hourglass")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(urgencyColor.opacity(0.12))
+                    .frame(width: 44, height: 44)
+                
+                VStack(spacing: 0) {
+                    Text("\(daysUntilDue)")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(urgencyColor)
+                    
+                    Text("天")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(urgencyColor)
                 }
-                .frame(width: 50, height: 50)
             }
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(assignment.title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                Text(assignment.course)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                
+                HStack(spacing: 6) {
+                    Text(assignment.course)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                    
+                    Text("•")
+                        .foregroundColor(.secondary)
+                    
+                    Text(assignment.dueDate, style: .date)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                }
             }
             
             Spacer()
             
-            if assignment.isCompleted {
-                Text("\(Int(assignment.score))/\(Int(assignment.total))")
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .foregroundColor(markColor(assignment.score / assignment.total * 100))
-            } else {
-                Text("进行中")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
+            Image(systemName: "chevron.right")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(.secondary.opacity(0.4))
         }
-        .padding()
-        .glassCard()
-    }
-    
-    func markColor(_ mark: Double) -> Color {
-        if mark >= 80 { return .green }
-        if mark >= 70 { return Color(hex: "8B5CF6") }
-        if mark >= 60 { return .orange }
-        return .red
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(urgencyColor.opacity(0.2), lineWidth: 1)
+                )
+        )
     }
 }
 
-// MARK: - 总平均分环形图
 
-struct OverallAverageGauge: View {
-    @EnvironmentObject var loc: LocalizationService
-    let average: Double
+// MARK: - 5. 课程详情页 (ModuleDetailView)
+// (全新重构，用于显示和编辑分数)
+
+struct ModuleDetailView: View {
+    @EnvironmentObject var viewModel: AcademicViewModel
+    @Environment(\.dismiss) var dismiss
+    
+    // 使用 @State 来管理模块的本地副本，以便编辑
+    @State private var module: Module
+    private var originalModule: Module // 存储原始数据
+    
+    // 跟踪是否有改动
+    private var hasChanges: Bool {
+        module != originalModule
+    }
+    
+    init(module: Module) {
+        self._module = State(initialValue: module)
+        self.originalModule = module
+    }
     
     var body: some View {
-        VStack(spacing: 20) {
-            ZStack {
-                Circle()
-                    .stroke(Color.gray.opacity(0.2), lineWidth: 20)
-                    .frame(width: 180, height: 180)
-                
-                Circle()
-                    .trim(from: 0, to: average / 100)
-                    .stroke(
-                        AngularGradient(
-                            gradient: Gradient(colors: [
-                                Color(hex: "8B5CF6"),
-                                Color(hex: "6366F1"),
-                                Color(hex: "A855F7")
-                            ]),
-                            center: .center
-                        ),
-                        style: StrokeStyle(lineWidth: 20, lineCap: .round)
-                    )
-                    .frame(width: 180, height: 180)
-                    .rotationEffect(.degrees(-90))
-                    .animation(.spring(response: 1.0, dampingFraction: 0.8), value: average)
-                
-                VStack(spacing: 8) {
-                    Text("\(average, specifier: "%.1f")")
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(hex: "8B5CF6"))
+        ZStack {
+            // 背景色
+            LinearGradient(
+                colors: [Color(hex: "F8F9FF"), Color(hex: "EEF2FF")],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    // 课程基本信息卡片
+                    moduleInfoCard
                     
-                    Text("总平均分")
-                        .font(.caption)
+                    // 成绩构成 (新)
+                    gradeBreakdownSection
+                }
+                .padding(16)
+            }
+        }
+        .navigationTitle("课程详情")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            // 仅当有改动时显示 "保存" 按钮
+            if hasChanges {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") {
+                        viewModel.updateModule(module)
+                        // dismiss() // (可选) 保存后自动退出
+                    }
+                    .foregroundColor(Color(hex: "6366F1"))
+                }
+            }
+        }
+    }
+    
+    // 卡片 1: 课程信息 (显示自动计算的分数)
+    private var moduleInfoCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(module.name)
+                        .font(.system(size: 18, weight: .bold))
+                    Text(module.code)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Text("\(module.credits) 学分")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                // 显示预估分或最终分
+                VStack(spacing: 4) {
+                    // **适配**：根据是否完成显示不同分数
+                    let mark = module.isCompleted ? module.finalMark : module.predictedMark
+                    Text(String(format: "%.1f", mark))
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundColor(gradeColor(mark))
+                    Text(module.isCompleted ? "最终成绩" : "预估成绩")
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.secondary)
                 }
             }
             
-            HStack(spacing: 20) {
-                GradeLabel(grade: gradeLevel(average), color: gradeColor(average))
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("当前等级")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text(gradeDescription(average))
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
+            // 状态切换 (绑定到 @State 副本)
+            Toggle("课程已结课", isOn: $module.isCompleted.animation())
+                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "7C3AED")))
+        }
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 2)
+    }
+    
+    // 卡片 2: 成绩构成 (可编辑)
+    private var gradeBreakdownSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("📊 成绩构成")
+                .font(.system(size: 16, weight: .bold))
+            
+            // 循环 $module.assessments，使其可绑定
+            ForEach($module.assessments) { $assessment in
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text(assessment.name)
+                            .font(.system(size: 14, weight: .medium))
+                        Spacer()
+                        Text("权重 \(assessment.weight, specifier: "%.0f")%")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // **核心：分数输入框**
+                    HStack {
+                        Text("得分 (%)")
+                        Spacer()
+                        // 使用 TextField 来绑定 score (Double?)
+                        TextField("未出分", value: $assessment.score, format: .number)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(Color(hex: "6366F1"))
+                            .frame(maxWidth: 80)
+                            .padding(.vertical, 4)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(5)
+                    }
                 }
+                .padding()
+                .background(Color.white.opacity(0.5))
+                .cornerRadius(10)
             }
-            .padding()
-            .background(Color.gray.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
-        )
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(14)
+        .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
     }
     
-    func gradeColor(_ mark: Double) -> Color {
-        if mark >= 80 { return .green }
-        if mark >= 70 { return Color(hex: "8B5CF6") }
-        if mark >= 60 { return .orange }
-        return .red
-    }
-    
-    func gradeLevel(_ score: Double) -> String {
-        switch score {
-        case 70...100: return "一等学位 First Class"
-        case 60..<70: return "二等一 Upper Second"
-        case 50..<60: return "二等二 Lower Second"
-        case 40..<50: return "三等 Third Class"
-        default: return "不及格 Fail"
-        }
-    }
-    
-    func gradeDescription(_ score: Double) -> String {
-        switch score {
-        case 70...100: return "优秀 - 一等学位水平!"
-        case 60..<70: return "良好 - 二等一水平"
-        case 50..<60: return "中等 - 二等二水平"
-        case 40..<50: return "及格 - 三等学位"
-        default: return "不及格 - 需要重修"
-        }
+    // (辅助函数)
+    private func gradeColor(_ mark: Double) -> Color {
+        if mark >= 70 { return Color(hex: "10B981") }
+        if mark >= 60 { return Color(hex: "8B5CF6") }
+        if mark >= 50 { return Color(hex: "F59E0B") }
+        return Color(hex: "EF4444")
     }
 }
 
-struct GradeLabel: View {
-    let grade: String
-    let color: Color
-    
-    var body: some View {
-        Text(grade)
-            .font(.caption)
-            .fontWeight(.bold)
-            .foregroundColor(.white)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(color)
-            .clipShape(Capsule())
-    }
-}
 
-// MARK: - 添加课程视图
+// MARK: - 6. 添加课程页 (AddModuleView)
+// (全新重构，支持动态考核项)
 
 struct AddModuleView: View {
-    @EnvironmentObject var loc: LocalizationService
+    @ObservedObject var viewModel: AcademicViewModel
     @Environment(\.dismiss) var dismiss
     
     @State private var name: String = ""
     @State private var code: String = ""
-    @State private var mark: Double = 0
+    @State private var credits: Int = 15
+    @State private var isCompleted = false
     
-    var onSave: (String, String, Double) -> Void
+    // 关键: 临时的考核项数组
+    @State private var assessments: [Assessment] = [
+        // 默认提供一个模板
+        Assessment(name: "期末考试", weight: 100.0, score: nil)
+    ]
     
-    var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text(loc.tr("academics_module_name"))) {
-                    TextField(loc.tr("academics_module_name"), text: $name)
-                    TextField(loc.tr("academics_module_code"), text: $code)
-                }
-                
-                Section(header: Text(loc.tr("academics_mark"))) {
-                    Slider(value: $mark, in: 0...100, step: 1)
-                    Text("\(Int(mark))")
-                }
-                
-                Button(action: {
-                    if !name.isEmpty {
-                        onSave(name, code, mark)
-                    }
-                }) {
-                    Text(loc.tr("todo_save"))
-                }
-                .disabled(name.isEmpty)
-            }
-            .navigationTitle(loc.tr("academics_add_module"))
-            .navigationBarItems(trailing: Button("取消") { dismiss() })
-        }
+    // 检查权重总和
+    private var totalWeight: Double {
+        assessments.reduce(0) { $0 + $1.weight }
     }
-}
-
-// MARK: - 添加作业视图
-
-struct AddAssignmentView: View {
-    @EnvironmentObject var loc: LocalizationService
-    @Environment(\.dismiss) var dismiss
     
-    @State private var title: String = ""
-    @State private var course: String = ""
-    @State private var score: Double = 0
-    @State private var total: Double = 100
-    @State private var isCompleted: Bool = false
-    
-    var onSave: (String, String, Double, Double, Bool) -> Void
+    // 检查是否可以保存
+    private var canSave: Bool {
+        !name.trimmingCharacters(in: .whitespaces).isEmpty &&
+        !code.trimmingCharacters(in: .whitespaces).isEmpty &&
+        totalWeight == 100.0 // 必须为 100
+    }
     
     var body: some View {
         NavigationView {
             Form {
-                Section {
-                    TextField(loc.tr("academics_assignment_name"), text: $title)
-                    TextField(loc.tr("academics_course_name"), text: $course)
+                // Section 1: 课程基本信息
+                Section(header: Text("课程信息")) {
+                    TextField("课程名称", text: $name)
+                    TextField("课程代码", text: $code)
+                        .textInputAutocapitalization(.characters)
+                    Stepper("学分：\(credits)", value: $credits, in: 0...60, step: 15)
+                    Toggle("课程已结课", isOn: $isCompleted.animation())
                 }
                 
-                Section {
-                    Toggle(loc.tr("academics_completed"), isOn: $isCompleted)
-                }
-                
-                if isCompleted {
-                    Section(header: Text(loc.tr("academics_score"))) {
+                // Section 2: 考核构成 (动态)
+                Section(header: assessmentHeader) {
+                    // 循环显示所有考核项
+                    ForEach($assessments) { $assessment in
+                        assessmentEditorRow(for: $assessment)
+                    }
+                    .onDelete(perform: removeAssessment) // 允许左滑删除
+                    
+                    // 添加新考核项的按钮
+                    Button(action: addAssessment) {
                         HStack {
-                            TextField(loc.tr("academics_score"), value: $score, format: .number)
-                            Text("/")
-                            TextField(loc.tr("academics_total_points"), value: $total, format: .number)
+                            Image(systemName: "plus.circle.fill")
+                            Text("添加考核项")
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+                
+                // 如果是“已结课”，提供输入分数的地方
+                if isCompleted {
+                    Section(header: Text("输入最终成绩")) {
+                        ForEach($assessments) { $assessment in
+                            HStack {
+                                Text(assessment.name)
+                                Spacer()
+                                TextField("得分", value: $assessment.score, format: .number)
+                                    .keyboardType(.decimalPad)
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(maxWidth: 80)
+                            }
                         }
                     }
                 }
-                
-                Button(action: {
-                    if !title.isEmpty {
-                        onSave(title, course, score, total, isCompleted)
-                    }
-                }) {
-                    Text(loc.tr("todo_save"))
-                }
-                .disabled(title.isEmpty)
             }
-            .navigationTitle(loc.tr("academics_add_assignment"))
-            .navigationBarItems(trailing: Button("取消") { dismiss() })
+            .navigationTitle("添加课程")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") {
+                        saveModule()
+                        dismiss()
+                    }
+                    .disabled(!canSave) // 如果权重不为100或信息不全，则禁用
+                }
+            }
         }
+    }
+    
+    // 考核 Section 的 Header，动态显示权重总和
+    private var assessmentHeader: some View {
+        HStack {
+            Text("考核构成")
+            Spacer()
+            Text("总权重: \(totalWeight, specifier: "%.0f")%")
+                .foregroundColor(totalWeight == 100 ? .green : .red)
+                .font(.caption.bold())
+        }
+    }
+    
+    /// 单个考核项的编辑行
+    private func assessmentEditorRow(for assessment: Binding<Assessment>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextField("考核项名称 (例如: 期末考试)", text: assessment.name)
+                .font(.system(size: 15))
+            
+            HStack {
+                Text("权重 (%)")
+                Spacer()
+                TextField("Weight", value: assessment.weight, format: .number)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: 80)
+                    .padding(.vertical, 4)
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(5)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+    
+    // MARK: - 辅助功能
+    
+    private func addAssessment() {
+        // 添加一个新的、空白的考核项
+        assessments.append(Assessment(name: "", weight: 0, score: nil))
+    }
+    
+    private func removeAssessment(at offsets: IndexSet) {
+        assessments.remove(atOffsets: offsets)
+    }
+    
+    private func saveModule() {
+        guard canSave else { return }
+        viewModel.addModule(
+            name: name,
+            code: code,
+            credits: credits,
+            assessments: assessments,
+            isCompleted: isCompleted
+        )
+    }
+}
+
+
+// MARK: - 7. 辅助工具 (Helpers)
+
+// MARK: - 8. 预览 (Preview)
+
+struct StudentAcademicsView_Previews: PreviewProvider {
+    static var previews: some View {
+        StudentAcademicsView()
+            .environmentObject(LocalizationService())
     }
 }

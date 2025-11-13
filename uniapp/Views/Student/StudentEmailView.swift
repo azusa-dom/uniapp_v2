@@ -27,69 +27,57 @@ struct StudentEmailView: View {
     }
     
     var body: some View {
-        NavigationStack {
+        NavigationView {
             ZStack {
-                backgroundLayer
-                content
+                LinearGradient(
+                    colors: [Color(hex: "F8FAFC"), Color(hex: "F1F5F9")],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+                
+                VStack(alignment: .leading, spacing: 20) {
+                    EmailStatsView(emails: mockEmails)
+                        .padding(.top, 16)
+                    
+                    // ✅ 分类标签（中文）
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(categories, id:\.self) { cat in
+                                Text(cat)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 16)
+                                    .background(selectedFilter == cat ? Color(hex:"6366F1") : Color.gray.opacity(0.15))
+                                    .foregroundColor(selectedFilter == cat ? .white : .black)
+                                    .cornerRadius(12)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .onTapGesture { 
+                                        withAnimation(.spring(response: 0.3)) {
+                                            selectedFilter = cat 
+                                        }
+                                    }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                    
+                    // ✅ 邮件列表
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            ForEach(filteredEmails) { email in
+                                NavigationLink(destination: EmailDetailView(email: email)) {
+                                    EmailRow(email: email)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 20)
+                    }
+                }
             }
             .navigationTitle("邮件")
             .navigationBarTitleDisplayMode(.large)
-        }
-    }
-    
-    private var backgroundLayer: some View {
-        LinearGradient(
-            colors: [Color(hex: "F8FAFC"), Color(hex: "F1F5F9")],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-        .ignoresSafeArea()
-    }
-    
-    private var content: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            EmailStatsView(emails: mockEmails)
-                .padding(.top, 16)
-            
-            AutoDeadlineBanner(emails: mockEmails)
-                .padding(.horizontal, 20)
-            
-            filterBar
-            
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    ForEach(filteredEmails) { email in
-                        NavigationLink(destination: EmailDetailView(email: email)) {
-                            EmailRow(email: email)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 20)
-            }
-        }
-    }
-    
-    private var filterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                ForEach(categories, id: \.self) { cat in
-                    Text(cat)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 16)
-                        .background(selectedFilter == cat ? Color(hex:"6366F1") : Color.gray.opacity(0.15))
-                        .foregroundColor(selectedFilter == cat ? .white : .black)
-                        .cornerRadius(12)
-                        .font(.system(size: 14, weight: .medium))
-                        .onTapGesture {
-                            withAnimation(.spring(response: 0.3)) {
-                                selectedFilter = cat
-                            }
-                        }
-                }
-            }
-            .padding(.horizontal, 20)
         }
     }
 }
@@ -158,26 +146,6 @@ struct EmailRow: View {
                             .font(.system(size: 14, weight: .regular))
                             .foregroundColor(.secondary)
                             .lineLimit(2)
-                        
-                        if let deadline = email.deadline, deadline.calendarAdded {
-                            HStack(spacing: 8) {
-                                Image(systemName: "calendar.badge.checkmark")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(Color(hex: "10B981"))
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("已自动加入日程：\(deadline.title)")
-                                        .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor(Color(hex: "10B981"))
-                                    Text("\(deadline.date) · \(deadline.time)")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(Color(hex: "059669"))
-                                }
-                                Spacer()
-                            }
-                            .padding(10)
-                            .background(Color(hex: "D1FAE5").opacity(0.6))
-                            .cornerRadius(10)
-                        }
                     }
                     
                     Spacer()
@@ -340,10 +308,6 @@ Best regards,
                             .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 2)
                     )
                     
-                    if let deadline = email.deadline {
-                        DeadlineSyncCard(deadline: deadline)
-                    }
-                    
                     // 原文
                     VStack(alignment: .leading, spacing: 12) {
                         Text("邮件内容")
@@ -474,91 +438,31 @@ Best regards,
                     }
                     
                     // 添加到日历按钮
-                    if let deadline = email.deadline, deadline.calendarAdded {
+                    Button(action: {}) {
                         HStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(Color(hex: "10B981"))
-                            Text("已同步到日历 · \(deadline.note)")
+                            Image(systemName: "calendar.badge.plus")
+                            Text("添加到日历")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(Color(hex: "065F46"))
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(14)
-                        .background(Color(hex: "ECFDF5"))
-                        .cornerRadius(12)
-                        .padding(.horizontal, 20)
-                    } else {
-                        Button(action: {}) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "calendar.badge.plus")
-                                Text("添加到日历")
-                                    .font(.system(size: 16, weight: .semibold))
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
+                        .padding(.vertical, 14)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                                startPoint: .leading,
+                                endPoint: .trailing
                             )
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                        }
-                        .padding(.horizontal, 20)
+                        )
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
                     }
+                    .padding(.horizontal, 20)
                 }
                 .padding(.vertical, 16)
             }
         }
         .navigationTitle(email.title)
         .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-private struct DeadlineSyncCard: View {
-    let deadline: EmailPreview.DeadlineMeta
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: "calendar.badge.checkmark")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Color(hex: "10B981"))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("已自动添加到日历")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color(hex: "065F46"))
-                    Text(deadline.note)
-                        .font(.system(size: 12))
-                        .foregroundColor(Color(hex: "059669"))
-                }
-                Spacer()
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(Color(hex: "10B981"))
-            }
-            
-            VStack(alignment: .leading, spacing: 6) {
-                Text(deadline.title)
-                    .font(.system(size: 15, weight: .semibold))
-                Text("截止：\(deadline.date) \(deadline.time)")
-                    .font(.system(size: 13))
-                    .foregroundColor(.secondary)
-            }
-            .padding()
-            .background(Color.white.opacity(0.9))
-            .cornerRadius(12)
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(hex: "D1FAE5"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color(hex: "34D399").opacity(0.4), lineWidth: 1)
-                )
-        )
     }
 }
 struct AddEmailToCalendarView: View {
@@ -626,10 +530,6 @@ struct EmailStatsView: View {
     private var unreadCount: Int {
         emails.filter { !$0.isRead }.count
     }
-    
-    private var syncedCount: Int {
-        emails.filter { $0.deadline?.calendarAdded == true }.count
-    }
 
     var body: some View {
         HStack(spacing: 20) {
@@ -651,72 +551,11 @@ struct EmailStatsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            
-            VStack {
-                Text("\(syncedCount)")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(Color(hex: "10B981"))
-                Text("已同步日历")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white.opacity(0.9))
-                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 2)
-        )
+        .background(Color.white.opacity(0.8))
+        .cornerRadius(16)
         .padding(.horizontal, 20)
-    }
-}
-
-private struct AutoDeadlineBanner: View {
-    let emails: [EmailPreview]
-    
-    private var nextDeadline: EmailPreview.DeadlineMeta? {
-        let deadlines = emails.compactMap { $0.deadline }
-        return deadlines.first
-    }
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(Color(hex: "10B981").opacity(0.15))
-                    .frame(width: 48, height: 48)
-                Image(systemName: "sparkles")
-                    .foregroundColor(Color(hex: "10B981"))
-                    .font(.system(size: 20, weight: .semibold))
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text("AI 已将邮件截止日期同步到日程")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                if let nextDeadline {
-                    Text("最近提醒：\(nextDeadline.title) · \(nextDeadline.date) \(nextDeadline.time)")
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
-                } else {
-                    Text("当前暂无自动同步的任务")
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            Spacer()
-            
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(Color(hex: "10B981"))
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color(hex: "D1FAE5"))
-        )
     }
 }

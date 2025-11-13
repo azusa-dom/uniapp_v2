@@ -8,65 +8,6 @@
 import Foundation
 import SwiftUI
 
-// MARK: - 学生学业
-struct Module: Identifiable {
-    let id = UUID()
-    var name: String
-    var code: String
-    var mark: Double
-    var assignments: Double
-    var participation: Double
-    var midterm: Double
-    var final: Double
-    var moduleAverage: Int
-    var assignmentList: [ModuleAssignment]
-    
-    init(name: String, code: String, mark: Double, assignments: Double, participation: Double, midterm: Double, final: Double, moduleAverage: Int = 65, assignmentList: [ModuleAssignment] = []) {
-        self.name = name
-        self.code = code
-        self.mark = mark
-        self.assignments = assignments
-        self.participation = participation
-        self.midterm = midterm
-        self.final = final
-        self.moduleAverage = moduleAverage
-        self.assignmentList = assignmentList
-    }
-    
-    var gradeBreakdown: [GradeComponent] {
-        return [
-            GradeComponent(component: "作业", weight: 40, grade: Int(assignments)),
-            GradeComponent(component: "课堂参与", weight: 10, grade: Int(participation)),
-            GradeComponent(component: "期中考试", weight: 25, grade: Int(midterm)),
-            GradeComponent(component: "期末考试", weight: 25, grade: Int(final))
-        ]
-    }
-    
-    struct ModuleAssignment: Identifiable {
-        let id = UUID()
-        var name: String
-        var grade: Int
-        var submitted: Bool
-        var dueDate: String
-    }
-    
-    struct GradeComponent: Identifiable {
-        let id = UUID()
-        var component: String
-        var weight: Int
-        var grade: Int
-    }
-}
-
-struct Assignment: Identifiable {
-    let id = UUID()
-    var title: String
-    var course: String
-    var score: Double
-    var total: Double
-    var isCompleted: Bool
-}
-
 // MARK: - 家长学业
 struct CourseSummary: Identifiable {
     let id = UUID()

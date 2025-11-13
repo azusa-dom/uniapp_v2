@@ -1,134 +1,221 @@
-//
-//  AcademicViewModel.swift
-//  uniapp
-//
-//  Created by 748 on 12/11/2025.
-//
-
+import Foundation
 import SwiftUI
-import Combine
 
-class AcademicViewModel: ObservableObject {
-    @Published var modules: [Module] = [
-        Module(
-            name: "数据方法与健康研究",
-            code: "CHME0013",
-            mark: 87,
-            assignments: 90,
-            participation: 95,
-            midterm: 85,
-            final: 86,
-            moduleAverage: 65,
-            assignmentList: [
-                .init(name: "数据分析作业", grade: 90, submitted: true, dueDate: "11月1日"),
-                .init(name: "Python 项目", grade: 88, submitted: true, dueDate: "10月20日"),
-                .init(name: "统计习题集", grade: 0, submitted: false, dueDate: "11月8日")
-            ]
-        ),
-        Module(
-            name: "数据科学与统计",
-            code: "CHME0007",
-            mark: 72,
-            assignments: 75,
-            participation: 80,
-            midterm: 68,
-            final: 70,
-            moduleAverage: 68,
-            assignmentList: [
-                .init(name: "回归分析", grade: 75, submitted: true, dueDate: "10月15日"),
-                .init(name: "统计建模", grade: 0, submitted: false, dueDate: "11月10日")
-            ]
-        ),
-        Module(
-            name: "健康数据科学原理",
-            code: "CHME0006",
-            mark: 67,
-            assignments: 70,
-            participation: 75,
-            midterm: 62,
-            final: 65,
-            moduleAverage: 62
-        ),
-        Module(
-            name: "Python 健康研究编程",
-            code: "CHME0011",
-            mark: 86,
-            assignments: 88,
-            participation: 90,
-            midterm: 84,
-            final: 86,
-            moduleAverage: 70,
-            assignmentList: [
-                .init(name: "数据清洗项目", grade: 88, submitted: true, dueDate: "10月5日"),
-                .init(name: "可视化作业", grade: 90, submitted: true, dueDate: "10月25日")
-            ]
-        ),
-        Module(
-            name: "数据科学流行病学",
-            code: "CHME0008",
-            mark: 69,
-            assignments: 72,
-            participation: 78,
-            midterm: 65,
-            final: 68,
-            moduleAverage: 64
-        ),
-        Module(
-            name: "医疗人工智能",
-            code: "CHME0016",
-            mark: 91,
-            assignments: 93,
-            participation: 95,
-            midterm: 88,
-            final: 90,
-            moduleAverage: 72,
-            assignmentList: [
-                .init(name: "CNN 图像分类", grade: 93, submitted: true, dueDate: "10月18日"),
-                .init(name: "NLP 文本分析", grade: 95, submitted: true, dueDate: "11月2日")
-            ]
-        ),
-        Module(
-            name: "医疗高级机器学习",
-            code: "CHME0017",
-            mark: 85,
-            assignments: 87,
-            participation: 90,
-            midterm: 82,
-            final: 84,
-            moduleAverage: 68
-        )
-    ]
-    
-    @Published var assignments: [Assignment] = [
-        Assignment(title: "数据分析作业", course: "数据方法", score: 90, total: 100, isCompleted: true),
-        Assignment(title: "Python 项目", course: "Python 编程", score: 88, total: 100, isCompleted: true),
-        Assignment(title: "统计习题集", course: "数据科学与统计", score: 75, total: 100, isCompleted: true),
-        Assignment(title: "AI 模型训练", course: "医疗人工智能", score: 93, total: 100, isCompleted: true),
-        Assignment(title: "回归分析报告", course: "数据科学与统计", score: 0, total: 100, isCompleted: false),
-        Assignment(title: "流行病学案例分析", course: "数据科学流行病学", score: 72, total: 100, isCompleted: true),
-    ]
-    
-    var overallAverage: Double {
-        let validModules = modules.filter { $0.mark > 0 }
-        if validModules.isEmpty { return 0 }
-        let totalMark = validModules.reduce(0) { $0 + $1.mark }
-        return totalMark / Double(validModules.count)
-    }
-    
-    func addModule(name: String, code: String, mark: Double, assignments: Double, participation: Double, midterm: Double, final: Double) {
-        modules.append(Module(
-            name: name,
-            code: code,
-            mark: mark,
-            assignments: assignments,
-            participation: participation,
-            midterm: midterm,
-            final: final
-        ))
-    }
-    
-    func addAssignment(title: String, course: String, score: Double, total: Double, isCompleted: Bool) {
-        assignments.append(Assignment(title: title, course: course, score: score, total: total, isCompleted: isCompleted))
-    }
+// MARK: - Models
+struct Assessment: Identifiable, Codable, Hashable {
+    var id = UUID()
+    var name: String
+    var weight: Double
+    var score: Double?
 }
 
+struct Module: Identifiable, Codable, Hashable {
+    var id = UUID()
+    var name: String
+    var code: String
+    var credits: Int
+    var isCompleted: Bool = false
+    var assessments: [Assessment] = []
+    
+    var finalMark: Double {
+        guard !assessments.isEmpty else { return 0.0 }
+        
+        let weightedSum = assessments.reduce(0.0) { sum, assessment in
+            let score = assessment.score ?? 0.0
+            return sum + (score * (assessment.weight / 100.0))
+        }
+        
+        return min(100, max(0, weightedSum))
+    }
+    
+    var predictedMark: Double {
+        let gradedAssessments = assessments.filter { $0.score != nil }
+        guard !gradedAssessments.isEmpty else { return 0.0 }
+        
+        let totalWeightGraded = gradedAssessments.reduce(0.0) { $0 + $1.weight }
+        guard totalWeightGraded > 0 else { return 0.0 }
+        
+        let achievedScore = gradedAssessments.reduce(0.0) { sum, assessment in
+            sum + (assessment.score! * assessment.weight)
+        }
+        
+        let predicted = achievedScore / totalWeightGraded
+        return min(100, max(0, predicted))
+    }
+    
+    var progressPercentage: Double {
+        let gradedAssessments = assessments.filter { $0.score != nil }
+        if assessments.isEmpty { return 0.0 }
+        return Double(gradedAssessments.count) / Double(assessments.count)
+    }
+    
+    var completedAssignments: Int {
+        assessments.filter { $0.score != nil }.count
+    }
+    
+    var totalAssignments: Int {
+        assessments.count
+    }
+    
+    var completedExams: Int = 0
+    var totalExams: Int = 0
+}
+
+struct Assignment: Identifiable, Hashable {
+    var id = UUID()
+    var title: String
+    var course: String
+    var dueDate: Date
+}
+
+// MARK: - ViewModel
+@MainActor
+class AcademicViewModel: ObservableObject {
+    @Published var modules: [Module] = []
+    @Published var upcomingAssignments: [Assignment] = [
+        Assignment(title: "COMP0016 论文", course: "UCL CS", dueDate: Date().addingTimeInterval(86400 * 2)),
+        Assignment(title: "FINA0010 报告", course: "UCL Finance", dueDate: Date().addingTimeInterval(86400 * 4))
+    ]
+    
+    init() {
+        loadMockData()
+    }
+    
+    private func convertMarkToGPAPoint(_ mark: Double) -> Double {
+        if mark >= 70 { return 4.0 }
+        if mark >= 60 { return 3.0 }
+        if mark >= 50 { return 2.0 }
+        if mark >= 40 { return 1.0 }
+        return 0.0
+    }
+    
+    var currentGPA: Double {
+        let completedModules = modules.filter { $0.isCompleted && $0.credits > 0 }
+        guard !completedModules.isEmpty else { return 0.0 }
+        
+        let totalCredits = completedModules.reduce(0) { $0 + $1.credits }
+        guard totalCredits > 0 else { return 0.0 }
+        
+        let totalWeightedPoints = completedModules.reduce(0.0) { sum, module in
+            let gpaPoint = convertMarkToGPAPoint(module.finalMark)
+            return sum + (gpaPoint * Double(module.credits))
+        }
+        
+        return totalWeightedPoints / Double(totalCredits)
+    }
+    
+    var inProgressModules: [Module] {
+        modules.filter { !$0.isCompleted }.sorted { $0.name < $1.name }
+    }
+    
+    var completedModules: [Module] {
+        modules.filter { $0.isCompleted }.sorted { $0.finalMark > $1.finalMark }
+    }
+    
+    var completedCredits: Int {
+        completedModules.reduce(0) { $0 + $1.credits }
+    }
+    
+    var completedCourses: Int {
+        completedModules.count
+    }
+    
+    var totalCourses: Int {
+        modules.count
+    }
+    
+    var gpaChange: Double = 0.15
+    
+    var gradeLevel: String {
+        switch currentGPA {
+        case 4.0: return "First (Avg)"
+        case 3.0..<4.0: return "2:1 (Avg)"
+        case 2.0..<3.0: return "2:2 (Avg)"
+        case 1.0..<2.0: return "Third (Avg)"
+        default: return "N/A"
+        }
+    }
+    
+    var highestGrade: Double {
+        completedModules.map { $0.finalMark }.max() ?? 0
+    }
+    
+    var averageGrade: Double {
+        let sum = completedModules.reduce(0) { $0 + $1.finalMark }
+        return completedModules.isEmpty ? 0 : sum / Double(completedModules.count)
+    }
+    
+    var pendingAssignments: Int {
+        upcomingAssignments.count
+    }
+    
+    func addModule(name: String, code: String, credits: Int, assessments: [Assessment], isCompleted: Bool) {
+        var newModule = Module(
+            name: name,
+            code: code,
+            credits: credits,
+            isCompleted: isCompleted,
+            assessments: assessments
+        )
+        
+        if isCompleted {
+            newModule.assessments = assessments.map {
+                var assessment = $0
+                if assessment.score == nil {
+                    assessment.score = 70.0
+                }
+                return assessment
+            }
+        }
+        
+        modules.append(newModule)
+    }
+    
+    func updateModule(_ module: Module) {
+        if let index = modules.firstIndex(where: { $0.id == module.id }) {
+            modules[index] = module
+        }
+    }
+    
+    func markModule(_ module: Module, completed: Bool) {
+        if let index = modules.firstIndex(where: { $0.id == module.id }) {
+            modules[index].isCompleted = completed
+        }
+    }
+    
+    func loadMockData() {
+        modules = [
+            Module(
+                name: "Intro to Computer Science",
+                code: "COMP0010",
+                credits: 15,
+                isCompleted: true,
+                assessments: [
+                    Assessment(name: "Coursework 1", weight: 40, score: 78),
+                    Assessment(name: "Final Exam", weight: 60, score: 68)
+                ]
+            ),
+            Module(
+                name: "Database Systems",
+                code: "COMP0012",
+                credits: 15,
+                isCompleted: false,
+                assessments: [
+                    Assessment(name: "SQL Project", weight: 50, score: 85),
+                    Assessment(name: "Written Exam", weight: 50, score: nil)
+                ]
+            ),
+            Module(
+                name: "Financial Markets",
+                code: "FINA0001",
+                credits: 30,
+                isCompleted: true,
+                assessments: [
+                    Assessment(name: "Midterm", weight: 30, score: 65),
+                    Assessment(name: "Group Project", weight: 30, score: 80),
+                    Assessment(name: "Final Exam", weight: 40, score: 72)
+                ]
+            )
+        ]
+    }
+}
