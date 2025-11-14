@@ -1,0 +1,17 @@
+# 备份文件夹
+*_backup_*/
+uniapp/Views/Parent_backup_*/
+
+# Xcode
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+*.xcworkspace/*
+!*.xcworkspace/contents.xcworkspacedata
+
+# macOS
+.DS_Store
+
+# Build
+build/
+DerivedData/
