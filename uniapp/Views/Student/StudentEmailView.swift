@@ -108,10 +108,8 @@ struct StudentEmailView: View {
             }
             .navigationTitle("邮件")
             .navigationBarTitleDisplayMode(.large)
-            .sheet(item: $selectedEmail) { email in
-                NavigationView {
-                    EmailDetailView(email: email)
-                }
+            .navigationDestination(item: $selectedEmail) { email in
+                EmailDetailView(email: email)
             }
         }
     }
@@ -305,20 +303,14 @@ struct EmailDetailView: View {
     @State private var showTranslation = false
     @State private var showSummary = false
     
-    // 使用 @State 存储 detail，避免每次渲染都重新计算
-    @State private var detail: EmailDetailContent
-    
-    // 初始化方法，在视图创建时计算一次
-    init(email: EmailPreview) {
-        self.email = email
-        
-        // 初始化 detail
+    // 使用计算属性，但缓存结果
+    private var detail: EmailDetailContent {
         if let existingDetail = mockEmailDetails[email.sender] {
-            _detail = State(initialValue: existingDetail)
-        } else {
-            // 默认内容（没有AI翻译和总结的邮件）
-            _detail = State(initialValue: EmailDetailContent(
-                original: """
+            return existingDetail
+        }
+        // 默认内容（没有AI翻译和总结的邮件）
+        return EmailDetailContent(
+            original: """
 Dear Student,
 
 \(email.excerpt)
@@ -328,19 +320,18 @@ Please check your student portal for more details.
 Best regards,
 \(email.sender)
 """,
-                aiTranslation: """
+            aiTranslation: """
 亲爱的同学，
 
 \(email.excerpt)
 
 请登录学生门户查看详细信息。
 """,
-                aiSummary: [
-                    "📧 请查看完整邮件内容",
-                    "🔍 登录学生门户获取更多信息"
-                ]
-            ))
-        }
+            aiSummary: [
+                "📧 请查看完整邮件内容",
+                "🔍 登录学生门户获取更多信息"
+            ]
+        )
     }
     
     var body: some View {
