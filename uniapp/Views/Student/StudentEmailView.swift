@@ -338,9 +338,8 @@ Best regards,
         }
     }
     
-    // 获取 detail，如果还没加载则加载
+    // 获取 detail，如果还没加载则返回默认值
     private var emailDetail: EmailDetailContent {
-        loadDetail()
         return detail ?? EmailDetailContent(
             original: email.excerpt,
             aiTranslation: email.excerpt,
@@ -607,6 +606,9 @@ Best regards,
         }
         .navigationTitle(email.title)
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            loadDetail()
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
