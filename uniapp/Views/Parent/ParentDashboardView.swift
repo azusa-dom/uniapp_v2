@@ -7,6 +7,8 @@ struct ParentDashboardView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var loc: LocalizationService
     @EnvironmentObject var uclVM: UCLAPIViewModel
+    @StateObject private var activitiesService = UCLActivitiesService()
+    @State private var hasLoadedActivities = false
     
     var body: some View {
         NavigationView {
@@ -47,7 +49,57 @@ struct ParentDashboardView: View {
                     }
                 }
             }
+            .onAppear {
+                loadCampusActivitiesIfNeeded()
+            }
         }
+    }
+    
+    // MARK: - 加载校园活动数据（确保数据已加载）
+    private func loadCampusActivitiesIfNeeded() {
+        // 如果 uclVM.events 中没有活动数据，则加载
+        let hasActivityEvents = uclVM.events.contains { $0.type == .manual }
+        
+        if !hasActivityEvents && !hasLoadedActivities {
+            // 加载活动数据
+            if activitiesService.activities.isEmpty {
+                activitiesService.loadActivities()
+                // 等待数据加载完成
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    convertAndAddActivities()
+                }
+            } else {
+                convertAndAddActivities()
+            }
+        }
+    }
+    
+    // MARK: - 转换并添加活动数据
+    private func convertAndAddActivities() {
+        guard !hasLoadedActivities else { return }
+        
+        let isChinese = loc.language == .chinese
+        
+        // 直接从 MockData.activities 加载并转换（与学生端保持一致）
+        let activityEvents = MockData.activities.map { activity in
+            return UCLAPIViewModel.UCLAPIEvent(
+                id: UUID(uuidString: activity.id) ?? UUID(),
+                title: activity.localizedTitle(isChinese: isChinese),
+                startTime: activity.startDate,
+                endTime: activity.endDate,
+                location: activity.localizedLocation(isChinese: isChinese),
+                type: .manual,
+                description: activity.localizedDescription(isChinese: isChinese),
+                recurrenceRule: nil,
+                reminderTime: .fifteenMin
+            )
+        }
+        
+        // 添加到 uclVM.events（如果没有添加过）
+        if !uclVM.events.contains(where: { $0.type == .manual }) {
+            uclVM.events.append(contentsOf: activityEvents)
+        }
+        hasLoadedActivities = true
     }
 }
 
@@ -604,9 +656,12 @@ struct CampusActivitiesPreviewCard: View {
     
     var todayActivities: [UCLAPIViewModel.UCLAPIEvent] {
         let calendar = Calendar.current
+        // 只显示活动类型的事件（type == .manual），不包括课程（type == .api）
         return uclVM.events.filter { event in
-            calendar.isDateInToday(event.startTime)
-        }.prefix(2).map { $0 }
+            event.type == .manual && calendar.isDateInToday(event.startTime)
+        }.sorted { $0.startTime < $1.startTime }
+        .prefix(2)
+        .map { $0 }
     }
     
     var body: some View {
