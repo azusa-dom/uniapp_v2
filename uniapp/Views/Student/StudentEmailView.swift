@@ -302,15 +302,18 @@ struct EmailDetailView: View {
     @Environment(\.dismiss) var dismiss
     @State private var showTranslation = false
     @State private var showSummary = false
+    @State private var detail: EmailDetailContent?
     
-    // 使用计算属性，但缓存结果
-    private var detail: EmailDetailContent {
+    // 延迟加载 detail
+    private func loadDetail() {
+        guard detail == nil else { return }
+        
         if let existingDetail = mockEmailDetails[email.sender] {
-            return existingDetail
-        }
-        // 默认内容（没有AI翻译和总结的邮件）
-        return EmailDetailContent(
-            original: """
+            detail = existingDetail
+        } else {
+            // 默认内容（没有AI翻译和总结的邮件）
+            detail = EmailDetailContent(
+                original: """
 Dear Student,
 
 \(email.excerpt)
@@ -320,17 +323,28 @@ Please check your student portal for more details.
 Best regards,
 \(email.sender)
 """,
-            aiTranslation: """
+                aiTranslation: """
 亲爱的同学，
 
 \(email.excerpt)
 
 请登录学生门户查看详细信息。
 """,
-            aiSummary: [
-                "📧 请查看完整邮件内容",
-                "🔍 登录学生门户获取更多信息"
-            ]
+                aiSummary: [
+                    "📧 请查看完整邮件内容",
+                    "🔍 登录学生门户获取更多信息"
+                ]
+            )
+        }
+    }
+    
+    // 获取 detail，如果还没加载则加载
+    private var emailDetail: EmailDetailContent {
+        loadDetail()
+        return detail ?? EmailDetailContent(
+            original: email.excerpt,
+            aiTranslation: email.excerpt,
+            aiSummary: []
         )
     }
     
@@ -392,7 +406,7 @@ Best regards,
                                 .font(.system(size: 18, weight: .semibold))
                                 .foregroundColor(.primary)
                         }
-                        Text(detail.original)
+                        Text(emailDetail.original)
                             .font(.system(size: 15, weight: .regular))
                             .foregroundColor(.primary)
                             .lineSpacing(8)
@@ -503,7 +517,7 @@ Best regards,
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(.primary)
                             }
-                            Text(detail.aiTranslation)
+                            Text(emailDetail.aiTranslation)
                                 .font(.system(size: 15, weight: .regular))
                                 .foregroundColor(.primary)
                                 .lineSpacing(8)
@@ -518,7 +532,7 @@ Best regards,
                     }
                     
                     // AI 总结内容（点击后显示）
-                    if showSummary && !detail.aiSummary.isEmpty {
+                    if showSummary && !emailDetail.aiSummary.isEmpty {
                         VStack(alignment: .leading, spacing: 16) {
                             HStack(spacing: 8) {
                                 Image(systemName: "list.bullet.rectangle.portrait.fill")
@@ -530,7 +544,7 @@ Best regards,
                             }
                             
                             VStack(alignment: .leading, spacing: 12) {
-                                ForEach(detail.aiSummary, id:\.self) { point in
+                                ForEach(emailDetail.aiSummary, id:\.self) { point in
                                     HStack(alignment: .top, spacing: 10) {
                                         Circle()
                                             .fill(
