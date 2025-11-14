@@ -301,6 +301,7 @@ struct EmailCard: View {
 struct EmailDetailView: View {
     let email: EmailPreview
     
+    @Environment(\.dismiss) var dismiss
     @State private var showTranslation = false
     @State private var showSummary = false
     
@@ -601,6 +602,16 @@ Best regards,
         }
         .navigationTitle(email.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
     }
 }
 struct AddEmailToCalendarView: View {
