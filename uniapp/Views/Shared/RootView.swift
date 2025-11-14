@@ -216,54 +216,53 @@ struct StudentTabView: View {
     }
 }
 
-// 家长端 Tab（5个）
+// 家长端 Tab（5个 - 重新设计）
 struct ParentTabView: View {
     @EnvironmentObject var loc: LocalizationService
     @EnvironmentObject var viewModel: UCLAPIViewModel
     @State private var selectedTab = 0
-    
+
     var body: some View {
         TabView(selection: $selectedTab) {
-            // 1. 首页
+            // Tab 1: 首页
             ParentDashboardView()
                 .tabItem {
-                    Label(loc.tr("tab_home"), systemImage: "house.fill")
+                    Label(loc.language == .chinese ? "首页" : "Home",
+                          systemImage: "house.fill")
                 }
                 .tag(0)
-            
-            // 2. 活动与日历（合并）
-            ParentCalendarView()
+
+            // Tab 2: 学业 & 课表
+            ParentAcademicsView()
                 .environmentObject(viewModel)
                 .tabItem {
-                    Label("活动日历", systemImage: "calendar")
+                    Label(loc.language == .chinese ? "学业" : "Academics",
+                          systemImage: "book.fill")
                 }
                 .tag(1)
-            
-            // 3. 学业
-            ParentTodoView()
+
+            // Tab 3: 健康 & 就医
+            ParentHealthView()
                 .tabItem {
-                    Label("学业", systemImage: "graduationcap.fill")
+                    Label(loc.language == .chinese ? "健康" : "Health",
+                          systemImage: "heart.fill")
                 }
                 .tag(2)
-            
-            // 4. AI
-            ParentAIAssistantView()
+
+            // Tab 4: 校园生活
+            ParentCampusView()
+                .environmentObject(viewModel)
                 .tabItem {
-                    Label(loc.tr("tab_ai"), systemImage: "sparkles")
+                    Label(loc.language == .chinese ? "活动" : "Campus",
+                          systemImage: "star.fill")
                 }
                 .tag(3)
 
-            // 5. 健康
-            ParentHealthView()
+            // Tab 5: 消息 & AI
+            ParentMessagesView()
                 .tabItem {
-                    Label("健康", systemImage: "heart.text.square")
-                }
-                .tag(5)
-            
-            // 5. 邮箱
-            ParentEmailView()
-                .tabItem {
-                    Label(loc.tr("tab_email"), systemImage: "envelope.fill")
+                    Label(loc.language == .chinese ? "消息" : "Messages",
+                          systemImage: "bubble.left.and.bubble.right.fill")
                 }
                 .tag(4)
         }
