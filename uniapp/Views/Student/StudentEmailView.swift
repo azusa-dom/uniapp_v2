@@ -103,16 +103,8 @@ struct StudentEmailView: View {
                     }
                 }
             }
-            .navigationBarHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    VStack(spacing: 4) {
-                        Text("邮件")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(.primary)
-                    }
-                }
-            }
+            .navigationTitle("邮件")
+            .navigationBarTitleDisplayMode(.large)
         }
     }
 }
