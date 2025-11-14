@@ -83,10 +83,15 @@ struct MessageBubble: View {
             )
     }
     
-    private func timeString(_ date: Date) -> String {
+    // 使用静态缓存的 DateFormatter，避免重复创建
+    private static let sharedTimeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
-        return formatter.string(from: date)
+        return formatter
+    }()
+    
+    private func timeString(_ date: Date) -> String {
+        return Self.sharedTimeFormatter.string(from: date)
     }
 }
 

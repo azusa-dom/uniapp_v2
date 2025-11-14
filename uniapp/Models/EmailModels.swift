@@ -211,26 +211,33 @@ struct EmailDetailContent {
 }
 
 // MARK: - 辅助函数
+// 使用静态缓存的 DateFormatter 实例，避免重复创建导致的性能问题
+private let timeFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "HH:mm"
+    return formatter
+}()
+
+private let monthDayFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "MMM d"
+    return formatter
+}()
+
 private func formatRelativeDate(_ date: Date) -> String {
     let calendar = Calendar.current
     let now = Date()
     
     if calendar.isDateInToday(date) {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        return "今天 · \(formatter.string(from: date))"
+        return "今天 · \(timeFormatter.string(from: date))"
     } else if calendar.isDateInYesterday(date) {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        return "昨天 · \(formatter.string(from: date))"
+        return "昨天 · \(timeFormatter.string(from: date))"
     } else {
         let daysAgo = calendar.dateComponents([.day], from: date, to: now).day ?? 0
         if daysAgo < 7 {
             return "\(daysAgo) 天前"
         } else {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MMM d"
-            return formatter.string(from: date)
+            return monthDayFormatter.string(from: date)
         }
     }
 }
