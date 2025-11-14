@@ -2,8 +2,6 @@
 //  StudentSettingsView.swift
 //  uniapp
 //
-//  学生设置：头像（图标/相册）、基础信息编辑、iOS17 新 onChange 写法
-//
 
 import SwiftUI
 

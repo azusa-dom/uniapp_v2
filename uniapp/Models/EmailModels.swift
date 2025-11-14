@@ -7,7 +7,142 @@
 
 import Foundation
 
-// MARK: - 邮件
+// MARK: - 完整邮件模型
+struct Email: Identifiable, Codable {
+    let id: String
+    let sender: EmailContact
+    let recipients: [EmailContact]
+    let cc: [EmailContact]
+    let subject: String
+    let subjectZH: String
+    let body: String
+    let bodyZH: String
+    let timestamp: Date
+    let isRead: Bool
+    let isStarred: Bool
+    let hasAttachments: Bool
+    let attachments: [EmailAttachment]
+    let category: EmailCategory
+    let priority: EmailPriority
+    let labels: [String]
+    
+    enum EmailCategory: String, Codable {
+        case inbox = "收件箱"
+        case sent = "已发送"
+        case draft = "草稿"
+        case spam = "垃圾邮件"
+        case trash = "已删除"
+        case academic = "学术"
+        case administrative = "行政"
+        case social = "社交"
+        case career = "职业"
+        case newsletter = "简讯"
+        
+        var displayName: String {
+            switch self {
+            case .academic: return "学术"
+            case .administrative: return "行政"
+            case .social: return "社交"
+            case .career: return "职业"
+            case .newsletter: return "简讯"
+            default: return rawValue
+            }
+        }
+        
+        var englishName: String {
+            switch self {
+            case .academic: return "Academic"
+            case .administrative: return "Administrative"
+            case .social: return "Events"
+            case .career: return "Career"
+            case .newsletter: return "Newsletter"
+            default: return "General"
+            }
+        }
+    }
+    
+    enum EmailPriority: String, Codable {
+        case low = "低"
+        case normal = "普通"
+        case high = "高"
+        case urgent = "紧急"
+    }
+}
+
+// MARK: - 邮件联系人
+struct EmailContact: Identifiable, Codable, Hashable {
+    let id: String
+    let name: String
+    let email: String
+    let avatarURL: String?
+    let department: String?
+    let title: String?
+    
+    var displayName: String {
+        return "\(name) <\(email)>"
+    }
+}
+
+// MARK: - 邮件附件
+struct EmailAttachment: Identifiable, Codable {
+    let id: String
+    let fileName: String
+    let fileType: String
+    let fileSize: Int // bytes
+    let downloadURL: String?
+    
+    var fileSizeFormatted: String {
+        let kb = Double(fileSize) / 1024.0
+        if kb < 1024 {
+            return String(format: "%.1f KB", kb)
+        } else {
+            let mb = kb / 1024.0
+            return String(format: "%.1f MB", mb)
+        }
+    }
+    
+    var fileIcon: String {
+        switch fileType.lowercased() {
+        case "pdf": return "doc.fill"
+        case "doc", "docx": return "doc.text.fill"
+        case "xls", "xlsx": return "tablecells.fill"
+        case "ppt", "pptx": return "rectangle.stack.fill"
+        case "jpg", "jpeg", "png": return "photo.fill"
+        case "zip", "rar": return "doc.zipper"
+        default: return "doc.fill"
+        }
+    }
+}
+
+// MARK: - 邮件草稿
+struct EmailDraft: Identifiable, Codable {
+    let id: String
+    var recipients: [EmailContact]
+    var cc: [EmailContact]
+    var subject: String
+    var body: String
+    var attachments: [EmailAttachment]
+    var lastModified: Date
+}
+
+// MARK: - 邮件过滤器
+struct EmailFilter {
+    var searchText: String = ""
+    var category: Email.EmailCategory?
+    var isUnreadOnly: Bool = false
+    var isStarredOnly: Bool = false
+    var hasAttachmentsOnly: Bool = false
+    var dateRange: DateRange?
+    
+    enum DateRange {
+        case today
+        case thisWeek
+        case thisMonth
+        case custom(from: Date, to: Date)
+    }
+}
+
+// MARK: - 兼容旧版本的 EmailPreview（用于现有视图）
 struct EmailPreview: Identifiable {
     struct DeadlineMeta {
         var title: String
@@ -17,7 +152,7 @@ struct EmailPreview: Identifiable {
         var note: String
     }
     
-    let id = UUID()
+    let id: UUID
     var title: String
     var sender: String
     var excerpt: String
@@ -25,6 +160,39 @@ struct EmailPreview: Identifiable {
     var category: String // "Academic", "Events", "Urgent", "General"
     var isRead: Bool
     var deadline: DeadlineMeta? = nil
+    
+    // 从完整 Email 模型转换
+    init(from email: Email) {
+        self.id = UUID(uuidString: email.id) ?? UUID()
+        self.title = email.subject
+        self.sender = email.sender.name
+        self.excerpt = String(email.body.prefix(100))
+        self.date = formatRelativeDate(email.timestamp)
+        self.category = email.category.englishName
+        self.isRead = email.isRead
+        self.deadline = nil
+    }
+    
+    // 成员初始化器（用于旧数据兼容）
+    init(
+        id: UUID = UUID(),
+        title: String,
+        sender: String,
+        excerpt: String,
+        date: String,
+        category: String,
+        isRead: Bool,
+        deadline: DeadlineMeta? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.sender = sender
+        self.excerpt = excerpt
+        self.date = date
+        self.category = category
+        self.isRead = isRead
+        self.deadline = deadline
+    }
 }
 
 struct EmailDetailContent {
@@ -33,8 +201,37 @@ struct EmailDetailContent {
     var aiSummary: [String]
 }
 
-// 模拟邮件数据
-let mockEmails: [EmailPreview] = [
+// MARK: - 辅助函数
+private func formatRelativeDate(_ date: Date) -> String {
+    let calendar = Calendar.current
+    let now = Date()
+    
+    if calendar.isDateInToday(date) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return "今天 · \(formatter.string(from: date))"
+    } else if calendar.isDateInYesterday(date) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return "昨天 · \(formatter.string(from: date))"
+    } else {
+        let daysAgo = calendar.dateComponents([.day], from: date, to: now).day ?? 0
+        if daysAgo < 7 {
+            return "\(daysAgo) 天前"
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMM d"
+            return formatter.string(from: date)
+        }
+    }
+}
+
+// 模拟邮件数据（从完整邮件数据转换，同时保留旧数据以保持兼容）
+let mockEmails: [EmailPreview] = {
+    // 从完整邮件数据转换
+    let fromFullEmails = MockData.fullEmails.map { EmailPreview(from: $0) }
+    // 保留旧的简化数据以保持向后兼容
+    let oldEmails: [EmailPreview] = [
     .init(
         title: "机器学习课程作业提交提醒",
         sender: "Prof. Sarah Chen",
@@ -125,9 +322,23 @@ let mockEmails: [EmailPreview] = [
             note: "Volunteer Reminder"
         )
     )
-]
+    ]
+    // 合并新旧数据，优先使用完整邮件数据
+    return fromFullEmails + oldEmails
+}()
 
-let mockEmailDetails: [String: EmailDetailContent] = [
+let mockEmailDetails: [String: EmailDetailContent] = {
+    // 从完整邮件数据生成详情
+    var details: [String: EmailDetailContent] = [:]
+    for email in MockData.fullEmails {
+        details[email.sender.name] = EmailDetailContent(
+            original: email.body,
+            aiTranslation: email.bodyZH,
+            aiSummary: email.labels.map { "📧 \($0)" }
+        )
+    }
+    // 保留旧的详情数据
+    let oldDetails: [String: EmailDetailContent] = [
     "Prof. Sarah Chen": .init(
         original: """
 Dear students,
@@ -197,4 +408,7 @@ SU Team
         aiTranslation: "大家好！国际文化节志愿者现开放报名，11 月 19 日截止。活动在 11 月 20 日举行，职责包含引导来宾及展台支持。",
         aiSummary: ["🌍 文化节志愿者", "📅 活动：11 月 20 日", "⏰ 报名截止：11 月 19 日"]
     )
-]
+    ]
+    // 合并新旧详情，优先使用完整邮件详情
+    return details.merging(oldDetails) { new, _ in new }
+}()

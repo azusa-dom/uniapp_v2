@@ -2,7 +2,6 @@
 //  MedicalRecordsView.swift
 //  uniapp
 //
-//  就诊历史视图
 //
 
 import SwiftUI

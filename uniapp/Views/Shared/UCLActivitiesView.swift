@@ -6,6 +6,7 @@ struct UCLActivitiesView: View {
     @State private var selectedCategory = "全部"
     @State private var searchText = ""
     @State private var showingFilters = false
+    @State private var showingActivityDetail: UCLActivity?
 
     let categories = ["全部", "学术", "文化", "体育", "社团", "讲座", "展览"]
 
@@ -70,6 +71,10 @@ struct UCLActivitiesView: View {
                 if activitiesService.activities.isEmpty {
                     activitiesService.loadActivities()
                 }
+            }
+            .sheet(item: $showingActivityDetail) { activity in
+                ActivityDetailSheet(activity: activity, service: activitiesService)
+                    .environmentObject(loc)
             }
         }
     }
@@ -147,7 +152,9 @@ struct UCLActivitiesView: View {
             ScrollView {
                 LazyVStack(spacing: 16) {
                     ForEach(filteredActivities, id: \.id) { activity in
-                        ActivityCard(activity: activity)
+                        ActivityCard(activity: activity) {
+                            showingActivityDetail = activity
+                        }
                     }
                 }
                 .padding(.horizontal)
@@ -161,6 +168,7 @@ struct ActivityCard: View {
     @EnvironmentObject var loc: LocalizationService
     @EnvironmentObject var appState: AppState
     let activity: UCLActivity
+    let onTap: () -> Void
 
     var formattedDate: String {
         let dateFormatter = DateFormatter()
@@ -200,6 +208,10 @@ struct ActivityCard: View {
                     .padding(.vertical, 4)
                     .background(Color(hex: "6366F1"))
                     .clipShape(Capsule())
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                onTap()
             }
 
             if let description = activity.description {
@@ -246,9 +258,7 @@ struct ActivityCard: View {
             }
 
             HStack(spacing: 12) {
-                Button(action: {
-                    // 查看详情
-                }) {
+                Button(action: onTap) {
                     Text("查看详情")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(Color(hex: "6366F1"))

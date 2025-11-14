@@ -43,7 +43,7 @@ class StudentAIAssistantViewModel: ObservableObject {
             let reply = try await AIService.shared.sendConversation(messages)
             messages.append(ChatMessage(text: reply, isUser: false))
         } catch let aiError as AIError {
-            messages.append(ChatMessage(text: "AI 错误：\(aiError.localizedDescription ?? "未知错误")", isUser: false))
+            messages.append(ChatMessage(text: "AI 错误：\(aiError.localizedDescription)", isUser: false))
         } catch {
             messages.append(ChatMessage(text: "AI 发生错误：\(error.localizedDescription)", isUser: false))
         }

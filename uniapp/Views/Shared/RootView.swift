@@ -85,6 +85,7 @@ struct StudentTabView: View {
                 }
                 .tag(5)
         }
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: selectedTab)
         .accentColor(Color(hex: "8B5CF6"))
     }
 }

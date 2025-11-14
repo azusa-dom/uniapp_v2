@@ -14,50 +14,25 @@ struct AllergiesManagementView: View {
     @State private var selectedAllergy: AllergyRecord?
     
     var body: some View {
-        ZStack {
-            ScrollView {
-                LazyVStack(spacing: 16) {
-                    // 警告提示
-                    warningBanner
-                    
-                    // 统计信息
-                    allergyStats
-                    
-                    // 过敏列表
-                    if healthManager.allergies.isEmpty {
-                        emptyState
-                    } else {
-                        ForEach(healthManager.allergies) { allergy in
-                            AllergyCard(allergy: allergy)
-                                .environmentObject(healthManager)
-                                .onTapGesture {
-                                    selectedAllergy = allergy
-                                }
+        VStack(spacing: 16) {
+            // ✅ 警告提示（现代化设计）
+            warningBanner
+            
+            // 过敏列表
+            if healthManager.allergies.isEmpty {
+                emptyState
+            } else {
+                ForEach(healthManager.allergies) { allergy in
+                    AllergyCard(allergy: allergy)
+                        .environmentObject(healthManager)
+                        .onTapGesture {
+                            selectedAllergy = allergy
                         }
-                    }
                 }
-                .padding()
             }
             
-            // 添加按钮
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    Button(action: { showingAddAllergy = true }) {
-                        Image(systemName: "plus")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .frame(width: 60, height: 60)
-                            .background(Color(hex: "EF4444"))
-                            .clipShape(Circle())
-                            .shadow(color: Color(hex: "EF4444").opacity(0.4), radius: 10, x: 0, y: 5)
-                    }
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 20)
-                }
-            }
+            // ✅ 统一风格的添加按钮
+            addButton
         }
         .sheet(isPresented: $showingAddAllergy) {
             AddAllergyView()
@@ -72,150 +47,174 @@ struct AllergiesManagementView: View {
     private var warningBanner: some View {
         HStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.title2)
-                .foregroundColor(Color(hex: "EF4444"))
+                .font(.system(size: 24))
+                .foregroundColor(Color(hex: "F59E0B"))
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("重要提醒")
-                    .font(.headline)
+                Text("重要提示")
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundColor(.primary)
                 
-                Text("就医时请主动告知医生您的过敏史")
-                    .font(.caption)
+                Text("请及时记录您的过敏史，以便在就医时提供准确信息")
+                    .font(.system(size: 12))
                     .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            
-            Spacer()
         }
-        .padding()
-        .background(Color(hex: "FEE2E2"))
+        .padding(16)
+        .background(Color(hex: "F59E0B").opacity(0.1))
         .cornerRadius(12)
-    }
-    
-    private var allergyStats: some View {
-        HStack(spacing: 12) {
-            ForEach(AllergyRecord.AllergyType.allCases, id: \.self) { type in
-                let count = healthManager.allergies.filter { $0.allergyType == type }.count
-                if count > 0 {
-                    VStack(spacing: 8) {
-                        Text(type.rawValue)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Text("\(count)")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.primary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .glassCard()
-                }
-            }
-        }
     }
     
     private var emptyState: some View {
         VStack(spacing: 16) {
-            Image(systemName: "checkmark.shield")
+            Image(systemName: "checkmark.shield.fill")
                 .font(.system(size: 60))
-                .foregroundColor(.secondary.opacity(0.5))
+                .foregroundColor(Color(hex: "10B981").opacity(0.3))
+                .padding(.top, 40)
             
-            Text("暂无过敏记录")
-                .font(.headline)
-                .foregroundColor(.secondary)
+            Text("暂无过敏史记录")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.primary)
             
-            Text("点击右下角 + 按钮添加过敏史")
-                .font(.caption)
+            Text("如果您有药物或食物过敏，请及时添加")
+                .font(.system(size: 13))
                 .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 60)
+        .padding(.vertical, 40)
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 2)
+    }
+    
+    // ✅ 统一风格的添加按钮
+    private var addButton: some View {
+        Button(action: { showingAddAllergy = true }) {
+            HStack {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 20))
+                
+                Text("添加过敏史")
+                    .font(.system(size: 15, weight: .semibold))
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(
+                LinearGradient(
+                    colors: [Color(hex: "EF4444"), Color(hex: "DC2626")],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(12)
+            .shadow(color: Color(hex: "EF4444").opacity(0.3), radius: 8, x: 0, y: 4)
+        }
+        .padding(.top, 8)
     }
 }
 
-// MARK: - 过敏卡片
+// MARK: - 过敏卡片（统一风格）
 struct AllergyCard: View {
     @EnvironmentObject var healthManager: HealthManager
     let allergy: AllergyRecord
+    @State private var showDeleteAlert = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(allergy.severity.color)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(allergy.allergen)
-                        .font(.headline)
-                        .foregroundColor(.primary)
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(severityColor.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(severityColor)
+                    }
                     
-                    Text(allergy.allergyType.rawValue)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(allergy.allergen)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Text(allergy.allergyType.rawValue)
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                    }
                 }
                 
                 Spacer()
                 
+                // 严重程度标签
                 Text(allergy.severity.rawValue)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(severityColor)
                     .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(allergy.severity.color)
+                    .padding(.vertical, 5)
+                    .background(severityColor.opacity(0.15))
                     .cornerRadius(8)
             }
             
             if !allergy.symptoms.isEmpty {
                 Divider()
                 
-                FlowLayout(spacing: 8) {
-                    ForEach(allergy.symptoms, id: \.self) { symptom in
-                        Text(symptom)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
-                    }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("症状表现")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.secondary)
+                    
+                    Text(allergy.symptoms.joined(separator: "、"))
+                        .font(.system(size: 13))
+                        .foregroundColor(.primary)
                 }
             }
             
-            if let discoveredDate = allergy.discoveredDate {
-                HStack {
-                    Image(systemName: "calendar")
-                        .font(.caption)
+            if !allergy.notes.isEmpty {
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("备注")
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.secondary)
                     
-                    Text("发现于 \(formatDate(discoveredDate))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
+                    Text(allergy.notes)
+                        .font(.system(size: 13))
+                        .foregroundColor(.primary)
                 }
             }
         }
-        .padding()
-        .glassCard()
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(allergy.severity.color.opacity(0.3), lineWidth: 2)
-        )
+        .padding(18)
+        .background(Color.white)
+        .cornerRadius(18)
+        .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
         .contextMenu {
             Button(role: .destructive, action: {
-                healthManager.deleteAllergy(allergy)
+                showDeleteAlert = true
             }) {
                 Label("删除", systemImage: "trash")
             }
         }
+        .alert("删除过敏史", isPresented: $showDeleteAlert) {
+            Button("取消", role: .cancel) { }
+            Button("删除", role: .destructive) {
+                healthManager.deleteAllergy(allergy)
+            }
+        } message: {
+            Text("确定要删除「\(allergy.allergen)」的过敏记录吗？")
+        }
     }
     
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy年MM月"
-        return formatter.string(from: date)
+    private var severityColor: Color {
+        switch allergy.severity {
+        case .mild: return Color(hex: "F59E0B")
+        case .moderate: return Color(hex: "F97316")
+        case .severe: return Color(hex: "EF4444")
+        case .lifeThreatening: return Color(hex: "DC2626")
+        }
     }
 }
 

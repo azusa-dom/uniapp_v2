@@ -2,8 +2,6 @@
 //  StudentDashboardView.swift (极致美观版)
 //  uniapp
 //
-//  重新设计：参考最佳移动应用设计，打造精致美观的首页
-//
 
 import SwiftUI
 
@@ -109,13 +107,6 @@ struct StudentDashboardView: View {
                 .ignoresSafeArea()
                 
                 ScrollView(showsIndicators: false) {
-                    NavigationLink(
-                        destination: CampusActivitiesView().environmentObject(loc),
-                        isActive: $showingCampusActivities
-                    ) {
-                        EmptyView()
-                    }
-                    .hidden()
                     
                     VStack(spacing: 16) {
                         // 欢迎卡片
@@ -288,7 +279,7 @@ struct StudentDashboardView: View {
                 // 问候语
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Hello, Zoya 👋")
+                        Text("今天也是元气满满的一天呢, Zoya 👋")
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.white)
                         
@@ -299,31 +290,10 @@ struct StudentDashboardView: View {
                     
                     Spacer()
                 }
-                
-                // 快速统计
-                HStack(spacing: 10) {
-                    miniStatChip(
-                        icon: "book.fill",
-                        value: "\(todayClasses.count)",
-                        label: "课程"
-                    )
-                    
-                    miniStatChip(
-                        icon: "checkmark.circle.fill",
-                        value: "\(appState.todoManager.todos.filter { !$0.isCompleted }.count)",
-                        label: "待办"
-                    )
-                    
-                    miniStatChip(
-                        icon: "sparkles",
-                        value: "\(pinnedActivities.count)",
-                        label: "活动"
-                    )
-                }
             }
             .padding(20)
         }
-        .frame(height: 140)
+        .frame(height: 100)
         .shadow(color: Color(hex: "6366F1").opacity(0.2), radius: 12, x: 0, y: 6)
     }
     
@@ -386,7 +356,9 @@ struct StudentDashboardView: View {
                     gradient: [DashboardPalette.bright, DashboardPalette.soft],
                     iconColor: .white
                 ) {
-                    selectedTab = 4  // 健康 tab
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        selectedTab = 4  // 健康 tab
+                    }
                 }
                 
                 PremiumQuickActionCard(
@@ -429,10 +401,8 @@ struct StudentDashboardView: View {
                         }
                         .foregroundColor(Color(hex: "6366F1"))
                     }
-                    NavigationLink {
-                        StudentCalendarView()
-                            .environmentObject(loc)
-                            .environmentObject(appState)
+                    Button {
+                        selectedTab = 1  // 切换到日历标签页
                     } label: {
                         Text("查看全部")
                             .font(.system(size: 13, weight: .semibold))
@@ -450,10 +420,8 @@ struct StudentDashboardView: View {
             } else {
                 VStack(spacing: 10) {
                     ForEach(todayClasses) { classItem in
-                        NavigationLink {
-                            StudentCalendarView()
-                                .environmentObject(loc)
-                                .environmentObject(appState)
+                        Button {
+                            selectedTab = 1  // 切换到日历标签页
                         } label: {
                             PremiumClassCard(classItem: classItem)
                         }

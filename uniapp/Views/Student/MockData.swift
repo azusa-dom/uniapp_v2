@@ -2,8 +2,7 @@
 //  MockData.swift
 //  uniapp
 //
-//  UCL Health Data Science MSc 真实课程数据
-//
+
 
 import Foundation
 
@@ -476,6 +475,7 @@ struct MockData {
         // Term 1 核心模块
         Module(
             name: "Statistical Methods in Health Data Science",
+            nameZH: "健康数据科学统计方法",
             code: "HDAT0001",
             credits: 15,
             isCompleted: true,
@@ -487,6 +487,7 @@ struct MockData {
         ),
         Module(
             name: "Epidemiology for Health Data Science",
+            nameZH: "健康数据科学流行病学",
             code: "HDAT0003",
             credits: 15,
             isCompleted: true,
@@ -497,6 +498,7 @@ struct MockData {
         ),
         Module(
             name: "Health Databases and Data Management",
+            nameZH: "健康数据库与数据管理",
             code: "HDAT0005",
             credits: 15,
             isCompleted: true,
@@ -508,6 +510,7 @@ struct MockData {
         ),
         Module(
             name: "Clinical Informatics and EHR Systems",
+            nameZH: "临床信息学与电子健康记录系统",
             code: "HDAT0007",
             credits: 15,
             isCompleted: true,
@@ -521,6 +524,7 @@ struct MockData {
         // Term 2 模块（进行中）
         Module(
             name: "Machine Learning for Health Data",
+            nameZH: "健康数据机器学习",
             code: "HDAT0004",
             credits: 15,
             isCompleted: false,
@@ -532,6 +536,7 @@ struct MockData {
         ),
         Module(
             name: "Natural Language Processing in Healthcare",
+            nameZH: "医疗自然语言处理",
             code: "HDAT0010",
             credits: 15,
             isCompleted: false,
@@ -542,6 +547,7 @@ struct MockData {
         ),
         Module(
             name: "Causal Inference Methods",
+            nameZH: "因果推断方法",
             code: "HDAT0011",
             credits: 15,
             isCompleted: false,
@@ -555,6 +561,7 @@ struct MockData {
         // 选修模块
         Module(
             name: "Advanced Topics in Precision Medicine",
+            nameZH: "精准医学前沿专题",
             code: "HDAT0012",
             credits: 15,
             isCompleted: false,
@@ -604,6 +611,676 @@ struct MockData {
             dueDate: createDate(month: 11, day: 27, hour: 17, minute: 0)
         )
     ]
+    
+    // MARK: - 邮件联系人数据库
+    static let emailContacts: [EmailContact] = [
+        // UCL 教职员工
+        EmailContact(
+            id: "prof-copas",
+            name: "Prof. Andrew Copas",
+            email: "a.copas@ucl.ac.uk",
+            avatarURL: nil,
+            department: "Institute of Health Informatics",
+            title: "Professor of Medical Statistics"
+        ),
+        EmailContact(
+            id: "prof-hemingway",
+            name: "Prof. Harry Hemingway",
+            email: "h.hemingway@ucl.ac.uk",
+            avatarURL: nil,
+            department: "Institute of Health Informatics",
+            title: "Director, IHI"
+        ),
+        EmailContact(
+            id: "dr-denaxas",
+            name: "Dr. Spiros Denaxas",
+            email: "s.denaxas@ucl.ac.uk",
+            avatarURL: nil,
+            department: "Institute of Health Informatics",
+            title: "Senior Lecturer in Biomedical Informatics"
+        ),
+        EmailContact(
+            id: "prof-smeeth",
+            name: "Prof. Liam Smeeth",
+            email: "l.smeeth@lshtm.ac.uk",
+            avatarURL: nil,
+            department: "LSHTM",
+            title: "Professor of Clinical Epidemiology"
+        ),
+        EmailContact(
+            id: "dr-diaz",
+            name: "Dr. Karla Diaz-Ordaz",
+            email: "k.diaz-ordaz@ucl.ac.uk",
+            avatarURL: nil,
+            department: "Department of Statistical Science",
+            title: "Associate Professor"
+        ),
+        
+        // 行政人员
+        EmailContact(
+            id: "admin-registry",
+            name: "Student Registry",
+            email: "registry@ucl.ac.uk",
+            avatarURL: nil,
+            department: "Student Administration",
+            title: nil
+        ),
+        EmailContact(
+            id: "admin-finance",
+            name: "Student Finance Office",
+            email: "student.finance@ucl.ac.uk",
+            avatarURL: nil,
+            department: "Finance",
+            title: nil
+        ),
+        EmailContact(
+            id: "admin-it",
+            name: "ISD Service Desk",
+            email: "service-desk@ucl.ac.uk",
+            avatarURL: nil,
+            department: "Information Services Division",
+            title: nil
+        ),
+        EmailContact(
+            id: "careers",
+            name: "UCL Careers Service",
+            email: "careers@ucl.ac.uk",
+            avatarURL: nil,
+            department: "Careers & Enterprise",
+            title: nil
+        ),
+        EmailContact(
+            id: "library",
+            name: "UCL Library Services",
+            email: "library@ucl.ac.uk",
+            avatarURL: nil,
+            department: "Library Services",
+            title: nil
+        ),
+        
+        // 外部联系人（公司/机构）
+        EmailContact(
+            id: "nhs-digital",
+            name: "NHS Digital Graduate Team",
+            email: "graduatescheme@nhs.net",
+            avatarURL: nil,
+            department: "NHS Digital",
+            title: "Recruitment Team"
+        ),
+        EmailContact(
+            id: "deepmind",
+            name: "DeepMind Health Team",
+            email: "health-partnerships@deepmind.com",
+            avatarURL: nil,
+            department: "Google DeepMind",
+            title: "Partnership Manager"
+        ),
+        EmailContact(
+            id: "gsk-recruit",
+            name: "GSK AI/ML Recruitment",
+            email: "ai.recruitment@gsk.com",
+            avatarURL: nil,
+            department: "GSK",
+            title: "Talent Acquisition"
+        ),
+        
+        // 学生组织
+        EmailContact(
+            id: "hds-society",
+            name: "Health Data Science Society",
+            email: "ucl.healthdatascience@gmail.com",
+            avatarURL: nil,
+            department: "Student Society",
+            title: nil
+        ),
+        EmailContact(
+            id: "ihi-student",
+            name: "IHI Student Representative",
+            email: "ihi.students@ucl.ac.uk",
+            avatarURL: nil,
+            department: "Student Union",
+            title: nil
+        )
+    ]
+    
+    // MARK: - 完整邮件数据
+    static let fullEmails: [Email] = {
+        let me = EmailContact(id: "me", name: "You", email: "ucabxyz@ucl.ac.uk", avatarURL: nil, department: nil, title: nil)
+        
+        return [
+            // 1. 紧急：作业截止提醒
+            Email(
+                id: "email-001",
+                sender: emailContacts.first(where: { $0.id == "prof-copas" })!,
+                recipients: [me],
+                cc: [],
+                subject: "URGENT: HDAT0001 Statistical Methods Assignment - Submission Deadline Extension",
+                subjectZH: "紧急：HDAT0001 统计方法作业 - 提交截止日期延期",
+                body: """
+                Dear HDAT0001 Students,
+                
+                Due to the recent technical issues with Moodle, we are extending the deadline for your Statistical Methods assignment from 25 November to **27 November 2024, 23:59**.
+                
+                **Key Points:**
+                • New deadline: 27 Nov 2024, 23:59
+                • Submit via Turnitin on Moodle
+                • Maximum word count: 2,500 words (excluding references)
+                • Late penalties still apply after the new deadline
+                
+                The assignment brief requires you to:
+                1. Analyze the UK Biobank cardiovascular dataset
+                2. Perform logistic regression analysis
+                3. Interpret results in clinical context
+                4. Discuss limitations and potential biases
+                
+                **Marking Criteria:**
+                • Statistical analysis (40%)
+                • Interpretation (30%)
+                • Critical evaluation (20%)
+                • Presentation (10%)
+                
+                If you have questions, please attend my office hours on Thursday 14:00-16:00 or email me directly.
+                
+                Good luck with your submissions!
+                
+                Best regards,
+                Prof. Andrew Copas
+                Chair, Statistical Methods in Health Data Science
+                Institute of Health Informatics, UCL
+                """,
+                bodyZH: """
+                亲爱的 HDAT0001 学生们，
+                
+                由于最近 Moodle 的技术问题，我们将统计方法作业的截止日期从 11 月 25 日延长至 **2024 年 11 月 27 日 23:59**。
+                
+                **要点：**
+                • 新截止日期：2024 年 11 月 27 日 23:59
+                • 通过 Moodle 上的 Turnitin 提交
+                • 最大字数：2,500 字（不包括参考文献）
+                • 新截止日期后仍会有迟交罚分
+                
+                作业简介要求您：
+                1. 分析英国生物样本库心血管数据集
+                2. 进行逻辑回归分析
+                3. 在临床背景下解释结果
+                4. 讨论局限性和潜在偏差
+                
+                **评分标准：**
+                • 统计分析（40%）
+                • 解释（30%）
+                • 批判性评估（20%）
+                • 呈现（10%）
+                
+                如有问题，请在周四 14:00-16:00 参加我的办公时间或直接发邮件给我。
+                
+                祝提交顺利！
+                
+                此致
+                Andrew Copas 教授
+                健康数据科学统计方法主任
+                UCL 健康信息学研究所
+                """,
+                timestamp: createDate(month: 11, day: 20, hour: 10, minute: 15),
+                isRead: false,
+                isStarred: true,
+                hasAttachments: true,
+                attachments: [
+                    EmailAttachment(id: "att-001", fileName: "Assignment_Brief_Updated.pdf", fileType: "pdf", fileSize: 245000, downloadURL: nil),
+                    EmailAttachment(id: "att-002", fileName: "UK_Biobank_Dataset_Codebook.xlsx", fileType: "xlsx", fileSize: 1200000, downloadURL: nil)
+                ],
+                category: .academic,
+                priority: .urgent,
+                labels: ["Assignment", "Deadline", "HDAT0001"]
+            ),
+            
+            // 2. 学术：研究项目督导邀请
+            Email(
+                id: "email-002",
+                sender: emailContacts.first(where: { $0.id == "dr-denaxas" })!,
+                recipients: [me],
+                cc: [],
+                subject: "MSc Dissertation Project Opportunity: AI-driven Clinical Decision Support",
+                subjectZH: "硕士论文项目机会：AI 驱动的临床决策支持",
+                body: """
+                Hi,
+                
+                I hope this email finds you well. I'm reaching out because I have an exciting dissertation project opportunity that aligns with your interests in machine learning and clinical informatics.
+                
+                **Project Title:** Developing Explainable AI Models for Sepsis Early Warning in ICU
+                
+                **Overview:**
+                This project involves building interpretable ML models using MIMIC-IV data to predict sepsis onset 6-12 hours before clinical diagnosis. You'll work with real ICU time-series data and collaborate with clinicians at UCLH.
+                
+                **What you'll learn:**
+                • Feature engineering from EHR time-series data
+                • SHAP/LIME for model interpretability
+                • Working with healthcare stakeholders
+                • Model validation in clinical contexts
+                • Writing for medical journals
+                
+                **Requirements:**
+                • Strong Python skills (PyTorch/scikit-learn)
+                • Interest in clinical applications
+                • Ability to communicate with non-technical audiences
+                
+                **Timeline:**
+                • Project starts: January 2025
+                • Literature review: Jan-Feb
+                • Data analysis: Mar-Apr
+                • Writing & submission: May-Aug
+                
+                I have funding for conference attendance (e.g., MLHC 2025) if we get good results.
+                
+                Interested? Let's schedule a meeting next week to discuss further. Please reply with your availability.
+                
+                Best,
+                Spiros
+                
+                --
+                Dr. Spiros Denaxas
+                Senior Lecturer in Biomedical Informatics
+                Institute of Health Informatics, UCL
+                Office: 222 Euston Road, Room 3.07
+                """,
+                bodyZH: """
+                你好，
+                
+                希望你一切都好。我联系你是因为有一个令人兴奋的论文项目机会，与你对机器学习和临床信息学的兴趣相符。
+                
+                **项目标题：** 在 ICU 中开发用于脓毒症早期预警的可解释 AI 模型
+                
+                **概述：**
+                该项目涉及使用 MIMIC-IV 数据构建可解释的 ML 模型，以在临床诊断前 6-12 小时预测脓毒症发作。你将使用真实的 ICU 时间序列数据，并与 UCLH 的临床医生合作。
+                
+                **你将学到：**
+                • 从 EHR 时间序列数据中进行特征工程
+                • 使用 SHAP/LIME 进行模型可解释性
+                • 与医疗利益相关者合作
+                • 在临床背景下进行模型验证
+                • 为医学期刊撰写论文
+                
+                **要求：**
+                • 强大的 Python 技能（PyTorch/scikit-learn）
+                • 对临床应用感兴趣
+                • 能够与非技术受众沟通
+                
+                **时间表：**
+                • 项目开始：2025 年 1 月
+                • 文献综述：1-2 月
+                • 数据分析：3-4 月
+                • 撰写和提交：5-8 月
+                
+                如果我们取得好成果，我有资金支持参加会议（例如 MLHC 2025）。
+                
+                感兴趣吗？下周安排一次会面进一步讨论。请回复你的时间安排。
+                
+                此致
+                Spiros
+                
+                --
+                Spiros Denaxas 博士
+                生物医学信息学高级讲师
+                UCL 健康信息学研究所
+                办公室：尤斯顿路 222 号，3.07 室
+                """,
+                timestamp: createDate(month: 11, day: 18, hour: 14, minute: 32),
+                isRead: true,
+                isStarred: true,
+                hasAttachments: false,
+                attachments: [],
+                category: .academic,
+                priority: .high,
+                labels: ["Dissertation", "Research", "Opportunity"]
+            ),
+            
+            // 3. 行政：学费缴纳提醒
+            Email(
+                id: "email-003",
+                sender: emailContacts.first(where: { $0.id == "admin-finance" })!,
+                recipients: [me],
+                cc: [],
+                subject: "Action Required: Term 2 Tuition Fee Payment Due 15 December 2024",
+                subjectZH: "需要操作：第 2 学期学费付款截止日期为 2024 年 12 月 15 日",
+                body: """
+                Dear Student,
+                
+                This is a reminder that your Term 2 tuition fee instalment is due by **15 December 2024**.
+                
+                **Payment Details:**
+                Amount Due: £6,750.00
+                Payment Reference: FEES-2024-TERM2-HDAT-MSC
+                
+                **How to Pay:**
+                1. Log into Portico (https://portico.ucl.ac.uk)
+                2. Go to 'My Finances' → 'Make a Payment'
+                3. Select 'Tuition Fees Term 2'
+                4. Follow payment instructions
+                
+                **Payment Methods Accepted:**
+                • Debit/Credit Card
+                • Bank Transfer
+                • Student Loan (if applicable)
+                
+                **Important:**
+                Late payments may result in:
+                • £50 administrative charge
+                • Block on exam registration
+                • Library access suspension
+                • Transcript withholding
+                
+                If you're experiencing financial difficulties, please contact Student Funding immediately: student-funding@ucl.ac.uk or call 020 7679 0004.
+                
+                **Already Paid?**
+                Please allow 3-5 working days for payment processing. If paid recently, you can disregard this email.
+                
+                For queries, contact:
+                Student Finance Office
+                Email: student.finance@ucl.ac.uk
+                Phone: 020 7679 2005
+                Opening hours: Mon-Fri 10:00-16:00
+                
+                Kind regards,
+                Student Finance Office
+                University College London
+                """,
+                bodyZH: """
+                亲爱的学生，
+                
+                这是一个提醒，你的第 2 学期学费分期付款截止日期为 **2024 年 12 月 15 日**。
+                
+                **付款详情：**
+                应付金额：£6,750.00
+                付款参考：FEES-2024-TERM2-HDAT-MSC
+                
+                **如何付款：**
+                1. 登录 Portico (https://portico.ucl.ac.uk)
+                2. 前往"我的财务"→"进行付款"
+                3. 选择"第 2 学期学费"
+                4. 按照付款说明操作
+                
+                **接受的付款方式：**
+                • 借记卡/信用卡
+                • 银行转账
+                • 学生贷款（如适用）
+                
+                **重要：**
+                逾期付款可能导致：
+                • £50 行政费用
+                • 考试注册被阻止
+                • 图书馆访问暂停
+                • 成绩单扣留
+                
+                如果你遇到财务困难，请立即联系学生资助：student-funding@ucl.ac.uk 或致电 020 7679 0004。
+                
+                **已付款？**
+                请允许 3-5 个工作日处理付款。如果最近已付款，可以忽略此邮件。
+                
+                如有疑问，请联系：
+                学生财务办公室
+                邮箱：student.finance@ucl.ac.uk
+                电话：020 7679 2005
+                开放时间：周一至周五 10:00-16:00
+                
+                此致
+                学生财务办公室
+                伦敦大学学院
+                """,
+                timestamp: createDate(month: 11, day: 19, hour: 9, minute: 0),
+                isRead: true,
+                isStarred: false,
+                hasAttachments: true,
+                attachments: [
+                    EmailAttachment(id: "att-003", fileName: "Fee_Statement_Term2.pdf", fileType: "pdf", fileSize: 89000, downloadURL: nil)
+                ],
+                category: .administrative,
+                priority: .high,
+                labels: ["Finance", "Fees", "Action Required"]
+            ),
+            
+            // 4. 职业：NHS Digital 招聘
+            Email(
+                id: "email-004",
+                sender: emailContacts.first(where: { $0.id == "nhs-digital" })!,
+                recipients: [me],
+                cc: [],
+                subject: "NHS Digital Graduate Scheme 2025 - Apply Now!",
+                subjectZH: "NHS Digital 2025 年毕业生计划 - 立即申请！",
+                body: """
+                Hello,
+                
+                Thank you for your interest in the NHS Digital Graduate Scheme at our recent UCL careers fair!
+                
+                We're excited to invite you to apply for our **Data Science & AI Graduate Programme 2025**.
+                
+                **Programme Highlights:**
+                • 2-year structured programme
+                • Starting salary: £32,000 (London weighting included)
+                • 4 x 6-month rotations across different teams
+                • Mentorship from senior data scientists
+                • Professional development budget (£2,000/year)
+                • Work on real NHS digital transformation projects
+                
+                **Rotation Areas:**
+                1. Clinical Decision Support Systems
+                2. Population Health Analytics
+                3. AI/ML Research & Development
+                4. Data Engineering & Infrastructure
+                
+                **What We're Looking For:**
+                ✓ MSc in Health Data Science, Computer Science, or related field
+                ✓ Programming skills: Python, R, SQL
+                ✓ Understanding of healthcare systems
+                ✓ Strong communication skills
+                ✓ Right to work in UK
+                
+                **Application Deadline: 15 January 2025**
+                
+                **Application Process:**
+                1. Online application form + CV
+                2. Online assessment (numerical & logical reasoning)
+                3. Video interview
+                4. Assessment centre (full day)
+                
+                **Apply here:** https://jobs.nhs.digital/graduates2025
+                
+                **Application Tips:**
+                • Highlight relevant coursework and projects
+                • Show passion for healthcare innovation
+                • Demonstrate teamwork experience
+                • Give specific examples of problem-solving
+                
+                We're also hosting a **virtual Q&A session on 5 December 2024, 18:00-19:00**. Register here: [link]
+                
+                Questions? Reply to this email or contact our recruitment team:
+                📧 graduatescheme@nhs.net
+                📞 0113 397 2000
+                
+                We look forward to receiving your application!
+                
+                Best regards,
+                NHS Digital Graduate Recruitment Team
+                
+                --
+                Follow us: @NHSDigital
+                Website: digital.nhs.uk/careers
+                """,
+                bodyZH: """
+                你好，
+                
+                感谢你在我们最近的 UCL 职业博览会上对 NHS Digital 毕业生计划感兴趣！
+                
+                我们很高兴邀请你申请我们的 **2025 年数据科学与 AI 毕业生项目**。
+                
+                **项目亮点：**
+                • 2 年结构化项目
+                • 起薪：£32,000（包括伦敦生活费）
+                • 4 x 6 个月轮岗，跨不同团队
+                • 高级数据科学家指导
+                • 专业发展预算（每年 £2,000）
+                • 参与真实的 NHS 数字化转型项目
+                
+                **轮岗领域：**
+                1. 临床决策支持系统
+                2. 人口健康分析
+                3. AI/ML 研究与开发
+                4. 数据工程与基础设施
+                
+                **我们在寻找：**
+                ✓ 健康数据科学、计算机科学或相关领域的硕士学位
+                ✓ 编程技能：Python、R、SQL
+                ✓ 了解医疗系统
+                ✓ 强大的沟通能力
+                ✓ 英国工作权
+                
+                **申请截止日期：2025 年 1 月 15 日**
+                
+                **申请流程：**
+                1. 在线申请表 + 简历
+                2. 在线评估（数字和逻辑推理）
+                3. 视频面试
+                4. 评估中心（全天）
+                
+                **在此申请：** https://jobs.nhs.digital/graduates2025
+                
+                **申请技巧：**
+                • 突出相关课程和项目
+                • 展示对医疗创新的热情
+                • 展示团队合作经验
+                • 给出具体的解决问题示例
+                
+                我们还将在 **2024 年 12 月 5 日 18:00-19:00 举办虚拟问答会**。在此注册：[链接]
+                
+                有问题？回复此邮件或联系我们的招聘团队：
+                📧 graduatescheme@nhs.net
+                📞 0113 397 2000
+                
+                期待收到你的申请！
+                
+                此致
+                NHS Digital 毕业生招聘团队
+                
+                --
+                关注我们：@NHSDigital
+                网站：digital.nhs.uk/careers
+                """,
+                timestamp: createDate(month: 11, day: 17, hour: 11, minute: 45),
+                isRead: true,
+                isStarred: false,
+                hasAttachments: true,
+                attachments: [
+                    EmailAttachment(id: "att-004", fileName: "Graduate_Scheme_Brochure_2025.pdf", fileType: "pdf", fileSize: 3400000, downloadURL: nil),
+                    EmailAttachment(id: "att-005", fileName: "Application_Guide.pdf", fileType: "pdf", fileSize: 567000, downloadURL: nil)
+                ],
+                category: .career,
+                priority: .normal,
+                labels: ["Jobs", "Graduate Scheme", "NHS"]
+            ),
+            
+            // 5. 社交：活动邀请
+            Email(
+                id: "email-005",
+                sender: emailContacts.first(where: { $0.id == "hds-society" })!,
+                recipients: [me],
+                cc: [],
+                subject: "🎉 You're Invited: HDS Society Christmas Social - 19 Dec 2024",
+                subjectZH: "🎉 邀请你：HDS 学会圣诞社交 - 2024 年 12 月 19 日",
+                body: """
+                Hey there! 👋
+                
+                The term is almost over, and it's time to celebrate! 🎄✨
+                
+                The Health Data Science Society is hosting our **Annual Christmas Social** and you're invited!
+                
+                **📅 When:** Thursday, 19 December 2024, 19:00 - 23:00
+                **📍 Where:** The Bloomsbury Bowling Lanes, Tavistock Hotel, Bedford Way
+                **🎫 Cost:** £15 (includes bowling, pizza, and 2 drinks)
+                
+                **What's Happening:**
+                🎳 Bowling competition (prizes for winners!)
+                🍕 Unlimited pizza buffet
+                🍻 Bar with happy hour drinks
+                🎁 Secret Santa gift exchange (£10 limit, optional)
+                🎵 DJ & dancing
+                
+                **How to Register:**
+                1. Fill out this form: [Google Form link]
+                2. Pay £15 via bank transfer or Venmo
+                3. Deadline: 10 December 2024
+                
+                **Bank Details:**
+                Account Name: UCL Health Data Science Society
+                Sort Code: 40-47-22
+                Account Number: 71234567
+                Reference: XMAS-[YourName]
+                
+                **Secret Santa (Optional):**
+                Want to join? Add your name to the Secret Santa list in the form. You'll be randomly assigned a recipient and receive yours via email by 13 December.
+                
+                **Dress Code:** Festive casual! Christmas jumpers encouraged 🎅
+                
+                Can't wait to see you there! It's been a tough term, and we all deserve some fun before the break.
+                
+                Questions? Message us on Instagram @ucl_hds or email ucl.healthdatascience@gmail.com
+                
+                Cheers! 🥳
+                HDS Society Committee
+                
+                P.S. We'll be taking group photos - tag us with #UCLHDSChristmas!
+                """,
+                bodyZH: """
+                嘿！👋
+                
+                学期快结束了，是时候庆祝一下了！🎄✨
+                
+                健康数据科学学会将举办我们的 **年度圣诞社交**，邀请你参加！
+                
+                **📅 时间：** 2024 年 12 月 19 日（周四），19:00 - 23:00
+                **📍 地点：** Bloomsbury Bowling Lanes，Tavistock Hotel，Bedford Way
+                **🎫 费用：** £15（包括保龄球、披萨和 2 杯饮料）
+                
+                **活动内容：**
+                🎳 保龄球比赛（获胜者有奖品！）
+                🍕 无限披萨自助餐
+                🍻 酒吧和欢乐时光饮料
+                🎁 神秘圣诞老人礼物交换（£10 限额，可选）
+                🎵 DJ 和舞蹈
+                
+                **如何注册：**
+                1. 填写此表格：[Google 表格链接]
+                2. 通过银行转账或 Venmo 支付 £15
+                3. 截止日期：2024 年 12 月 10 日
+                
+                **银行详情：**
+                账户名：UCL Health Data Science Society
+                分类代码：40-47-22
+                账号：71234567
+                参考：XMAS-[你的名字]
+                
+                **神秘圣诞老人（可选）：**
+                想参加吗？在表格中添加你的名字到神秘圣诞老人列表。你将被随机分配一个接收者，并在 12 月 13 日前通过电子邮件收到你的。
+                
+                **着装要求：** 节日休闲！鼓励穿圣诞毛衣 🎅
+                
+                迫不及待想见到你！这是一个艰难的学期，我们都应该在假期前好好玩一玩。
+                
+                有问题？在 Instagram 上给我们留言 @ucl_hds 或发邮件至 ucl.healthdatascience@gmail.com
+                
+                干杯！🥳
+                HDS 学会委员会
+                
+                附言：我们会拍集体照 - 用 #UCLHDSChristmas 标记我们！
+                """,
+                timestamp: createDate(month: 11, day: 16, hour: 16, minute: 20),
+                isRead: false,
+                isStarred: false,
+                hasAttachments: false,
+                attachments: [],
+                category: .social,
+                priority: .normal,
+                labels: ["Event", "Social", "Christmas"]
+            )
+        ]
+    }()
     
     // MARK: - 辅助函数
     private static func createDate(month: Int = 11, day: Int = 15, weekday: Int = 2, hour: Int, minute: Int) -> Date {

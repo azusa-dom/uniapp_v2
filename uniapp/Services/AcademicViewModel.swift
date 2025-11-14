@@ -12,10 +12,19 @@ struct Assessment: Identifiable, Codable, Hashable {
 struct Module: Identifiable, Codable, Hashable {
     var id = UUID()
     var name: String
+    var nameZH: String?  // 中文名称（可选）
     var code: String
     var credits: Int
     var isCompleted: Bool = false
     var assessments: [Assessment] = []
+    
+    // 根据语言返回显示名称
+    func displayName(isChinese: Bool) -> String {
+        if isChinese, let zhName = nameZH, !zhName.isEmpty {
+            return "\(name) · \(zhName)"
+        }
+        return name
+    }
     
     var finalMark: Double {
         guard !assessments.isEmpty else { return 0.0 }
@@ -149,9 +158,10 @@ class AcademicViewModel: ObservableObject {
         upcomingAssignments.count
     }
     
-    func addModule(name: String, code: String, credits: Int, assessments: [Assessment], isCompleted: Bool) {
+    func addModule(name: String, nameZH: String? = nil, code: String, credits: Int, assessments: [Assessment], isCompleted: Bool) {
         var newModule = Module(
             name: name,
+            nameZH: nameZH,
             code: code,
             credits: credits,
             isCompleted: isCompleted,

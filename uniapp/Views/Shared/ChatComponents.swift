@@ -222,12 +222,11 @@ struct MarkdownText: View {
     // 处理行内 Markdown（如 **粗体**）
     private func processInlineMarkdown(_ text: String) -> AttributedString {
         var result = AttributedString()
-        var remaining = text
         let pattern = "\\*\\*(.+?)\\*\\*"
         
         if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
-            let nsString = remaining as NSString
-            let matches = regex.matches(in: remaining, options: [], range: NSRange(location: 0, length: nsString.length))
+            let nsString = text as NSString
+            let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: nsString.length))
             
             var lastIndex = 0
             

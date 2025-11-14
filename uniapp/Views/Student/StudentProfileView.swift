@@ -2,8 +2,7 @@
 //  StudentProfileView.swift
 //  uniapp
 //
-//  学生档案（发布级）：资料头卡片 / 设置卡片 / 数据共享 / 退出 / 角色切换
-//
+
 
 import SwiftUI
 

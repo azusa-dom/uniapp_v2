@@ -38,7 +38,22 @@ class AppState: ObservableObject {
     @Published var shareCalendar: Bool = true
     
     // -- 管理器 --
-    @StateObject var todoManager = TodoManager()
+    var todoManager: TodoManager
+    
+    // 用于订阅 TodoManager 的变化
+    private var cancellables = Set<AnyCancellable>()
+    
+    // 初始化器
+    init() {
+        self.todoManager = TodoManager()
+        
+        // 订阅 TodoManager 的变化，当 todos 变化时触发 AppState 的更新
+        todoManager.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+    }
     
     // -- 日历事件 --
     @Published var calendarEvents: [UCLAPIViewModel.UCLAPIEvent]? = nil

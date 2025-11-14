@@ -5,14 +5,30 @@ import Foundation // 需要用于 UUID 和 Date
 // (这是你的主文件)
 
 struct StudentAcademicsView: View {
-    // 假设 LocalizationService 存在于你的项目中
-    // @EnvironmentObject var loc: LocalizationService
+    @EnvironmentObject var loc: LocalizationService
     
     // 使用 @StateObject 在这里创建和持有 ViewModel 实例
     @StateObject private var viewModel = AcademicViewModel()
+    @EnvironmentObject var appState: AppState
+    
+    private var isChinese: Bool {
+        loc.language == .chinese
+    }
     
     @State private var selectedTab: AcademicsTab = .overview
     @State private var showingAddModule = false
+    @State private var selectedTodo: TodoItem?
+    
+    // 统一的即将截止数据源（与首页同步）
+    private var upcomingDeadlines: [TodoItem] {
+        let active = appState.todoManager.todos.filter { !$0.isCompleted }
+        let sorted = active.sorted { lhs, rhs in
+            let lhsDate = lhs.dueDate ?? Date.distantFuture
+            let rhsDate = rhs.dueDate ?? Date.distantFuture
+            return lhsDate < rhsDate
+        }
+        return Array(sorted.prefix(3))
+    }
     
     enum AcademicsTab {
         case overview, inProgress, completed
@@ -48,6 +64,7 @@ struct StudentAcademicsView: View {
                         }
                     }
                     .padding(.horizontal, 16)
+                    .id(appState.todoManager.todos.count) // 强制刷新当 todos 变化时
                     .padding(.vertical, 12)
                 }
             }
@@ -304,24 +321,38 @@ struct StudentAcademicsView: View {
                 
                 Spacer()
                 
-                Text("\(viewModel.upcomingAssignments.count) 项")
+                Text("\(upcomingDeadlines.count) 项")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.secondary)
             }
             
-            if viewModel.upcomingAssignments.isEmpty {
+            if upcomingDeadlines.isEmpty {
                 emptyStateView(
                     icon: "checkmark.circle.fill",
-                    message: "暂无待交作业",
+                    message: "暂无待办事项",
                     color: Color(hex: "10B981")
                 )
             } else {
                 VStack(spacing: 10) {
-                    ForEach(viewModel.upcomingAssignments.prefix(3)) { assignment in
-                        UpcomingAssignmentCard(assignment: assignment)
+                    ForEach(upcomingDeadlines) { todo in
+                        UpcomingTodoCard(todo: todo)
+                            .onTapGesture {
+                                selectedTodo = todo
+                            }
                     }
                 }
             }
+        }
+        .sheet(item: $selectedTodo) { todo in
+            TodoDetailView(
+                todo: todo,
+                isPresented: Binding(
+                    get: { selectedTodo != nil },
+                    set: { if !$0 { selectedTodo = nil } }
+                )
+            )
+            .environmentObject(loc)
+            .environmentObject(appState)
         }
     }
     
@@ -409,14 +440,19 @@ struct StudentAcademicsView: View {
 // MARK: - 4. 卡片视图 (Cards)
 
 struct InProgressModuleCard: View {
+    @EnvironmentObject var loc: LocalizationService
     let module: Module
     let markComplete: () -> Void
+    
+    private var isChinese: Bool {
+        loc.language == .chinese
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(module.name)
+                    Text(module.displayName(isChinese: isChinese))
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.primary)
                         .lineLimit(2)
@@ -499,8 +535,13 @@ struct InProgressModuleCard: View {
 
 
 struct CompletedModuleCard: View {
+    @EnvironmentObject var loc: LocalizationService
     let module: Module
     let markInProgress: () -> Void
+    
+    private var isChinese: Bool {
+        loc.language == .chinese
+    }
     
     var body: some View {
         // **崩溃修复**：
@@ -526,7 +567,7 @@ struct CompletedModuleCard: View {
             
             // 课程信息
             VStack(alignment: .leading, spacing: 6) {
-                Text(module.name)
+                Text(module.displayName(isChinese: isChinese))
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.primary)
                     .lineLimit(2)
@@ -583,6 +624,92 @@ struct CompletedModuleCard: View {
     }
 }
 
+
+// MARK: - Upcoming Todo Card (与首页同步)
+struct UpcomingTodoCard: View {
+    let todo: TodoItem
+    
+    private var timeRemaining: String {
+        guard let dueDate = todo.dueDate else { return "无截止" }
+        
+        let now = Date()
+        let interval = dueDate.timeIntervalSince(now)
+        
+        if interval < 0 {
+            return "已逾期"
+        } else if interval < 3600 {
+            return "\(Int(interval / 60))分钟后"
+        } else if interval < 86400 {
+            return "\(Int(interval / 3600))小时后"
+        } else {
+            return "\(Int(interval / 86400))天后"
+        }
+    }
+    
+    private var urgencyColor: Color {
+        guard let dueDate = todo.dueDate else { return Color(hex: "6366F1") }
+        
+        let interval = dueDate.timeIntervalSince(Date())
+        
+        if interval < 0 {
+            return Color(hex: "EF4444")
+        } else if interval < 86400 {
+            return Color(hex: "F59E0B")
+        } else if interval < 259200 {
+            return Color(hex: "F97316")
+        } else {
+            return Color(hex: "6366F1")
+        }
+    }
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // 优先级指示
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(urgencyColor.opacity(0.12))
+                    .frame(width: 44, height: 44)
+                
+                Image(systemName: "clock.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(urgencyColor)
+            }
+            
+            // 任务信息
+            VStack(alignment: .leading, spacing: 4) {
+                Text(todo.title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                
+                HStack(spacing: 6) {
+                    Text(todo.category)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                    
+                    Text("·")
+                        .foregroundColor(.secondary)
+                    
+                    Text(timeRemaining)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(urgencyColor)
+                }
+            }
+            
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.secondary.opacity(0.4))
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
+        )
+    }
+}
 
 struct UpcomingAssignmentCard: View {
     let assignment: Assignment
@@ -662,11 +789,16 @@ struct UpcomingAssignmentCard: View {
 
 struct ModuleDetailView: View {
     @EnvironmentObject var viewModel: AcademicViewModel
+    @EnvironmentObject var loc: LocalizationService
     @Environment(\.dismiss) var dismiss
     
     // 使用 @State 来管理模块的本地副本，以便编辑
     @State private var module: Module
     private var originalModule: Module // 存储原始数据
+    
+    private var isChinese: Bool {
+        loc.language == .chinese
+    }
     
     // 跟踪是否有改动
     private var hasChanges: Bool {
@@ -720,7 +852,7 @@ struct ModuleDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(module.name)
+                    Text(module.displayName(isChinese: isChinese))
                         .font(.system(size: 18, weight: .bold))
                     Text(module.code)
                         .font(.system(size: 13, weight: .medium))

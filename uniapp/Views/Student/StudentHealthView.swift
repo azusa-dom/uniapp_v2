@@ -1,8 +1,7 @@
 //  StudentHealthView.swift
 //  uniapp
 //
-//  学生健康中心：专业 iOS 风格设计
-//
+
 
 import SwiftUI
 

@@ -8,9 +8,7 @@
 //
 //  StudentCalendarView.swift
 //  uniapp
-//
-//  Created on 2024.
-//  ✨ 重新设计 - 现代化日历视图，整合 UCL 活动
+
 //
 
 import SwiftUI
@@ -20,9 +18,9 @@ import EventKit
 
 /// 日历视图模式枚举
 enum CalendarViewMode: String, CaseIterable, Identifiable {
-    case month = "月视图"
-    case week = "周视图"
-    case day = "日视图"
+    case month
+    case week
+    case day
     
     var id: String { rawValue }
     
@@ -31,6 +29,14 @@ enum CalendarViewMode: String, CaseIterable, Identifiable {
         case .month: return "calendar"
         case .week: return "calendar.day.timeline.left"
         case .day: return "calendar.badge.clock"
+        }
+    }
+    
+    func displayName(isChinese: Bool) -> String {
+        switch self {
+        case .month: return isChinese ? "月视图" : "Month"
+        case .week: return isChinese ? "周视图" : "Week"
+        case .day: return isChinese ? "日视图" : "Day"
         }
     }
 }
@@ -61,6 +67,7 @@ struct StudentCalendarView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var viewModel = UCLAPIViewModel()
     @StateObject private var activitiesService = UCLActivitiesService()
+    @StateObject private var timetableViewModel = TimetableViewModel()
     
     @State private var selectedDate = Date()
     @State private var viewMode: CalendarViewMode = .day
@@ -68,6 +75,7 @@ struct StudentCalendarView: View {
     @State private var showingSettings = false  // ✅ 新增
     @State private var showingActivityDetail: UCLActivity?
     @State private var showingEventDetail: UCLAPIViewModel.UCLAPIEvent?
+    @State private var selectedTodo: TodoItem?
     @State private var defaultReminderTime: ReminderTime = .fifteenMin  // ✅ 新增
     @State private var defaultViewMode: CalendarViewMode = .month  // ✅ 新增
     
@@ -96,27 +104,23 @@ struct StudentCalendarView: View {
                         topControlBar
                         
                         // 日历视图切换
-                        if viewMode == .week {
-                            WeekTimetableView()
-                                .environmentObject(loc)
-                        } else {
-                            calendarViewSection
-                            
-                            // 今日概览卡片
-                            todayOverviewCard
-                            
-                            // 今日日程
-                            todayScheduleSection
-                            
-                            // UCL 校园活动
-                            uclActivitiesSection
-                            
-                            // 本周推荐
-                            weeklyRecommendationsSection
-                        }
+                        calendarViewSection
+                        
+                        // 今日日程（所有视图模式都显示）
+                        todayScheduleSection
+                        
+                        // 今日待办（所有视图模式都显示）
+                        todayTodosSection
+                        
+                        // UCL 校园活动（所有视图模式都显示）
+                        uclActivitiesSection
+                        
+                        // 本周推荐（所有视图模式都显示）
+                        weeklyRecommendationsSection
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 30)
+                    .id(appState.todoManager.todos.count) // 强制刷新当 todos 变化时
                 }
             }
             .navigationBarHidden(true)
@@ -140,12 +144,33 @@ struct StudentCalendarView: View {
             .sheet(item: $showingEventDetail) { event in
                 EventDetailSheet(event: event)
             }
+            .sheet(item: $selectedTodo) { todo in
+                TodoDetailView(
+                    todo: todo,
+                    isPresented: Binding(
+                        get: { selectedTodo != nil },
+                        set: { if !$0 { selectedTodo = nil } }
+                    )
+                )
+                .environmentObject(loc)
+                .environmentObject(appState)
+            }
             .onAppear {
                 viewMode = defaultViewMode
                 loadData()
             }
-            .onChange(of: defaultViewMode) { newMode in
+            .onChange(of: defaultViewMode) { oldValue, newMode in
                 viewMode = newMode
+            }
+            .alert("导入成功", isPresented: $showingImportSuccess) {
+                Button("确定", role: .cancel) { }
+            } message: {
+                Text("已成功导入 \(importedCount) 门课程到系统日历，课程将每周重复。")
+            }
+            .alert("导入失败", isPresented: $showingImportError) {
+                Button("确定", role: .cancel) { }
+            } message: {
+                Text(importErrorMessage.isEmpty ? "无法导入课程到日历，请检查权限设置" : importErrorMessage)
             }
         }
     }
@@ -154,7 +179,7 @@ struct StudentCalendarView: View {
     private var topControlBar: some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("日历")
+                Text(loc.language == .chinese ? "日历" : "Calendar")
                     .font(.system(size: 32, weight: .bold))
                     .foregroundColor(.primary)
                 
@@ -187,11 +212,17 @@ struct StudentCalendarView: View {
                         .frame(width: 44, height: 44)
                         .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 2)
 
-                    Image(systemName: "calendar.badge.plus")
-                        .font(.system(size: 18))
-                        .foregroundColor(Color(hex: "6366F1"))
+                    if isImporting {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "6366F1")))
+                    } else {
+                        Image(systemName: "calendar.badge.plus")
+                            .font(.system(size: 18))
+                            .foregroundColor(Color(hex: "6366F1"))
+                    }
                 }
             }
+            .disabled(isImporting)
 
             // 添加按钮
             Button(action: { showingAddEventSheet = true }) {
@@ -226,7 +257,7 @@ struct StudentCalendarView: View {
                         HStack(spacing: 6) {
                             Image(systemName: mode.icon)
                                 .font(.system(size: 14))
-                            Text(mode.rawValue)
+                            Text(mode.displayName(isChinese: loc.language == .chinese))
                                 .font(.system(size: 14, weight: .semibold))
                         }
                         .foregroundColor(viewMode == mode ? .white : Color(hex: "6366F1"))
@@ -259,52 +290,24 @@ struct StudentCalendarView: View {
                         selectedDate: $selectedDate,
                         eventsProvider: { date in events(on: date) }
                     )
+                    .environmentObject(loc)
                 case .week:
                     WeekTimetableView()
                         .environmentObject(loc)
+                        .environmentObject(timetableViewModel)
                 case .day:
-                    ModernDayView(selectedDate: $selectedDate)
+                    ModernDayView(
+                        selectedDate: $selectedDate,
+                        eventsProvider: { date in events(on: date) }
+                    )
+                    .environmentObject(loc)
+                    .environmentObject(timetableViewModel)
                 }
             }
             .transition(.opacity.combined(with: .scale(scale: 0.95)))
         }
     }
     
-    // MARK: - 今日概览卡片
-    private var todayOverviewCard: some View {
-        let todayEvents = eventsForSelectedDate
-        let todayActivities = activitiesService.activities.filter { activity in
-            guard let activityDate = parseActivityDate(activity.date) else { return false }
-            return Calendar.current.isDate(activityDate, inSameDayAs: selectedDate)
-        }
-        let todayTodos = appState.todoManager.todos.filter { todo in
-            guard let dueDate = todo.dueDate else { return false }
-            return Calendar.current.isDate(dueDate, inSameDayAs: selectedDate)
-        }
-        
-        return HStack(spacing: 16) {
-            OverviewStatCard(
-                title: "日程",
-                count: todayEvents.count,
-                icon: "calendar",
-                color: "6366F1"
-            )
-            
-            OverviewStatCard(
-                title: "活动",
-                count: todayActivities.count,
-                icon: "sparkles",
-                color: "8B5CF6"
-            )
-            
-            OverviewStatCard(
-                title: "待办",
-                count: todayTodos.count,
-                icon: "checkmark.circle",
-                color: "10B981"
-            )
-        }
-    }
     
     // MARK: - 今日日程
     private var todayScheduleSection: some View {
@@ -317,13 +320,13 @@ struct StudentCalendarView: View {
                         .font(.system(size: 16))
                         .foregroundColor(Color(hex: "6366F1"))
                     
-                    Text("今日日程")
+                    Text(loc.language == .chinese ? "今日日程" : "Today's Schedule")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.primary)
                     
                     Spacer()
                     
-                    Text("\(todayEvents.count) 项")
+                    Text(loc.language == .chinese ? "\(todayEvents.count) 项" : "\(todayEvents.count) items")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
                 }
@@ -333,14 +336,57 @@ struct StudentCalendarView: View {
                         ModernEventCard(event: event) {
                             showingEventDetail = event
                         }
+                        .environmentObject(loc)
+                        .environmentObject(timetableViewModel)
                     }
                 }
             } else {
                 StudentEmptyStateCard(
                     icon: "calendar.badge.exclamationmark",
-                    message: "今天还没有安排，来添加一个吧。",
+                    message: loc.language == .chinese ? "今天还没有安排，来添加一个吧。" : "No schedule for today. Add one!",
                     color: "6366F1"
                 )
+            }
+        }
+    }
+    
+    // MARK: - 今日待办
+    private var todayTodosSection: some View {
+        let todayTodos = appState.todoManager.todos.filter { todo in
+            guard let dueDate = todo.dueDate else { return false }
+            return Calendar.current.isDate(dueDate, inSameDayAs: selectedDate) && !todo.isCompleted
+        }
+        .sorted { lhs, rhs in
+            let lhsDate = lhs.dueDate ?? Date.distantFuture
+            let rhsDate = rhs.dueDate ?? Date.distantFuture
+            return lhsDate < rhsDate
+        }
+        
+        return VStack(alignment: .leading, spacing: 16) {
+            if !todayTodos.isEmpty {
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(Color(hex: "10B981"))
+                    
+                    Text(loc.language == .chinese ? "今日待办" : "Today's Todos")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Text(loc.language == .chinese ? "\(todayTodos.count) 项" : "\(todayTodos.count) items")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                
+                VStack(spacing: 12) {
+                    ForEach(todayTodos) { todo in
+                        CalendarTodoCard(todo: todo) {
+                            selectedTodo = todo
+                        }
+                    }
+                }
             }
         }
     }
@@ -359,7 +405,7 @@ struct StudentCalendarView: View {
                         .font(.system(size: 16))
                         .foregroundColor(Color(hex: "8B5CF6"))
                     
-                    Text("UCL 校园活动")
+                    Text(loc.language == .chinese ? "UCL 校园活动" : "UCL Campus Activities")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.primary)
                     
@@ -369,7 +415,7 @@ struct StudentCalendarView: View {
                         // 跳转到活动页面
                     }) {
                         HStack(spacing: 4) {
-                            Text("查看全部")
+                            Text(loc.language == .chinese ? "查看全部" : "View All")
                                 .font(.system(size: 14, weight: .medium))
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 12))
@@ -400,7 +446,7 @@ struct StudentCalendarView: View {
                         .font(.system(size: 16))
                         .foregroundColor(Color(hex: "8B5CF6"))
                     
-                    Text("本周推荐")
+                    Text(loc.language == .chinese ? "本周推荐" : "Weekly Recommendations")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.primary)
                     
@@ -444,14 +490,24 @@ struct StudentCalendarView: View {
         }
     }
 
+    @State private var showingImportSuccess = false
+    @State private var showingImportError = false
+    @State private var importErrorMessage = ""
+    @State private var importedCount = 0
+    @State private var isImporting = false
+    
     // 导入 Mock 课程表到系统日历
     private func importMockTimetableToSystemCalendar() async {
+        isImporting = true
         do {
             let count = try await CalendarImportService.shared.importTimetableEvents(MockData.timetableEvents, alarmMinutesBefore: 15)
-            // 简单反馈：用通知或打印；这里用print，UI已尽量简洁
-            print("Imported \(count) events into system calendar")
+            importedCount = count
+            isImporting = false
+            showingImportSuccess = true
         } catch {
-            print("Import failed: \(error.localizedDescription)")
+            isImporting = false
+            importErrorMessage = error.localizedDescription
+            showingImportError = true
         }
     }
     
@@ -486,9 +542,29 @@ struct StudentCalendarView: View {
     }
     
     private func events(on date: Date) -> [UCLAPIViewModel.UCLAPIEvent] {
-        viewModel.events
+        var allEvents: [UCLAPIViewModel.UCLAPIEvent] = []
+        
+        // 添加 UCLAPI 事件（手动添加的日程）
+        let apiEvents = viewModel.events
             .compactMap { occurrence(for: $0, on: date) }
-            .sorted { $0.startTime < $1.startTime }
+        allEvents.append(contentsOf: apiEvents)
+        
+        // 添加 TimetableViewModel 的课程事件（使用中英文标题）
+        let isChinese = loc.language == .chinese
+        let timetableEvents = timetableViewModel.events(for: date).map { timetableEvent in
+            UCLAPIViewModel.UCLAPIEvent(
+                id: timetableEvent.id,
+                title: timetableEvent.localizedTitle(isChinese: isChinese),
+                startTime: timetableEvent.startTime,
+                endTime: timetableEvent.endTime,
+                location: timetableEvent.localizedLocation(isChinese: isChinese),
+                type: .api,
+                description: timetableEvent.localizedTitle(isChinese: isChinese)
+            )
+        }
+        allEvents.append(contentsOf: timetableEvents)
+        
+        return allEvents.sorted { $0.startTime < $1.startTime }
     }
     
     private func occurrence(for event: UCLAPIViewModel.UCLAPIEvent, on date: Date) -> UCLAPIViewModel.UCLAPIEvent? {
@@ -653,8 +729,26 @@ struct OverviewStatCard: View {
 
 // MARK: - 现代化事件卡片
 struct ModernEventCard: View {
+    @EnvironmentObject var loc: LocalizationService
+    @EnvironmentObject var timetableViewModel: TimetableViewModel
     let event: UCLAPIViewModel.UCLAPIEvent
     let onTap: () -> Void
+    
+    private var isChinese: Bool {
+        loc.language == .chinese
+    }
+    
+    // 获取课程的中英文标题（如果是课程类型）
+    private var eventTitle: String {
+        // event.title 已经在 events(on:) 方法中使用了 localizedTitle，所以直接使用
+        return event.title
+    }
+    
+    // 获取课程的中英文地点（如果是课程类型）
+    private var eventLocation: String {
+        // event.location 已经在 events(on:) 方法中使用了 localizedLocation，所以直接使用
+        return event.location
+    }
     
     var body: some View {
         Button(action: onTap) {
@@ -677,7 +771,7 @@ struct ModernEventCard: View {
                 
                 // 内容区域
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(event.title)
+                    Text(eventTitle)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
                     
@@ -686,14 +780,14 @@ struct ModernEventCard: View {
                             .font(.system(size: 12))
                             .foregroundColor(Color(hex: "6366F1"))
                         
-                        Text(event.location)
+                        Text(eventLocation)
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
                     }
                     
                     // 类型标签 - 课程和日程不显示"加入日历"按钮
                     HStack(spacing: 8) {
-                        Text(event.type == .api ? "课程" : "手动添加")
+                        Text(event.type == .api ? (isChinese ? "课程" : "Course") : (isChinese ? "手动添加" : "Manual"))
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(event.type == .api ? Color(hex: "6366F1") : Color(hex: "8B5CF6"))
                             .padding(.horizontal, 8)
@@ -840,7 +934,96 @@ struct ModernActivityCard: View {
     }
 }
 
-// MARK: - 本周推荐卡片
+// MARK: - 日历待办卡片
+struct CalendarTodoCard: View {
+    let todo: TodoItem
+    let onTap: () -> Void
+    
+    private var timeRemaining: String {
+        guard let dueDate = todo.dueDate else { return "无截止" }
+        
+        let now = Date()
+        let interval = dueDate.timeIntervalSince(now)
+        
+        if interval < 0 {
+            return "已逾期"
+        } else if interval < 3600 {
+            return "\(Int(interval / 60))分钟后"
+        } else if interval < 86400 {
+            return "\(Int(interval / 3600))小时后"
+        } else {
+            return "\(Int(interval / 86400))天后"
+        }
+    }
+    
+    private var urgencyColor: Color {
+        guard let dueDate = todo.dueDate else { return Color(hex: "6366F1") }
+        
+        let interval = dueDate.timeIntervalSince(Date())
+        
+        if interval < 0 {
+            return Color(hex: "EF4444")
+        } else if interval < 86400 {
+            return Color(hex: "F59E0B")
+        } else if interval < 259200 {
+            return Color(hex: "F97316")
+        } else {
+            return Color(hex: "6366F1")
+        }
+    }
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                // 优先级指示
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(urgencyColor.opacity(0.12))
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: "clock.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(urgencyColor)
+                }
+                
+                // 任务信息
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(todo.title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    HStack(spacing: 6) {
+                        Text(todo.category)
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                        
+                        Text("·")
+                            .foregroundColor(.secondary)
+                        
+                        Text(timeRemaining)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(urgencyColor)
+                    }
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.secondary.opacity(0.4))
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
 struct WeeklyRecommendationCard: View {
     @EnvironmentObject var loc: LocalizationService
     let activity: UCLActivity
@@ -1089,10 +1272,15 @@ struct EventDetailSheet: View {
 struct ModernMonthView: View {
     @Binding var selectedDate: Date
     let eventsProvider: (Date) -> [UCLAPIViewModel.UCLAPIEvent]
+    @EnvironmentObject var loc: LocalizationService
     
     @State private var visibleMonth: Date
     private let calendar = Calendar.current
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
+    
+    private var isChinese: Bool {
+        loc.language == .chinese
+    }
     
     init(
         selectedDate: Binding<Date>,
@@ -1104,23 +1292,23 @@ struct ModernMonthView: View {
     }
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             monthHeader
             weekdayHeader
             
-            LazyVGrid(columns: columns, spacing: 12) {
+            LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(daysInVisibleMonth) { day in
                     dayCell(for: day)
                 }
             }
         }
-        .padding(20)
+        .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 16)
                 .fill(Color.white)
                 .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
         )
-        .onChange(of: selectedDate) { newValue in
+        .onChange(of: selectedDate) { oldValue, newValue in
             let targetMonth = calendar.startOfMonth(for: newValue)
             if !calendar.isDate(targetMonth, inSameDayAs: visibleMonth) {
                 visibleMonth = targetMonth
@@ -1129,24 +1317,27 @@ struct ModernMonthView: View {
     }
     
     private var monthHeader: some View {
-        HStack {
+        HStack(spacing: 12) {
             Button(action: { shiftMonth(-1) }) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(Color(hex: "6366F1"))
-                    .padding(10)
-                    .background(Circle().fill(Color(hex: "6366F1").opacity(0.1)))
+                    .frame(width: 28, height: 28)
+                    .background(
+                        Circle()
+                            .fill(Color(hex: "6366F1").opacity(0.1))
+                    )
             }
             
             Spacer()
             
-            VStack(spacing: 4) {
+            VStack(spacing: 2) {
                 Text(visibleMonth, format: .dateTime.year().month())
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.primary)
                 
-                Text("共 \(monthlyEventCount) 个安排")
-                    .font(.system(size: 13, weight: .medium))
+                Text(isChinese ? "共 \(monthlyEventCount) 个安排" : "\(monthlyEventCount) events")
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
             }
             
@@ -1154,24 +1345,32 @@ struct ModernMonthView: View {
             
             Button(action: { shiftMonth(1) }) {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(Color(hex: "6366F1"))
-                    .padding(10)
-                    .background(Circle().fill(Color(hex: "6366F1").opacity(0.1)))
+                    .frame(width: 28, height: 28)
+                    .background(
+                        Circle()
+                            .fill(Color(hex: "6366F1").opacity(0.1))
+                    )
             }
         }
     }
     
     private var weekdayHeader: some View {
         let symbols = orderedWeekdaySymbols
-        return HStack {
+        return HStack(spacing: 0) {
             ForEach(symbols, id: \.value) { weekday in
                 Text(weekday.symbol.uppercased())
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
             }
         }
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color(hex: "F8F9FF"))
+        )
     }
     
     private func dayCell(for day: MonthDayItem) -> some View {
@@ -1185,95 +1384,65 @@ struct ModernMonthView: View {
                 visibleMonth = calendar.startOfMonth(for: day.date)
             }
         } label: {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
+                // 日期数字
                 HStack {
                     Text("\(calendar.component(.day, from: day.date))")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(textColor(isSelected: isSelected, isWithinMonth: day.isWithinDisplayedMonth))
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(textColor(isSelected: isSelected, isWithinMonth: day.isWithinDisplayedMonth, isToday: isToday))
                     
-                    if isToday {
+                    Spacer()
+                    
+                    if isToday && !isSelected {
                         Circle()
-                            .fill(Color(hex: "F59E0B"))
-                            .frame(width: 6, height: 6)
+                            .fill(Color(hex: "6366F1"))
+                            .frame(width: 4, height: 4)
                     }
                 }
                 
-                eventPreview(events: events, isSelected: isSelected)
+                // 事件指示器（使用小圆点，避免重叠）
+                eventIndicators(events: events, isSelected: isSelected)
             }
-            .frame(maxWidth: .infinity, minHeight: 72, alignment: .topLeading)
-            .padding(10)
-            .background(backgroundColor(isSelected: isSelected, isWithinMonth: day.isWithinDisplayedMonth))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .frame(maxWidth: .infinity, minHeight: 50, alignment: .topLeading)
+            .padding(.horizontal, 4)
+            .padding(.vertical, 6)
+            .background(backgroundColor(isSelected: isSelected, isWithinMonth: day.isWithinDisplayedMonth, isToday: isToday))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(isSelected ? Color(hex: "6366F1") : Color.clear, lineWidth: 1.5)
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(
+                        isSelected ? Color(hex: "6366F1") : (isToday ? Color(hex: "6366F1").opacity(0.3) : Color.clear),
+                        lineWidth: isSelected ? 2 : 1
+                    )
             )
         }
         .buttonStyle(.plain)
     }
     
     @ViewBuilder
-    private func eventPreview(events: [UCLAPIViewModel.UCLAPIEvent], isSelected: Bool) -> some View {
+    private func eventIndicators(events: [UCLAPIViewModel.UCLAPIEvent], isSelected: Bool) -> some View {
         if events.isEmpty {
             Spacer()
+                .frame(height: 4)
         } else {
-            // Keep the earliest event as the hero indicator to avoid stacked pills.
-            let sortedEvents = events.sorted { $0.startTime < $1.startTime }
-            let primaryEvent = sortedEvents[0]
-            let extraCount = sortedEvents.count - 1
-            
-            let pillBackground = isSelected ? Color.white.opacity(0.15) : Color(hex: "F3F4F6")
-            let titleColor: Color = isSelected ? .white : .primary
-            
-            HStack(alignment: .center, spacing: 8) {
-                Circle()
-                    .fill(eventColor(for: primaryEvent))
-                    .frame(width: 7, height: 7)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(eventTimeLabel(for: primaryEvent))
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.secondary)
-                    
-                    Text(primaryEvent.title)
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(titleColor)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
-                
-                Spacer(minLength: 4)
-                
-                if extraCount > 0 {
-                    Text("+\(extraCount)")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(Color(hex: "6366F1"))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(Color(hex: "6366F1").opacity(isSelected ? 0.25 : 0.12))
-                        )
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(pillBackground)
-            )
+            // 只显示一个红点，表示有事件
+            Circle()
+                .fill(Color(hex: "EF4444"))
+                .frame(width: 4, height: 4)
         }
     }
     
-    private func textColor(isSelected: Bool, isWithinMonth: Bool) -> Color {
+    private func textColor(isSelected: Bool, isWithinMonth: Bool, isToday: Bool) -> Color {
         if isSelected {
             return .white
         }
-        return isWithinMonth ? .primary : .secondary.opacity(0.6)
+        if isToday {
+            return Color(hex: "6366F1")
+        }
+        return isWithinMonth ? .primary : .secondary.opacity(0.5)
     }
     
-    private func backgroundColor(isSelected: Bool, isWithinMonth: Bool) -> some View {
+    private func backgroundColor(isSelected: Bool, isWithinMonth: Bool, isToday: Bool) -> some View {
         Group {
             if isSelected {
                 LinearGradient(
@@ -1281,17 +1450,23 @@ struct ModernMonthView: View {
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
+            } else if isToday {
+                Color(hex: "6366F1").opacity(0.08)
             } else if isWithinMonth {
                 Color.white
             } else {
-                Color.white.opacity(0.7)
+                Color(hex: "F8F9FF").opacity(0.5)
             }
         }
     }
     
     private var orderedWeekdaySymbols: [(value: Int, symbol: String)] {
-        let symbols = calendar.shortStandaloneWeekdaySymbols
-        let firstWeekday = calendar.firstWeekday - 1
+        // 使用正确的 locale 来获取星期符号
+        let locale = Locale(identifier: isChinese ? "zh_CN" : "en_US")
+        var localizedCalendar = Calendar.current
+        localizedCalendar.locale = locale
+        let symbols = localizedCalendar.shortStandaloneWeekdaySymbols
+        let firstWeekday = localizedCalendar.firstWeekday - 1
         return (0..<symbols.count).map { offset in
             let index = (offset + firstWeekday) % symbols.count
             return (value: index + 1, symbol: symbols[index])
@@ -1364,7 +1539,7 @@ struct ModernMonthView: View {
     private func eventTimeLabel(for event: UCLAPIViewModel.UCLAPIEvent) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
-        return "\(formatter.string(from: event.startTime))"
+        return formatter.string(from: event.startTime)
     }
 }
 
@@ -1455,6 +1630,17 @@ struct ModernWeekView: View {
 // MARK: - 现代化日视图
 struct ModernDayView: View {
     @Binding var selectedDate: Date
+    let eventsProvider: (Date) -> [UCLAPIViewModel.UCLAPIEvent]
+    @EnvironmentObject var loc: LocalizationService
+    @EnvironmentObject var timetableViewModel: TimetableViewModel
+    
+    private var isChinese: Bool {
+        loc.language == .chinese
+    }
+    
+    private var todayEvents: [UCLAPIViewModel.UCLAPIEvent] {
+        eventsProvider(selectedDate)
+    }
     
     var body: some View {
         VStack(spacing: 16) {
@@ -1515,7 +1701,7 @@ struct ModernDayView: View {
                         selectedDate = Date()
                     }
                 }) {
-                    Text("返回今天")
+                    Text(isChinese ? "返回今天" : "Back to Today")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(Color(hex: "6366F1"))
                         .padding(.horizontal, 20)
@@ -1526,6 +1712,9 @@ struct ModernDayView: View {
                         )
                 }
             }
+            
+            // 今日日程
+            dayScheduleSection
         }
         .padding(20)
         .background(
@@ -1533,6 +1722,44 @@ struct ModernDayView: View {
                 .fill(Color.white)
                 .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
         )
+    }
+    
+    // MARK: - 日视图日程部分
+    private var dayScheduleSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if !todayEvents.isEmpty {
+                HStack {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.system(size: 16))
+                        .foregroundColor(Color(hex: "6366F1"))
+                    
+                    Text(isChinese ? "今日日程" : "Today's Schedule")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Text(isChinese ? "\(todayEvents.count) 项" : "\(todayEvents.count) items")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                
+                VStack(spacing: 12) {
+                    ForEach(todayEvents) { event in
+                        ModernEventCard(event: event) {
+                            // 点击事件处理
+                        }
+                    }
+                }
+            } else {
+                StudentEmptyStateCard(
+                    icon: "calendar.badge.exclamationmark",
+                    message: isChinese ? "今天还没有安排，来添加一个吧。" : "No schedule for today. Add one!",
+                    color: "6366F1"
+                )
+            }
+        }
+        .padding(.top, 8)
     }
 }
 
@@ -1642,20 +1869,24 @@ struct AddEventSheet: View {
             }
             .navigationTitle("添加事件")
             .navigationBarTitleDisplayMode(.inline)
-            .onChange(of: startDate) { _ in
+            .onChange(of: startDate) { oldValue, newValue in
                 syncEndDateWithDuration()
                 if !recurrenceEnabled {
-                    selectedWeekdays = [Calendar.current.component(.weekday, from: startDate)]
+                    selectedWeekdays = [Calendar.current.component(.weekday, from: newValue)]
                 }
             }
-            .onChange(of: durationOption) { _ in syncEndDateWithDuration() }
-            .onChange(of: customDuration) { _ in syncEndDateWithDuration() }
-            .onChange(of: recurrenceEnabled) { enabled in
+            .onChange(of: durationOption) { oldValue, newValue in
+                syncEndDateWithDuration()
+            }
+            .onChange(of: customDuration) { oldValue, newValue in
+                syncEndDateWithDuration()
+            }
+            .onChange(of: recurrenceEnabled) { oldValue, enabled in
                 if enabled && requiresWeekdaySelection {
                     ensureWeekdaySeed()
                 }
             }
-            .onChange(of: recurrenceFrequency) { newValue in
+            .onChange(of: recurrenceFrequency) { oldValue, newValue in
                 if (newValue == .weekly || newValue == .biweekly) && recurrenceEnabled {
                     ensureWeekdaySeed()
                 }
@@ -2081,3 +2312,4 @@ struct ActivityDetailSheet: View {
         }
     }
 }
+

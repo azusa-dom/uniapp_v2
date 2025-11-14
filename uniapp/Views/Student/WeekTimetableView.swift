@@ -9,7 +9,7 @@ import SwiftUI
 
 // MARK: - 周视图课程表
 struct WeekTimetableView: View {
-    @StateObject private var viewModel = TimetableViewModel()
+    @EnvironmentObject var viewModel: TimetableViewModel
     @EnvironmentObject var loc: LocalizationService
     @State private var selectedWeek: Date = Date()
     
@@ -21,11 +21,16 @@ struct WeekTimetableView: View {
         DateComponents(hour: hour, minute: 0)
     }
     
-    private let weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+    private var weekdays: [String] {
+        if isChinese {
+            return ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+        } else {
+            return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        }
+    }
     
     private var weekStart: Date {
-        let calendar = Calendar.current
-        return calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: selectedWeek)) ?? selectedWeek
+        viewModel.getWeekStart(for: selectedWeek)
     }
     
     private var weekDates: [Date] {
@@ -36,10 +41,7 @@ struct WeekTimetableView: View {
     }
     
     private func eventsForDay(_ date: Date) -> [TimetableEvent] {
-        let calendar = Calendar.current
-        return viewModel.weekEvents.filter { event in
-            calendar.isDate(event.startTime, inSameDayAs: date)
-        }.sorted { $0.startTime < $1.startTime }
+        viewModel.events(for: date)
     }
     
     var body: some View {
@@ -73,6 +75,7 @@ struct WeekTimetableView: View {
                 withAnimation {
                     selectedWeek = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: selectedWeek) ?? selectedWeek
                     viewModel.selectedDate = selectedWeek
+                    viewModel.currentWeekStart = viewModel.getWeekStart(for: selectedWeek)
                 }
             } label: {
                 Image(systemName: "chevron.left")
@@ -92,6 +95,7 @@ struct WeekTimetableView: View {
                 withAnimation {
                     selectedWeek = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: selectedWeek) ?? selectedWeek
                     viewModel.selectedDate = selectedWeek
+                    viewModel.currentWeekStart = viewModel.getWeekStart(for: selectedWeek)
                 }
             } label: {
                 Image(systemName: "chevron.right")
@@ -212,6 +216,18 @@ struct CourseBlockView: View {
     let dayIndex: Int
     let timeSlots: [DateComponents]
     
+    // 高级紫色系配色方案
+    private let purplePalette = [
+        "6366F1", // Indigo (主紫色)
+        "7C3AED", // Violet (深紫)
+        "8B5CF6", // Purple (标准紫)
+        "9333EA", // Deep Purple (深紫)
+        "A855F7", // Bright Purple (亮紫)
+        "C084FC", // Light Purple (浅紫)
+        "D8B4FE", // Lavender (薰衣草紫)
+        "E9D5FF"  // Pale Purple (淡紫)
+    ]
+    
     private var isChinese: Bool {
         loc.language == .chinese
     }
@@ -224,9 +240,16 @@ struct CourseBlockView: View {
     }
     
     private var height: CGFloat {
-        let calendar = Calendar.current
         let duration = event.endTime.timeIntervalSince(event.startTime)
         return CGFloat(duration / 3600) * 60
+    }
+    
+    // 根据课程代码生成一致的紫色
+    private var purpleColor: String {
+        // 使用课程代码的哈希值来分配颜色，确保同一课程总是相同颜色
+        let hash = abs(event.courseCode.hashValue)
+        let index = hash % purplePalette.count
+        return purplePalette[index]
     }
     
     var body: some View {
@@ -247,8 +270,18 @@ struct CourseBlockView: View {
         }
         .padding(6)
         .frame(width: 96, height: max(height, 40), alignment: .topLeading)
-        .background(Color(hex: event.color))
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(hex: purpleColor),
+                    Color(hex: purpleColor).opacity(0.85)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
         .cornerRadius(6)
+        .shadow(color: Color(hex: purpleColor).opacity(0.3), radius: 4, x: 0, y: 2)
         .offset(x: CGFloat(dayIndex) * 100 + 60, y: startPosition)
     }
 }
