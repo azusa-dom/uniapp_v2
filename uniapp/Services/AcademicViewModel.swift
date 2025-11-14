@@ -70,7 +70,7 @@ struct Module: Identifiable, Codable, Hashable {
     var totalExams: Int = 0
 }
 
-struct Assignment: Identifiable, Hashable {
+struct AcademicAssignment: Identifiable, Hashable {
     var id = UUID()
     var title: String
     var course: String
@@ -81,9 +81,9 @@ struct Assignment: Identifiable, Hashable {
 @MainActor
 class AcademicViewModel: ObservableObject {
     @Published var modules: [Module] = []
-    @Published var upcomingAssignments: [Assignment] = [
-        Assignment(title: "COMP0016 论文", course: "UCL CS", dueDate: Date().addingTimeInterval(86400 * 2)),
-        Assignment(title: "FINA0010 报告", course: "UCL Finance", dueDate: Date().addingTimeInterval(86400 * 4))
+    @Published var upcomingAssignments: [AcademicAssignment] = [
+        AcademicAssignment(title: "COMP0016 论文", course: "UCL CS", dueDate: Date().addingTimeInterval(86400 * 2)),
+        AcademicAssignment(title: "FINA0010 报告", course: "UCL Finance", dueDate: Date().addingTimeInterval(86400 * 4))
     ]
     
     init() {

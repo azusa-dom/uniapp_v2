@@ -140,7 +140,7 @@ struct TodoListView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(categories, id: \.self) { category in
-                        FilterChip(
+                        TodoFilterChip(
                             title: category,
                             isSelected: selectedCategory == category
                         ) {
@@ -156,7 +156,7 @@ struct TodoListView: View {
             // 状态筛选
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    FilterChip(
+                    TodoFilterChip(
                         title: "全部",
                         isSelected: selectedStatus == nil
                     ) {
@@ -166,7 +166,7 @@ struct TodoListView: View {
                     }
                     
                     ForEach(TodoStatus.allCases) { status in
-                        FilterChip(
+                        TodoFilterChip(
                             title: status.rawValue,
                             isSelected: selectedStatus == status,
                             color: Color(hex: status.color)
@@ -292,7 +292,7 @@ struct TodoListCard: View {
 }
 
 // MARK: - 筛选标签
-struct FilterChip: View {
+struct TodoFilterChip: View {
     let title: String
     let isSelected: Bool
     var color: Color? = nil

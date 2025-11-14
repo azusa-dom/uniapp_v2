@@ -712,7 +712,7 @@ struct UpcomingTodoCard: View {
 }
 
 struct UpcomingAssignmentCard: View {
-    let assignment: Assignment
+    let assignment: AcademicAssignment
     
     // (这部分视图和逻辑与你的原始代码保持一致)
     private var daysUntilDue: Int {

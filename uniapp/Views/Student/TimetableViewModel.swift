@@ -32,26 +32,41 @@ class TimetableViewModel: ObservableObject {
         var allEvents: [TimetableEvent] = []
         let calendar = Calendar.current
         
-        // 学期时间范围（2024年9月-2025年6月）
+        // 学期时间范围（2024年9月-2025年12月，延长到当前日期之后以确保显示）
+        let today = Date()
         guard let semesterStart = calendar.date(from: DateComponents(year: 2024, month: 9, day: 1)),
-              let semesterEnd = calendar.date(from: DateComponents(year: 2025, month: 6, day: 30)) else {
+              let semesterEnd = calendar.date(byAdding: .year, value: 1, to: semesterStart) else {
             return baseEvents
         }
         
+        // 获取学期开始那一周的第一天（周一）
+        let semesterStartWeek = getWeekStart(for: semesterStart)
+        
         for event in baseEvents {
-            var currentDate = event.startTime
+            // 从基础事件中提取星期几和时间
+            let weekday = calendar.component(.weekday, from: event.startTime)
+            let hour = calendar.component(.hour, from: event.startTime)
+            let minute = calendar.component(.minute, from: event.startTime)
             
-            // 确保开始日期在学期内
-            while currentDate < semesterStart {
-                if let nextWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: currentDate) {
-                    currentDate = nextWeek
-                } else {
-                    break
-                }
+            // 计算从学期开始第一周的那一天到目标星期几的天数差
+            let semesterStartWeekday = calendar.component(.weekday, from: semesterStartWeek)
+            var dayOffset = weekday - semesterStartWeekday
+            if dayOffset < 0 {
+                dayOffset += 7
             }
             
-            // 生成每周重复的课程
-            while currentDate <= semesterEnd {
+            // 从学期开始的第一周对应的星期几开始
+            guard var currentDate = calendar.date(byAdding: .day, value: dayOffset, to: semesterStartWeek) else {
+                continue
+            }
+            
+            // 设置具体时间
+            currentDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: currentDate) ?? currentDate
+            
+            // 生成每周重复的课程（包括今天和未来）
+            let endDate = max(semesterEnd, calendar.date(byAdding: .month, value: 6, to: today) ?? semesterEnd)
+            
+            while currentDate <= endDate {
                 // 计算结束时间
                 let duration = event.endTime.timeIntervalSince(event.startTime)
                 let endTime = currentDate.addingTimeInterval(duration)

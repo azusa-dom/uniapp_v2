@@ -15,7 +15,7 @@ class ActivityViewModel: ObservableObject {
     
     // 学业相关（用于首页/统计用）
     @Published var modules: [Module] = []
-    @Published var assignments: [Assignment] = []
+    @Published var assignments: [AcademicAssignment] = []
     @Published var currentGPA: Double = 0.0
     @Published var completedCourses: Int = 0
     @Published var totalCourses: Int = 0

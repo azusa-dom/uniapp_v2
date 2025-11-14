@@ -1,707 +1,759 @@
-//
-//  ParentDashboardView.swift
-//  uniapp
-//
-//
+// MARK: - ParentDashboardView.swift
+// 文件位置: uniapp/Views/Parent/ParentDashboardView.swift
 
 import SwiftUI
 
 struct ParentDashboardView: View {
-    @EnvironmentObject var loc: LocalizationService
     @EnvironmentObject var appState: AppState
-    @State private var showingSettings = false
-    @State private var selectedTodo: TodoItem? = nil
-    @State private var showingTodoDetail = false
-    
-    // 使用枚举管理不同的 modal 状态
-    @State private var activeSheet: ParentDashboardSheet?
-    
-    enum ParentDashboardSheet: Identifiable {
-        case settings
-        case todoDetail(TodoItem)
-        
-        var id: String {
-            switch self {
-            case .settings:
-                return "settings"
-            case .todoDetail(let todo):
-                return "todo-\(todo.id)"
-            }
-        }
-    }
+    @EnvironmentObject var loc: LocalizationService
+    @EnvironmentObject var uclVM: UCLAPIViewModel
     
     var body: some View {
-        NavigationStack {
+        NavigationView {
             ZStack {
-                DesignSystem.backgroundGradient.ignoresSafeArea()
+                // 背景渐变
+                DesignSystem.backgroundGradient
+                    .ignoresSafeArea()
                 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 24) {
-                        // 学生状态卡片
-                        StudentStatusCard()
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // 顶部学生信息卡
+                        StudentHeaderCard()
                         
-                        // 即将截止的任务
-                        if !appState.todoManager.upcomingDeadlines.isEmpty {
-                            UpcomingDeadlinesCard(
-                                onTodoTap: { todo in
-                                    activeSheet = .todoDetail(todo)
-                                }
-                            )
-                        }
+                        // 学业概况卡
+                        AcademicSummaryCard()
                         
-                        // 学业总览
-                        AcademicOverviewCard()
+                        // 今日课表卡
+                        TodayScheduleCard()
                         
-                        // 本周总结
-                        WeeklySummaryCard()
+                        // 健康 & 用药卡
+                        HealthSummaryCard()
                         
-                        // 出勤热力图
-                        AttendanceHeatmapCard()
+                        // 本周重要事项
+                        WeeklyHighlightsCard()
                         
-                        // 根据共享设置显示内容
-                        if appState.shareGrades {
-                            AssignmentProgressCard()
-                        } else {
-                            DataNotSharedView(dataType: "成绩信息")
-                        }
-                        
-                        // 活动参与
-                        ActivityParticipationCard()
+                        // 校园活动预览
+                        CampusActivitiesPreviewCard()
                     }
                     .padding()
                 }
             }
-            .navigationTitle("家长中心")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationTitle(loc.language == .chinese ? "家长面板" : "Parent Dashboard")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        activeSheet = .settings
-                    }) {
+                    NavigationLink(destination: ParentSettingsView()) {
                         Image(systemName: "gearshape.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(Color(hex: "6366F1"))
+                            .foregroundColor(DesignSystem.primaryColor)
                     }
-                }
-            }
-            .sheet(item: $activeSheet) { sheet in
-                switch sheet {
-                case .settings:
-                    ParentSettingsView()
-                        .environmentObject(appState)
-                        .environmentObject(loc)
-                case .todoDetail(let todo):
-                    TodoDetailView(
-                        todo: todo,
-                        isPresented: Binding(
-                            get: { activeSheet != nil },
-                            set: { if !$0 { activeSheet = nil } }
-                        )
-                    )
-                    .environmentObject(appState)
-                    .environmentObject(loc)
                 }
             }
         }
     }
 }
 
-// MARK: - 即将截止的任务卡片
-struct UpcomingDeadlinesCard: View {
+// MARK: - 学生头部信息卡
+struct StudentHeaderCard: View {
     @EnvironmentObject var appState: AppState
-    let onTodoTap: (TodoItem) -> Void
+    @EnvironmentObject var loc: LocalizationService
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("📅 即将截止")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.primary)
-            
-            if appState.todoManager.upcomingDeadlines.isEmpty {
-                Text("暂无即将截止的任务")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-            } else {
-                ForEach(appState.todoManager.upcomingDeadlines) { todo in
-                    Button(action: {
-                        onTodoTap(todo)
-                    }) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(todo.title)
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.primary)
-                                
-                                if let dueDate = todo.dueDate {
-                                    Text(dueDate, style: .relative)
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            
-                            Spacer()
-                            
-                            Circle()
-                                .fill(Color(hex: todo.priority.color).opacity(0.2))
-                                .frame(width: 28, height: 28)
-                                .overlay(
-                                    Text(todo.priority.displayName)
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(Color(hex: todo.priority.color))
-                                )
-                        }
-                        .padding(12)
-                        .background(Color.white.opacity(0.6))
-                        .cornerRadius(10)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
+        HStack(spacing: 16) {
+            // 学生头像
+            ZStack {
+                Circle()
+                    .fill(DesignSystem.primaryGradient)
+                    .frame(width: 70, height: 70)
+                
+                Image(systemName: appState.avatarIcon)
+                    .font(.system(size: 32))
+                    .foregroundColor(.white)
             }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(appState.studentName)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                
+                Text(appState.studentProgram)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                HStack(spacing: 4) {
+                    Image(systemName: "building.columns.fill")
+                        .font(.caption)
+                    Text("University College London")
+                        .font(.caption)
+                }
+                .foregroundColor(.secondary)
+            }
+            
+            Spacer()
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 2)
-        )
+        .padding()
+        .glassCard()
     }
 }
 
-// MARK: - 学生状态卡片
-struct StudentStatusCard: View {
+// MARK: - 学业概况卡
+struct AcademicSummaryCard: View {
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var loc: LocalizationService
+    
+    // 模拟数据 - 实际应从 ViewModel 获取
+    private let averageGrade = 72.5
+    private let completedCredits = 60
+    private let totalCredits = 180
+    private let pendingAssignments = 3
+    
     var body: some View {
-        VStack(spacing: 20) {
-            // 头部信息
-            HStack(spacing: 16) {
-                // 头像
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 70, height: 70)
-                        .shadow(color: Color(hex: "6366F1").opacity(0.3), radius: 15, x: 0, y: 8)
-                    
-                    Text("ZH")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.white)
-                }
+        VStack(alignment: .leading, spacing: 16) {
+            // 标题
+            HStack {
+                Image(systemName: "graduationcap.fill")
+                    .foregroundColor(DesignSystem.primaryColor)
+                Text(loc.language == .chinese ? "学业概况" : "Academic Overview")
+                    .font(.headline)
+                Spacer()
                 
-                // 学生信息
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Zoya Huo")
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundColor(.primary)
-                    
-                    Text("MSc Health Data Science")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.secondary)
-                    
-                    HStack(spacing: 4) {
-                        Image(systemName: "building.2")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color(hex: "6366F1"))
+                if !appState.shareGrades {
+                    Image(systemName: "eye.slash.fill")
+                        .foregroundColor(.gray)
+                        .font(.caption)
+                }
+            }
+            
+            if appState.shareGrades {
+                // 成绩信息
+                VStack(spacing: 12) {
+                    // 平均分
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text(loc.language == .chinese ? "平均成绩" : "Average Grade")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Text(String(format: "%.1f", averageGrade))
+                                .font(.title)
+                                .fontWeight(.bold)
+                                .foregroundColor(gradeColor(for: averageGrade))
+                        }
                         
-                        Text("University College London")
-                            .font(.system(size: 13))
+                        Spacer()
+                        
+                        // 学位等级标签
+                        Text(gradeLevel(for: averageGrade))
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(gradeColor(for: averageGrade).opacity(0.2))
+                            .foregroundColor(gradeColor(for: averageGrade))
+                            .clipShape(Capsule())
+                    }
+                    
+                    Divider()
+                    
+                    // 学分进度
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(loc.language == .chinese ? "已修学分" : "Credits Earned")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text("\(completedCredits) / \(totalCredits)")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                        }
+                        
+                        Spacer()
+                        
+                        // 进度环
+                        ZStack {
+                            Circle()
+                                .stroke(Color.gray.opacity(0.2), lineWidth: 8)
+                            
+                            Circle()
+                                .trim(from: 0, to: CGFloat(completedCredits) / CGFloat(totalCredits))
+                                .stroke(DesignSystem.primaryColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                                .rotationEffect(.degrees(-90))
+                            
+                            Text("\(Int((Double(completedCredits) / Double(totalCredits)) * 100))%")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                        }
+                        .frame(width: 60, height: 60)
+                    }
+                    
+                    Divider()
+                    
+                    // 待办作业
+                    HStack {
+                        Image(systemName: "doc.text.fill")
+                            .foregroundColor(DesignSystem.warningColor)
+                        Text(loc.language == .chinese ? "本周待完成作业" : "Pending Assignments")
+                            .font(.subheadline)
+                        Spacer()
+                        Text("\(pendingAssignments)")
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundColor(DesignSystem.warningColor)
+                    }
+                }
+            } else {
+                // 未共享提示
+                DataNotSharedView(dataType: loc.language == .chinese ? "成绩信息" : "Grade Information")
+            }
+            
+            // 查看详情按钮
+            if appState.shareGrades {
+                NavigationLink(destination: ParentAcademicsView()) {
+                    HStack {
+                        Text(loc.language == .chinese ? "查看详细学业信息" : "View Details")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                    }
+                    .foregroundColor(DesignSystem.primaryColor)
+                    .padding(.top, 4)
+                }
+            }
+        }
+        .padding()
+        .glassCard()
+    }
+    
+    // 辅助函数：根据分数返回颜色
+    private func gradeColor(for grade: Double) -> Color {
+        if grade >= 70 { return DesignSystem.successColor }
+        else if grade >= 60 { return Color.blue }
+        else if grade >= 50 { return DesignSystem.warningColor }
+        else { return DesignSystem.errorColor }
+    }
+    
+    // 辅助函数：根据分数返回等级
+    private func gradeLevel(for grade: Double) -> String {
+        if grade >= 70 {
+            return loc.language == .chinese ? "一等荣誉" : "First Class"
+        } else if grade >= 60 {
+            return loc.language == .chinese ? "二等一荣誉" : "Upper Second"
+        } else if grade >= 50 {
+            return loc.language == .chinese ? "二等二荣誉" : "Lower Second"
+        } else if grade >= 40 {
+            return loc.language == .chinese ? "三等" : "Third Class"
+        } else {
+            return loc.language == .chinese ? "不及格" : "Fail"
+        }
+    }
+}
+
+// MARK: - 今日课表卡
+struct TodayScheduleCard: View {
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var loc: LocalizationService
+    
+    // 模拟今日课程数据 - 实际应从 MockData.timetableEvents 过滤
+    private var todayClasses: [TimetableClass] {
+        [
+            TimetableClass(
+                id: UUID(),
+                courseName: "Deep Learning",
+                courseNameCN: "深度学习",
+                time: "10:00 - 12:00",
+                location: "Roberts Building",
+                locationCN: "罗伯茨大楼",
+                room: "Room 309",
+                instructor: "Dr. Smith"
+            ),
+            TimetableClass(
+                id: UUID(),
+                courseName: "Medical Statistics",
+                courseNameCN: "医学统计",
+                time: "14:00 - 16:00",
+                location: "Cruciform Building",
+                locationCN: "十字楼",
+                room: "LT1",
+                instructor: "Prof. Johnson"
+            )
+        ]
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // 标题
+            HStack {
+                Image(systemName: "calendar.circle.fill")
+                    .foregroundColor(DesignSystem.primaryColor)
+                Text(loc.language == .chinese ? "今日课表" : "Today's Schedule")
+                    .font(.headline)
+                Spacer()
+                
+                if !appState.shareCalendar {
+                    Image(systemName: "eye.slash.fill")
+                        .foregroundColor(.gray)
+                        .font(.caption)
+                }
+            }
+            
+            if appState.shareCalendar {
+                if todayClasses.isEmpty {
+                    // 无课程
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(DesignSystem.successColor)
+                        Text(loc.language == .chinese ? "今日无课程安排" : "No classes today")
                             .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 8)
+                } else {
+                    // 课程列表
+                    ForEach(todayClasses) { classItem in
+                        TimetableClassRow(classItem: classItem)
                     }
                 }
                 
+                // 查看完整课表
+                NavigationLink(destination: ParentAcademicsView()) {
+                    HStack {
+                        Text(loc.language == .chinese ? "查看完整课表" : "View Full Schedule")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                    }
+                    .foregroundColor(DesignSystem.primaryColor)
+                    .padding(.top, 4)
+                }
+            } else {
+                DataNotSharedView(dataType: loc.language == .chinese ? "课表信息" : "Schedule")
+            }
+        }
+        .padding()
+        .glassCard()
+    }
+}
+
+// MARK: - 课程行组件
+struct TimetableClassRow: View {
+    @EnvironmentObject var loc: LocalizationService
+    let classItem: TimetableClass
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // 时间线指示器
+            VStack {
+                Circle()
+                    .fill(DesignSystem.primaryColor)
+                    .frame(width: 10, height: 10)
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 2)
+            }
+            .frame(height: 60)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(loc.language == .chinese ? classItem.courseNameCN : classItem.courseName)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                
+                HStack(spacing: 8) {
+                    Label(classItem.time, systemImage: "clock")
+                    Label(loc.language == .chinese ? classItem.locationCN : classItem.location,
+                          systemImage: "mappin.circle")
+                }
+                .font(.caption)
+                .foregroundColor(.secondary)
+                
+                if let instructor = classItem.instructor {
+                    Text(instructor)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - 健康概况卡
+struct HealthSummaryCard: View {
+    @EnvironmentObject var loc: LocalizationService
+    
+    // 模拟数据
+    private let allergyCount = 3
+    private let severeAllergyCount = 1
+    private let activeMedicationCount = 2
+    private let weeklyComplianceRate = 0.85
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // 标题
+            HStack {
+                Image(systemName: "heart.text.square.fill")
+                    .foregroundColor(DesignSystem.errorColor)
+                Text(loc.language == .chinese ? "健康 & 用药" : "Health & Medication")
+                    .font(.headline)
                 Spacer()
             }
             
-            Divider()
-                .padding(.vertical, 4)
-            
-            // 状态指示器
-            HStack(spacing: 12) {
-                ParentStatusIndicator(
-                    icon: "checkmark.circle.fill",
-                    title: "活跃",
-                    subtitle: "学习状态良好",
-                    color: Color(hex: "10B981")
-                )
-                
-                ParentStatusIndicator(
-                    icon: "clock.fill",
-                    title: "准时",
-                    subtitle: "按时完成任务",
-                    color: Color(hex: "6366F1")
-                )
-                
-                ParentStatusIndicator(
-                    icon: "star.fill",
-                    title: "优秀",
-                    subtitle: "学术表现优异",
-                    color: Color(hex: "F59E0B")
-                )
-            }
-        }
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(
-                            LinearGradient(
-                                colors: [Color.white.opacity(0.5), Color.white.opacity(0.2)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                )
-                .shadow(color: .black.opacity(0.08), radius: 20, x: 0, y: 10)
-        )
-    }
-}
-
-// MARK: - 状态指示器
-struct ParentStatusIndicator: View {
-    let icon: String
-    let title: String
-    let subtitle: String
-    let color: Color
-    
-    var body: some View {
-        VStack(spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.15))
-                    .frame(width: 48, height: 48)
-                
-                Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(color)
-            }
-            
-            Text(title)
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(.primary)
-            
-            Text(subtitle)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
-// MARK: - 学业总览卡片
-struct AcademicOverviewCard: View {
-    @EnvironmentObject var loc: LocalizationService
-    
-    // ✅ 修复：
-    // 这个 highlights 数组现在会正确使用
-    // `共享数据模型.swift` 中定义的 `CourseSummary`
-    private let highlights: [CourseSummary] = [
-        .init(name: "数据方法与健康研究", grade: 87, trend: "up"),
-        .init(name: "数据科学与统计", grade: 72, trend: "stable"),
-        .init(name: "健康数据科学原理", grade: 67, trend: "down")
-    ]
-    
-    var body: some View {
-        NavigationLink(destination: ParentAcademicDetailView()) {
-            VStack(alignment: .leading, spacing: 20) {
-                // 标题
+            // 健康指标
+            VStack(spacing: 12) {
+                // 过敏信息
                 HStack {
-                    Image(systemName: "graduationcap.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(Color(hex: "6366F1"))
-                    
-                    Text("学业总览")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.primary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(loc.language == .chinese ? "过敏记录" : "Allergies")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        HStack(spacing: 4) {
+                            Text("\(allergyCount)")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                            Text(loc.language == .chinese ? "项" : "items")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
                     
                     Spacer()
                     
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.secondary)
-                        .font(.system(size: 14))
-                }
-                
-                // 总平均分
-                HStack(alignment: .center, spacing: 16) {
-                    Text("81.7")
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(hex: "10B981"))
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("平均分")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                        
+                    // 严重过敏标记
+                    if severeAllergyCount > 0 {
                         HStack(spacing: 4) {
-                            Image(systemName: "arrow.up.right")
-                                .font(.system(size: 12))
-                                .foregroundColor(Color(hex: "10B981"))
-                            
-                            Text("较上月 +2.3")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(Color(hex: "10B981"))
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(DesignSystem.errorColor)
+                            Text("\(severeAllergyCount) " + (loc.language == .chinese ? "严重" : "severe"))
+                                .font(.caption)
+                                .fontWeight(.semibold)
                         }
-                        
-                        Text("🏆 一等学位水平")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(Color(hex: "F59E0B"))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 2)
-                            .background(Color(hex: "F59E0B").opacity(0.1))
-                            .clipShape(Capsule())
-                            .padding(.top, 2)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(DesignSystem.errorColor.opacity(0.1))
+                        .clipShape(Capsule())
                     }
                 }
                 
                 Divider()
                 
-                // 课程列表
-                VStack(spacing: 12) {
-                    ForEach(highlights) { course in
-                        HStack(spacing: 12) {
-                            // 趋势图标
-                            Image(systemName: course.trendIcon)
-                                .font(.system(size: 12))
-                                .foregroundColor(course.trendColor)
-                                .frame(width: 20)
-                            
-                            Text(course.name)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Text("\(course.grade) 分")
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundColor(course.gradeColor)
+                // 用药信息
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(loc.language == .chinese ? "长期用药" : "Active Medications")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        HStack(spacing: 4) {
+                            Text("\(activeMedicationCount)")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                            Text(loc.language == .chinese ? "种" : "types")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                         }
+                    }
+                    
+                    Spacer()
+                    
+                    // 本周打卡率
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text(loc.language == .chinese ? "本周打卡" : "This Week")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(String(format: "%.0f%%", weeklyComplianceRate * 100))
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundColor(complianceColor(for: weeklyComplianceRate))
                     }
                 }
             }
-            .padding(24)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                    )
-                    .shadow(color: .black.opacity(0.08), radius: 20, x: 0, y: 10)
-            )
+            
+            // 查看详情
+            NavigationLink(destination: ParentHealthView()) {
+                HStack {
+                    Text(loc.language == .chinese ? "查看健康档案详情" : "View Health Details")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                }
+                .foregroundColor(DesignSystem.primaryColor)
+                .padding(.top, 4)
+            }
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding()
+        .glassCard()
+    }
+    
+    private func complianceColor(for rate: Double) -> Color {
+        if rate >= 0.8 { return DesignSystem.successColor }
+        else if rate >= 0.6 { return DesignSystem.warningColor }
+        else { return DesignSystem.errorColor }
     }
 }
 
-// MARK: - 本周总结卡片
-struct WeeklySummaryCard: View {
+// MARK: - 本周重要事项卡
+struct WeeklyHighlightsCard: View {
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var loc: LocalizationService
+    
+    // 模拟数据 - 实际应整合 TodoManager 和 HealthDataManager.appointments
+    private var upcomingEvents: [UpcomingEvent] {
+        [
+            UpcomingEvent(
+                id: UUID(),
+                title: "Machine Learning Project",
+                titleCN: "机器学习项目",
+                type: .assignment,
+                date: Date().addingTimeInterval(2 * 24 * 3600),
+                priority: .high
+            ),
+            UpcomingEvent(
+                id: UUID(),
+                title: "GP Appointment",
+                titleCN: "全科医生预约",
+                type: .medical,
+                date: Date().addingTimeInterval(3 * 24 * 3600),
+                priority: .medium
+            ),
+            UpcomingEvent(
+                id: UUID(),
+                title: "Statistics Assignment",
+                titleCN: "统计学作业",
+                type: .assignment,
+                date: Date().addingTimeInterval(5 * 24 * 3600),
+                priority: .medium
+            )
+        ]
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // 标题
             HStack {
-                Image(systemName: "chart.bar.fill")
-                    .font(.system(size: 18))
-                    .foregroundColor(Color(hex: "8B5CF6"))
-                
-                Text("📊 本周总结")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.primary)
+                Image(systemName: "flag.fill")
+                    .foregroundColor(DesignSystem.warningColor)
+                Text(loc.language == .chinese ? "本周重要事项" : "Weekly Highlights")
+                    .font(.headline)
+                Spacer()
             }
             
-            // 统计网格
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                WeeklyStat(icon: "book.fill", value: "3", label: "门课程", color: Color(hex: "6366F1"))
-                WeeklyStat(icon: "pencil", value: "2", label: "次作业", color: Color(hex: "F59E0B"))
-                WeeklyStat(icon: "checkmark.circle.fill", value: "95%", label: "出勤率", color: Color(hex: "10B981"))
-                WeeklyStat(icon: "person.3.fill", value: "3", label: "次小组", color: Color(hex: "EC4899"))
+            if upcomingEvents.isEmpty {
+                Text(loc.language == .chinese ? "暂无待办事项" : "No upcoming events")
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 8)
+            } else {
+                ForEach(upcomingEvents) { event in
+                    UpcomingEventRow(event: event)
+                }
             }
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.08), radius: 20, x: 0, y: 10)
-        )
+        .padding()
+        .glassCard()
     }
 }
 
-struct WeeklyStat: View {
-    let icon: String
-    let value: String
-    let label: String
-    let color: Color
+// MARK: - 待办事项行
+struct UpcomingEventRow: View {
+    @EnvironmentObject var loc: LocalizationService
+    let event: UpcomingEvent
     
     var body: some View {
         HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.15))
-                    .frame(width: 40, height: 40)
-                
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(color)
-            }
+            // 图标
+            Image(systemName: event.type.icon)
+                .font(.title3)
+                .foregroundColor(event.type.color)
+                .frame(width: 32, height: 32)
+                .background(event.type.color.opacity(0.1))
+                .clipShape(Circle())
             
             VStack(alignment: .leading, spacing: 2) {
-                Text(value)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.primary)
+                Text(loc.language == .chinese ? event.titleCN : event.title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
                 
-                Text(label)
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+                HStack(spacing: 6) {
+                    Image(systemName: "calendar")
+                        .font(.caption2)
+                    Text(event.date, style: .date)
+                        .font(.caption)
+                }
+                .foregroundColor(.secondary)
             }
             
             Spacer()
-        }
-        .padding(12)
-        .background(Color.white.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-}
-
-// MARK: - 出勤热力图卡片
-struct AttendanceHeatmapCard: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "calendar")
-                    .font(.system(size: 18))
-                    .foregroundColor(Color(hex: "10B981"))
-                
-                Text("📈 出勤热力图")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.primary)
-            }
             
-            HStack(spacing: 12) {
-                // 月度统计
-                VStack(spacing: 8) {
-                    Text("95%")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(Color(hex: "10B981"))
-                    
-                    Text("本月出勤率")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color(hex: "10B981").opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                
-                // 周度统计
-                VStack(spacing: 8) {
-                    Text("100%")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(Color(hex: "6366F1"))
-                    
-                    Text("本周出勤率")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color(hex: "6366F1").opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+            // 优先级标签
+            if event.priority == .high {
+                Text(loc.language == .chinese ? "紧急" : "Urgent")
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(DesignSystem.errorColor.opacity(0.1))
+                    .foregroundColor(DesignSystem.errorColor)
+                    .clipShape(Capsule())
             }
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.08), radius: 20, x: 0, y: 10)
-        )
+        .padding(.vertical, 4)
     }
 }
 
-// MARK: - 作业进度卡片
-struct AssignmentProgressCard: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "doc.text.fill")
-                    .font(.system(size: 18))
-                    .foregroundColor(Color(hex: "F59E0B"))
-                
-                Text("📝 作业进度")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.primary)
-            }
-            
-            VStack(spacing: 12) {
-                ProgressRow(title: "已完成", value: 12, total: 15, color: Color(hex: "10B981"))
-                ProgressRow(title: "进行中", value: 2, total: 15, color: Color(hex: "F59E0B"))
-                ProgressRow(title: "即将截止", value: 1, total: 15, color: Color(hex: "EF4444"))
-            }
-        }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.08), radius: 20, x: 0, y: 10)
-        )
-    }
-}
-
-struct ProgressRow: View {
-    let title: String
-    let value: Int
-    let total: Int
-    let color: Color
+// MARK: - 校园活动预览卡
+struct CampusActivitiesPreviewCard: View {
+    @EnvironmentObject var uclVM: UCLAPIViewModel
+    @EnvironmentObject var loc: LocalizationService
     
-    var percentage: Double {
-        Double(value) / Double(total)
+    var todayActivities: [UCLAPIViewModel.UCLAPIEvent] {
+        let calendar = Calendar.current
+        return uclVM.events.filter { event in
+            calendar.isDateInToday(event.startTime)
+        }.prefix(2).map { $0 }
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 16) {
+            // 标题
             HStack {
-                Text(title)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.primary)
-                
+                Image(systemName: "star.circle.fill")
+                    .foregroundColor(DesignSystem.secondaryColor)
+                Text(loc.language == .chinese ? "今日校园活动" : "Today's Campus Events")
+                    .font(.headline)
                 Spacer()
-                
-                Text("\(value)/\(total)")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(color)
             }
             
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.gray.opacity(0.2))
-                    
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(color)
-                        .frame(width: geometry.size.width * percentage)
+            if todayActivities.isEmpty {
+                Text(loc.language == .chinese ? "今日暂无校园活动" : "No campus events today")
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 8)
+            } else {
+                ForEach(todayActivities) { activity in
+                    CampusActivityPreviewRow(activity: activity)
                 }
             }
-            .frame(height: 8)
-        }
-    }
-}
-
-// MARK: - 活动参与卡片
-struct ActivityParticipationCard: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 18))
-                    .foregroundColor(Color(hex: "EC4899"))
-                
-                Text("🎯 活动参与")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.primary)
-            }
             
-            VStack(spacing: 12) {
-                ActivityRow(icon: "book.fill", title: "学术活动", count: 3, color: Color(hex: "6366F1"))
-                ActivityRow(icon: "person.3.fill", title: "社交活动", count: 2, color: Color(hex: "EC4899"))
-                ActivityRow(icon: "figure.run", title: "运动健康", count: 1, color: Color(hex: "10B981"))
-            }
-            
-            Text("本月总计参与 6 次活动")
-                .font(.system(size: 13))
-                .foregroundColor(.secondary)
+            // 查看全部活动
+            NavigationLink(destination: ParentCampusView()) {
+                HStack {
+                    Text(loc.language == .chinese ? "查看所有校园活动" : "View All Activities")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                }
+                .foregroundColor(DesignSystem.primaryColor)
                 .padding(.top, 4)
+            }
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.08), radius: 20, x: 0, y: 10)
-        )
+        .padding()
+        .glassCard()
     }
 }
 
-struct ActivityRow: View {
-    let icon: String
-    let title: String
-    let count: Int
-    let color: Color
+// MARK: - 活动预览行
+struct CampusActivityPreviewRow: View {
+    @EnvironmentObject var loc: LocalizationService
+    let activity: UCLAPIViewModel.UCLAPIEvent
     
     var body: some View {
         HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.15))
-                    .frame(width: 36, height: 36)
+            // 时间指示器
+            VStack {
+                Text(activity.startTime, style: .time)
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+            }
+            .frame(width: 50)
+            .padding(.vertical, 8)
+            .background(DesignSystem.primaryColor.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(activity.title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
                 
-                Image(systemName: icon)
-                    .font(.system(size: 14))
-                    .foregroundColor(color)
+                if !activity.location.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "mappin.circle.fill")
+                            .font(.caption2)
+                        Text(activity.location)
+                            .font(.caption)
+                    }
+                    .foregroundColor(.secondary)
+                }
             }
             
-            Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.primary)
-            
             Spacer()
-            
-            Text("\(count) 次")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(color)
         }
-        .padding(12)
-        .background(Color.white.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .padding(.vertical, 4)
     }
 }
 
 // MARK: - 数据未共享视图
 struct DataNotSharedView: View {
+    @EnvironmentObject var loc: LocalizationService
     let dataType: String
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             Image(systemName: "lock.shield.fill")
-                .font(.system(size: 40))
-                .foregroundColor(Color(hex: "F59E0B"))
+                .font(.title)
+                .foregroundColor(.gray)
             
-            Text("\(dataType)未共享")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.primary)
-            
-            Text("学生尚未开启此数据共享")
-                .font(.system(size: 14))
+            Text(loc.language == .chinese ? "学生暂未共享\(dataType)" : "Student hasn't shared \(dataType)")
+                .font(.subheadline)
                 .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color(hex: "F59E0B").opacity(0.3), lineWidth: 1.5)
-                )
-        )
+        .padding(.vertical, 20)
+        .background(Color.gray.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
+
+// MARK: - 辅助数据模型
+struct TimetableClass: Identifiable {
+    let id: UUID
+    let courseName: String
+    let courseNameCN: String
+    let time: String
+    let location: String
+    let locationCN: String
+    let room: String
+    let instructor: String?
+}
+
+struct UpcomingEvent: Identifiable {
+    let id: UUID
+    let title: String
+    let titleCN: String
+    let type: EventType
+    let date: Date
+    let priority: Priority
+    
+    enum EventType {
+        case assignment, medical, activity
+        
+        var icon: String {
+            switch self {
+            case .assignment: return "doc.text.fill"
+            case .medical: return "cross.case.fill"
+            case .activity: return "star.fill"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .assignment: return DesignSystem.primaryColor
+            case .medical: return DesignSystem.errorColor
+            case .activity: return DesignSystem.secondaryColor
+            }
+        }
+    }
+    
+    enum Priority {
+        case high, medium, low
+    }
+}
+
