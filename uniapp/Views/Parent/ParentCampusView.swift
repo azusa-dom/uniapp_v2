@@ -13,13 +13,13 @@ struct ParentCampusView: View {
     
     @State private var selectedFilter: ActivityFilter = .all
     
-    var filteredActivities: [UCLAPIEvent] {
+    var filteredActivities: [UCLAPIViewModel.UCLAPIEvent] {
         switch selectedFilter {
         case .all:
             return viewModel.events
         case .thisWeek:
             let weekFromNow = Date().addingTimeInterval(7*24*3600)
-            return viewModel.events.filter { $0.startDate >= Date() && $0.startDate <= weekFromNow }
+            return viewModel.events.filter { $0.startTime >= Date() && $0.startTime <= weekFromNow }
         case .recommended:
             return viewModel.events.filter { $0.isRecommended }
         }
@@ -67,12 +67,12 @@ struct ParentCampusView: View {
 struct ActivityFilterBar: View {
     @EnvironmentObject var loc: LocalizationService
     @Binding var selectedFilter: ActivityFilter
-    
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
                 ForEach(ActivityFilter.allCases, id: \.self) { filter in
-                    FilterChip(
+                    ParentFilterChip(
                         title: filter.displayName(loc: loc),
                         isSelected: selectedFilter == filter,
                         icon: filter.icon
@@ -88,12 +88,12 @@ struct ActivityFilterBar: View {
 }
 
 // MARK: - 筛选芯片
-struct FilterChip: View {
+struct ParentFilterChip: View {
     let title: String
     let isSelected: Bool
     let icon: String
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
@@ -178,8 +178,8 @@ struct CampusStatItem: View {
 // MARK: - 校园活动卡片
 struct CampusActivityCard: View {
     @EnvironmentObject var loc: LocalizationService
-    let activity: UCLAPIEvent
-    
+    let activity: UCLAPIViewModel.UCLAPIEvent
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // 顶部状态标签
@@ -192,12 +192,12 @@ struct CampusActivityCard: View {
                         color: Color(hex: "8B5CF6")
                     )
                 }
-                
+
                 Spacer()
-                
+
                 // 活动类型
-                if !activity.eventType.isEmpty {
-                    Text(activity.eventType.capitalized)
+                if let activityType = activity.activityType {
+                    Text(activityType.capitalized)
                         .font(.caption2)
                         .fontWeight(.semibold)
                         .padding(.horizontal, 8)
@@ -207,46 +207,44 @@ struct CampusActivityCard: View {
                         .clipShape(Capsule())
                 }
             }
-            
+
             // 活动标题
             Text(activity.title)
                 .font(.headline)
                 .lineLimit(2)
-            
+
             // 时间和地点
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
                     Image(systemName: "calendar")
                         .font(.caption)
                         .foregroundColor(Color(hex: "6366F1"))
-                    Text(activity.startDate, style: .date)
+                    Text(activity.startTime, style: .date)
                         .font(.subheadline)
-                    
+
                     Text("•")
                         .foregroundColor(.secondary)
-                    
+
                     Image(systemName: "clock")
                         .font(.caption)
                         .foregroundColor(Color(hex: "6366F1"))
-                    Text(activity.startDate, style: .time)
+                    Text(activity.startTime, style: .time)
                         .font(.subheadline)
                 }
-                
-                if let location = activity.location {
-                    HStack(spacing: 6) {
-                        Image(systemName: "mappin.circle.fill")
-                            .font(.caption)
-                            .foregroundColor(Color(hex: "6366F1"))
-                        Text(location)
-                            .font(.subheadline)
-                            .lineLimit(1)
-                    }
+
+                HStack(spacing: 6) {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "6366F1"))
+                    Text(activity.location)
+                        .font(.subheadline)
+                        .lineLimit(1)
                 }
             }
             .foregroundColor(.secondary)
-            
+
             // 活动描述
-            if let description = activity.eventDescription {
+            if let description = activity.description {
                 Text(description)
                     .font(.caption)
                     .foregroundColor(.secondary)
