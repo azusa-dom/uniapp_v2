@@ -11,6 +11,7 @@ import SwiftUI
 struct StudentEmailView: View {
     @EnvironmentObject var loc: LocalizationService
     @State var selectedFilter = "全部"
+    @State private var selectedEmail: EmailPreview? = nil
     
     let categories = ["全部", "紧急", "学术", "活动"]
     
@@ -92,7 +93,9 @@ struct StudentEmailView: View {
                         // 邮件列表
                         VStack(spacing: 12) {
                             ForEach(filteredEmails) { email in
-                                NavigationLink(destination: EmailDetailView(email: email)) {
+                                Button {
+                                    selectedEmail = email
+                                } label: {
                                     EmailRow(email: email)
                                 }
                                 .buttonStyle(PlainButtonStyle())
@@ -105,6 +108,9 @@ struct StudentEmailView: View {
             }
             .navigationTitle("邮件")
             .navigationBarTitleDisplayMode(.large)
+            .navigationDestination(item: $selectedEmail) { email in
+                EmailDetailView(email: email)
+            }
         }
     }
 }
@@ -296,7 +302,8 @@ struct EmailDetailView: View {
     @State private var showTranslation = false
     @State private var showSummary = false
     
-    var detail: EmailDetailContent {
+    // 使用计算属性，但确保只计算一次
+    private var detail: EmailDetailContent {
         if let existingDetail = mockEmailDetails[email.sender] {
             return existingDetail
         }

@@ -143,13 +143,22 @@ struct EmailFilter {
 }
 
 // MARK: - 兼容旧版本的 EmailPreview（用于现有视图）
-struct EmailPreview: Identifiable {
-    struct DeadlineMeta {
+struct EmailPreview: Identifiable, Hashable {
+    struct DeadlineMeta: Hashable {
         var title: String
         var date: String
         var time: String
         var calendarAdded: Bool
         var note: String
+    }
+    
+    // Hashable 实现
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    static func == (lhs: EmailPreview, rhs: EmailPreview) -> Bool {
+        lhs.id == rhs.id
     }
     
     let id: UUID
