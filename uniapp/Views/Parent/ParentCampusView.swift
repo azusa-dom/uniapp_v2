@@ -16,6 +16,8 @@ struct ParentCampusView: View {
     @EnvironmentObject var uclVM: UCLAPIViewModel
     
     @State private var selectedFilter: ActivityFilter = .all
+    @State private var selectedActivity: UCLAPIViewModel.UCLAPIEvent? = nil
+    @State private var showingActivityDetail = false
     
     var filteredActivities: [UCLAPIViewModel.UCLAPIEvent] {
         switch selectedFilter {
@@ -53,7 +55,10 @@ struct ParentCampusView: View {
                                 
                                 // 活动列表
                                 ForEach(filteredActivities) { activity in
-                                    ParentCampusActivityCard(activity: activity)
+                                    ParentCampusActivityCard(activity: activity) {
+                                        selectedActivity = activity
+                                        showingActivityDetail = true
+                                    }
                                 }
                             }
                             .padding()
@@ -62,6 +67,11 @@ struct ParentCampusView: View {
                 }
             }
             .navigationTitle(loc.language == .chinese ? "校园活动" : "Campus Activities")
+            .sheet(isPresented: $showingActivityDetail) {
+                if let activity = selectedActivity {
+                    ActivityDetailView(activity: activity)
+                }
+            }
         }
     }
 }
@@ -203,108 +213,112 @@ struct CampusStatItem: View {
 struct ParentCampusActivityCard: View {
     @EnvironmentObject var loc: LocalizationService
     let activity: UCLAPIViewModel.UCLAPIEvent
+    let onTap: () -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // 顶部状态标签
-            HStack {
-                // 参与状态
-                if activity.isStudentJoined {
-                    ActivityStatusBadge(
-                        icon: "checkmark.circle.fill",
-                        text: loc.language == .chinese ? "已报名" : "Registered",
-                        color: DesignSystem.successColor
-                    )
-                }
-                
-                // 推荐标签
-                if activity.isRecommended {
-                    ActivityStatusBadge(
-                        icon: "sparkles",
-                        text: loc.language == .chinese ? "推荐" : "Recommended",
-                        color: DesignSystem.secondaryColor
-                    )
-                }
-                
-                Spacer()
-                
-                // 活动类型
-                if let category = activity.category {
-                    Text(category)
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.blue.opacity(0.1))
-                        .foregroundColor(.blue)
-                        .clipShape(Capsule())
-                }
-            }
-            
-            // 活动标题
-            Text(activity.title)
-                .font(.headline)
-                .lineLimit(2)
-            
-            // 时间和地点
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
-                    Image(systemName: "calendar")
-                        .font(.caption)
-                        .foregroundColor(DesignSystem.primaryColor)
-                    Text(activity.startTime, style: .date)
-                        .font(.subheadline)
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 12) {
+                // 顶部状态标签
+                HStack {
+                    // 参与状态
+                    if activity.isStudentJoined {
+                        ActivityStatusBadge(
+                            icon: "checkmark.circle.fill",
+                            text: loc.language == .chinese ? "已报名" : "Registered",
+                            color: DesignSystem.successColor
+                        )
+                    }
                     
-                    Text("•")
-                        .foregroundColor(.secondary)
+                    // 推荐标签
+                    if activity.isRecommended {
+                        ActivityStatusBadge(
+                            icon: "sparkles",
+                            text: loc.language == .chinese ? "推荐" : "Recommended",
+                            color: DesignSystem.secondaryColor
+                        )
+                    }
                     
-                    Image(systemName: "clock")
-                        .font(.caption)
-                        .foregroundColor(DesignSystem.primaryColor)
-                    Text(activity.startTime, style: .time)
-                        .font(.subheadline)
-                }
-                
-                if !activity.location.isEmpty {
-                    HStack(spacing: 6) {
-                        Image(systemName: "mappin.circle.fill")
-                            .font(.caption)
-                            .foregroundColor(DesignSystem.primaryColor)
-                        Text(activity.location)
-                            .font(.subheadline)
-                            .lineLimit(1)
+                    Spacer()
+                    
+                    // 活动类型
+                    if let category = activity.category {
+                        Text(category)
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.blue.opacity(0.1))
+                            .foregroundColor(.blue)
+                            .clipShape(Capsule())
                     }
                 }
-            }
-            .foregroundColor(.secondary)
-            
-            // 活动描述
-            if let description = activity.eventDescription {
-                Text(description)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(3)
-            }
-            
-            // 相关性标签（如果是推荐活动）
-            if activity.isRecommended {
-                HStack(spacing: 6) {
-                    Image(systemName: "lightbulb.fill")
-                        .font(.caption2)
-                        .foregroundColor(DesignSystem.warningColor)
-                    Text(loc.language == .chinese ? "与学习方向高度相关" : "Highly relevant to major")
-                        .font(.caption)
-                        .fontWeight(.medium)
+                
+                // 活动标题
+                Text(activity.title)
+                    .font(.headline)
+                    .lineLimit(2)
+                
+                // 时间和地点
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "calendar")
+                            .font(.caption)
+                            .foregroundColor(DesignSystem.primaryColor)
+                        Text(activity.startTime, style: .date)
+                            .font(.subheadline)
+                        
+                        Text("•")
+                            .foregroundColor(.secondary)
+                        
+                        Image(systemName: "clock")
+                            .font(.caption)
+                            .foregroundColor(DesignSystem.primaryColor)
+                        Text(activity.startTime, style: .time)
+                            .font(.subheadline)
+                    }
+                    
+                    if !activity.location.isEmpty {
+                        HStack(spacing: 6) {
+                            Image(systemName: "mappin.circle.fill")
+                                .font(.caption)
+                                .foregroundColor(DesignSystem.primaryColor)
+                            Text(activity.location)
+                                .font(.subheadline)
+                                .lineLimit(1)
+                        }
+                    }
                 }
-                .foregroundColor(DesignSystem.warningColor)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(DesignSystem.warningColor.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .foregroundColor(.secondary)
+                
+                // 活动描述
+                if let description = activity.eventDescription {
+                    Text(description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(3)
+                }
+                
+                // 相关性标签（如果是推荐活动）
+                if activity.isRecommended {
+                    HStack(spacing: 6) {
+                        Image(systemName: "lightbulb.fill")
+                            .font(.caption2)
+                            .foregroundColor(DesignSystem.warningColor)
+                        Text(loc.language == .chinese ? "与学习方向高度相关" : "Highly relevant to major")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(DesignSystem.warningColor)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(DesignSystem.warningColor.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
             }
+            .padding()
+            .glassCard()
         }
-        .padding()
-        .glassCard()
+        .buttonStyle(.plain)
     }
 }
 
@@ -426,5 +440,172 @@ extension UCLAPIViewModel.UCLAPIEvent {
             return "Social"
         }
         return "Event"
+    }
+}
+
+// MARK: - 活动详情视图
+struct ActivityDetailView: View {
+    @EnvironmentObject var loc: LocalizationService
+    @Environment(\.dismiss) var dismiss
+    let activity: UCLAPIViewModel.UCLAPIEvent
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                DesignSystem.backgroundGradient
+                    .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        // 标题
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(activity.title)
+                                .font(.title2)
+                                .fontWeight(.bold)
+                            
+                            // 状态标签
+                            HStack(spacing: 8) {
+                                if activity.isStudentJoined {
+                                    ActivityStatusBadge(
+                                        icon: "checkmark.circle.fill",
+                                        text: loc.language == .chinese ? "已报名" : "Registered",
+                                        color: DesignSystem.successColor
+                                    )
+                                }
+                                
+                                if activity.isRecommended {
+                                    ActivityStatusBadge(
+                                        icon: "sparkles",
+                                        text: loc.language == .chinese ? "推荐" : "Recommended",
+                                        color: DesignSystem.secondaryColor
+                                    )
+                                }
+                                
+                                if let category = activity.category {
+                                    Text(category)
+                                        .font(.caption2)
+                                        .fontWeight(.semibold)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.blue.opacity(0.1))
+                                        .foregroundColor(.blue)
+                                        .clipShape(Capsule())
+                                }
+                            }
+                        }
+                        
+                        // 时间和地点信息卡片
+                        VStack(alignment: .leading, spacing: 16) {
+                            // 日期和时间
+                            HStack(spacing: 12) {
+                                Image(systemName: "calendar")
+                                    .font(.title3)
+                                    .foregroundColor(DesignSystem.primaryColor)
+                                    .frame(width: 32)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(loc.language == .chinese ? "日期" : "Date")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Text(activity.startTime, style: .date)
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                }
+                            }
+                            
+                            // 时间
+                            HStack(spacing: 12) {
+                                Image(systemName: "clock")
+                                    .font(.title3)
+                                    .foregroundColor(DesignSystem.primaryColor)
+                                    .frame(width: 32)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(loc.language == .chinese ? "时间" : "Time")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Text("\(activity.startTime, style: .time) - \(activity.endTime, style: .time)")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                }
+                            }
+                            
+                            // 地点
+                            if !activity.location.isEmpty {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "mappin.circle.fill")
+                                        .font(.title3)
+                                        .foregroundColor(DesignSystem.primaryColor)
+                                        .frame(width: 32)
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(loc.language == .chinese ? "地点" : "Location")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                        Text(activity.location)
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                    }
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.white)
+                                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                        )
+                        
+                        // 活动描述
+                        if let description = activity.eventDescription {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(loc.language == .chinese ? "活动详情" : "Activity Details")
+                                    .font(.headline)
+                                
+                                Text(description)
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.white)
+                                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                            )
+                        }
+                        
+                        // 相关性提示（如果是推荐活动）
+                        if activity.isRecommended {
+                            HStack(spacing: 8) {
+                                Image(systemName: "lightbulb.fill")
+                                    .font(.title3)
+                                    .foregroundColor(DesignSystem.warningColor)
+                                
+                                Text(loc.language == .chinese ? "与学习方向高度相关" : "Highly relevant to major")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(DesignSystem.warningColor.opacity(0.1))
+                            )
+                        }
+                    }
+                    .padding()
+                }
+            }
+            .navigationTitle(loc.language == .chinese ? "活动详情" : "Activity Details")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(loc.language == .chinese ? "完成" : "Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }

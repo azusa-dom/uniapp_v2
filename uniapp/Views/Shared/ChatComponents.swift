@@ -6,14 +6,12 @@ struct MessageBubble: View {
     
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            if message.isUser {
-                Spacer(minLength: 60)
-            }
-            
+            // AI 消息：头像在左边
             if !message.isUser {
                 avatarView
             }
             
+            // 消息内容
             VStack(alignment: message.isUser ? .trailing : .leading, spacing: 4) {
                 // 渲染 Markdown 格式的消息
                 if message.isUser {
@@ -54,11 +52,16 @@ struct MessageBubble: View {
                     .padding(.horizontal, 4)
             }
             
+            // 用户消息：头像在右边
             if message.isUser {
                 avatarView
-                Spacer(minLength: 0)
+            }
+            
+            // 弹性空间：用户消息时在左边，AI消息时在右边
+            if message.isUser {
+                Spacer()
             } else {
-                Spacer(minLength: 60)
+                Spacer()
             }
         }
         .padding(.horizontal, 4)
