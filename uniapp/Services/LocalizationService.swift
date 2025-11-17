@@ -199,7 +199,6 @@ class LocalizationService: ObservableObject {
             "tab_calendar_activities": [.chinese: "活动日历", .english: "Calendar & Activities"],
             "tab_settings": [.chinese: "设置", .english: "Settings"],
             "view_all": [.chinese: "查看全部", .english: "View All"],
-            "add": [.chinese: "添加", .english: "Add"],
             "close": [.chinese: "关闭", .english: "Close"],
             "completed": [.chinese: "已完成", .english: "Completed"],
             "created_time": [.chinese: "创建时间", .english: "Created"],
@@ -245,7 +244,6 @@ class LocalizationService: ObservableObject {
             "monthly_participation": [.chinese: "本月参与: 5次活动", .english: "This month: 5 activities"],
             "data_not_shared": [.chinese: "%@未共享", .english: "%@ Not Shared"],
             "data_not_shared_desc": [.chinese: "学生尚未开启此数据共享", .english: "Student hasn't enabled data sharing"],
-            "todo_detail": [.chinese: "待办详情", .english: "Todo Detail"],
 
             // StudentDashboardView 专用
             "student_program": [.chinese: "MSc Health Data Science · Year 1", .english: "MSc Health Data Science · Year 1"],
