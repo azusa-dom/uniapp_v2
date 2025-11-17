@@ -1,0 +1,385 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # Core Services
+  # ==========================================
+
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: uniapp_gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=development
+      - DATABASE_URL=postgresql+asyncpg://uniapp:uniapp_password@postgres:5432/uniapp
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./gateway:/app/gateway
+      - ./shared:/app/shared
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  # ==========================================
+  # Microservices
+  # ==========================================
+
+  auth_service:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    container_name: uniapp_auth
+    environment:
+      - SERVICE_NAME=auth
+      - DATABASE_URL=postgresql+asyncpg://uniapp:uniapp_password@postgres:5432/uniapp
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/auth:/app/services/auth
+      - ./shared:/app/shared
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  ucl_proxy_service:
+    build:
+      context: .
+      dockerfile: services/ucl_proxy/Dockerfile
+    container_name: uniapp_ucl_proxy
+    environment:
+      - SERVICE_NAME=ucl_proxy
+      - REDIS_URL=redis://redis:6379/1
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      - ./services/ucl_proxy:/app/services/ucl_proxy
+      - ./shared:/app/shared
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  email_service:
+    build:
+      context: .
+      dockerfile: services/email/Dockerfile
+    container_name: uniapp_email
+    environment:
+      - SERVICE_NAME=email
+      - DATABASE_URL=postgresql+asyncpg://uniapp:uniapp_password@postgres:5432/uniapp
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    volumes:
+      - ./services/email:/app/services/email
+      - ./shared:/app/shared
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  grades_service:
+    build:
+      context: .
+      dockerfile: services/grades/Dockerfile
+    container_name: uniapp_grades
+    environment:
+      - SERVICE_NAME=grades
+      - DATABASE_URL=postgresql+asyncpg://uniapp:uniapp_password@postgres:5432/uniapp
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    volumes:
+      - ./services/grades:/app/services/grades
+      - ./shared:/app/shared
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  ai_service:
+    build:
+      context: .
+      dockerfile: services/ai/Dockerfile
+    container_name: uniapp_ai
+    environment:
+      - SERVICE_NAME=ai
+      - DATABASE_URL=postgresql+asyncpg://uniapp:uniapp_password@postgres:5432/uniapp
+      - QDRANT_URL=http://qdrant:6333
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - qdrant
+    volumes:
+      - ./services/ai:/app/services/ai
+      - ./shared:/app/shared
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  schedule_service:
+    build:
+      context: .
+      dockerfile: services/schedule/Dockerfile
+    container_name: uniapp_schedule
+    environment:
+      - SERVICE_NAME=schedule
+      - DATABASE_URL=postgresql+asyncpg://uniapp:uniapp_password@postgres:5432/uniapp
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    volumes:
+      - ./services/schedule:/app/services/schedule
+      - ./shared:/app/shared
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  health_service:
+    build:
+      context: .
+      dockerfile: services/health/Dockerfile
+    container_name: uniapp_health
+    environment:
+      - SERVICE_NAME=health
+      - DATABASE_URL=postgresql+asyncpg://uniapp:uniapp_password@postgres:5432/uniapp
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    volumes:
+      - ./services/health:/app/services/health
+      - ./shared:/app/shared
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  notifications_service:
+    build:
+      context: .
+      dockerfile: services/notifications/Dockerfile
+    container_name: uniapp_notifications
+    environment:
+      - SERVICE_NAME=notifications
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      - ./services/notifications:/app/services/notifications
+      - ./shared:/app/shared
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  # ==========================================
+  # Background Workers
+  # ==========================================
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    container_name: uniapp_celery_worker
+    command: celery -A shared.tasks.celery_app worker --loglevel=info --concurrency=4
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+      - DATABASE_URL=postgresql+asyncpg://uniapp:uniapp_password@postgres:5432/uniapp
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    volumes:
+      - ./services:/app/services
+      - ./shared:/app/shared
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    container_name: uniapp_celery_beat
+    command: celery -A shared.tasks.celery_app beat --loglevel=info
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+      - DATABASE_URL=postgresql+asyncpg://uniapp:uniapp_password@postgres:5432/uniapp
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    volumes:
+      - ./services:/app/services
+      - ./shared:/app/shared
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  # ==========================================
+  # Databases & Infrastructure
+  # ==========================================
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: uniapp_postgres
+    environment:
+      POSTGRES_DB: uniapp
+      POSTGRES_USER: uniapp
+      POSTGRES_PASSWORD: uniapp_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uniapp -d uniapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: uniapp_redis
+    command: redis-server --appendonly yes --requirepass ""
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:v1.7.4
+    container_name: uniapp_qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__GRPC_PORT: 6334
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: uniapp_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: uniapp_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  # ==========================================
+  # Monitoring (Optional)
+  # ==========================================
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: uniapp_prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: uniapp_grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - uniapp_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  qdrant_data:
+  rabbitmq_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  uniapp_network:
+    driver: bridge
