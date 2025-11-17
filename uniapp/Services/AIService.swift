@@ -1,44 +1,4 @@
 //
-//  UCLApp.swift
-//  uniapp
-//
-//  Created by 748 on 12/11/2025.
-//
-
-import SwiftUI
-
-@main
-struct uniappApp: App {
-    // 注册全局状态
-    @StateObject private var appState = AppState()
-    @StateObject private var loc = LocalizationService()
-
-    var body: some Scene {
-        WindowGroup {
-            // 登录逻辑
-            // 为演示方便，我们假设已登录
-            // 你可以将 appState.isLoggedIn 初始值设为 false 来显示 LoginView
-            if appState.isLoggedIn {
-                // RootView 是根视图，它会根据 appState.userRole 自动切换
-                RootView()
-                    .environmentObject(appState)
-                    .environmentObject(loc)
-            } else {
-                // 登录视图 (使用 LoginModule.swift 中的 LoginView)
-                LoginView { token in
-                    withAnimation(.spring()) {
-                        appState.userRole = token.role
-                        appState.isLoggedIn = true
-                    }
-                }
-                .environmentObject(appState)
-                .environmentObject(loc)
-            }
-        }
-    }
-}
-
-//
 //  AIService.swift
 //  uniapp
 //
@@ -49,34 +9,34 @@ import Foundation
 
 final class AIService {
     static let shared = AIService()
-    
+
     private let apiKey = Config.deepSeekAPIKey
     private let baseURL = URL(string: "https://api.deepseek.com/v1/chat/completions")!
     private init() {}
-    
+
     /// 将当前会话发送到 DeepSeek，返回模型回复
     func sendConversation(_ messages: [ChatMessage]) async throws -> String {
         guard !apiKey.isEmpty else {
             throw AIError.missingAPIKey
         }
-        
+
         guard messages.last?.isUser == true else {
             throw AIError.invalidConversation
         }
-        
+
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        
+
         let systemPrompt = """
         You are UniApp's bilingual study assistant for UCL students. Respond in polished Simplified Chinese, stay concise, and focus on actionable guidance for classes, assignments, health and campus life.
         """
-        
+
         var payloadMessages: [[String: String]] = [
             ["role": "system", "content": systemPrompt]
         ]
-        
+
         let historySlice = Array(messages.suffix(8))
         for message in historySlice {
             payloadMessages.append([
@@ -84,7 +44,7 @@ final class AIService {
                 "content": message.text
             ])
         }
-        
+
         let payload: [String: Any] = [
             "model": "deepseek-chat",
             "messages": payloadMessages,
@@ -92,28 +52,28 @@ final class AIService {
             "max_tokens": 800,
             "stream": false
         ]
-        
+
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
-        
+
         let (data, response): (Data, URLResponse)
         do {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch {
             throw AIError.networkError(error)
         }
-        
+
         guard let httpResponse = response as? HTTPURLResponse else {
             throw AIError.invalidResponse
         }
-        
+
         guard 200..<300 ~= httpResponse.statusCode else {
             let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
             throw AIError.apiError(statusCode: httpResponse.statusCode, message: errorMessage)
         }
-        
+
         return try parseResponse(data)
     }
-    
+
     private func parseResponse(_ data: Data) throws -> String {
         do {
             let response = try JSONDecoder().decode(DeepSeekResponse.self, from: data)
@@ -132,11 +92,11 @@ private struct DeepSeekResponse: Decodable {
     struct Choice: Decodable {
         let message: ResponseMessage
     }
-    
+
     struct ResponseMessage: Decodable {
         let content: String
     }
-    
+
     let choices: [Choice]
 }
 
@@ -149,7 +109,7 @@ enum AIError: LocalizedError {
     case networkError(Error)
     case missingAPIKey
     case invalidConversation
-    
+
     var errorDescription: String? {
         switch self {
         case .invalidURL:

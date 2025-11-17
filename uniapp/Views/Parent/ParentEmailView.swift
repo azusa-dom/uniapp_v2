@@ -1,5 +1,5 @@
 //
-//  ParentEmail.swift
+//  ParentEmailView.swift
 //  uniapp
 //
 

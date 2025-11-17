@@ -26,6 +26,7 @@ struct StudentProfileView: View {
                         // 个人资料头部
                         ProfileHeaderCard(showingAvatarPicker: $showingAvatarPicker)
                             .environmentObject(appState)
+                            .environmentObject(loc)
 
                         // 设置卡片
                         SettingsCard(showingLanguageSheet: $showingLanguageSheet)
@@ -67,6 +68,7 @@ struct StudentProfileView: View {
 // MARK: - 个人资料头部卡片
 struct ProfileHeaderCard: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var loc: LocalizationService
     @Binding var showingAvatarPicker: Bool
 
     var body: some View {
@@ -117,7 +119,7 @@ struct ProfileHeaderCard: View {
 
                 HStack(spacing: 6) {
                     Image(systemName: "number").font(.system(size: 12)).foregroundColor(Color(hex:"8B5CF6"))
-                    Text("Student ID: \(appState.studentId.isEmpty ? "20241234" : appState.studentId)")
+                    Text("\(loc.tr("profile_student_id")) \(appState.studentId.isEmpty ? "20241234" : appState.studentId)")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
                 }
@@ -222,7 +224,7 @@ struct DataSharingCard: View {
                         Image(systemName: "graduationcap.fill").foregroundColor(Color(hex:"3B82F6"))
                         VStack(alignment: .leading, spacing: 2) {
                             Text(loc.tr("data_sharing_grades")).font(.system(size: 15, weight: .semibold))
-                            Text("与家长共享成绩信息").font(.system(size: 13)).foregroundColor(.secondary)
+                            Text(loc.tr("data_sharing_grades_desc")).font(.system(size: 13)).foregroundColor(.secondary)
                         }
                     }
                 }
@@ -237,7 +239,7 @@ struct DataSharingCard: View {
                         Image(systemName: "calendar").foregroundColor(Color(hex:"F59E0B"))
                         VStack(alignment: .leading, spacing: 2) {
                             Text(loc.tr("data_sharing_calendar")).font(.system(size: 15, weight: .semibold))
-                            Text("与家长共享日程安排").font(.system(size: 13)).foregroundColor(.secondary)
+                            Text(loc.tr("data_sharing_calendar_desc")).font(.system(size: 13)).foregroundColor(.secondary)
                         }
                     }
                 }.tint(Color(hex:"8B5CF6"))
@@ -341,7 +343,7 @@ struct LanguageSelectionSheet: View {
                     .padding()
                 }
             }
-            .navigationTitle("选择语言")
+            .navigationTitle(loc.tr("language_selection_title"))
             .navigationBarTitleDisplayMode(.inline)
         }
     }

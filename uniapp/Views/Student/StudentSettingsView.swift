@@ -42,12 +42,13 @@ struct StudentSettingsView: View {
                         academicInfoSection
                         contactSection
                         aboutSection
+                        languageSection
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 20)
                 }
             }
-            .navigationTitle("设置")
+            .navigationTitle(loc.tr("settings_title"))
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -67,19 +68,19 @@ struct StudentSettingsView: View {
                     Button {
                         saveChanges()
                     } label: {
-                        Text("保存")
+                        Text(loc.tr("save"))
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(hasUnsavedChanges ? Color(hex:"6366F1") : .secondary)
                     }
                     .disabled(!hasUnsavedChanges)
                 }
             }
-            .alert("未保存的更改", isPresented: $showingSaveAlert) {
-                Button("放弃更改", role: .destructive) { dismiss() }
-                Button("继续编辑", role: .cancel) {}
-                Button("保存") { saveChanges(); dismiss() }
+            .alert(loc.tr("settings_unsaved_title"), isPresented: $showingSaveAlert) {
+                Button(loc.tr("settings_discard"), role: .destructive) { dismiss() }
+                Button(loc.tr("settings_continue_editing"), role: .cancel) {}
+                Button(loc.tr("save")) { saveChanges(); dismiss() }
             } message: {
-                Text("您有未保存的更改，是否要保存？")
+                Text(loc.tr("settings_unsaved_message"))
             }
             .sheet(isPresented: $showingAvatarPicker) {
                 AvatarPickerView(selectedIcon: $appState.avatarIcon)
@@ -89,21 +90,20 @@ struct StudentSettingsView: View {
                 ImagePicker(image: $selectedImage)
             }
             .onAppear { loadCurrentData() }
-            // ✅ iOS 17：onChange 新签名（零参数版），避免弃用警告
-            .onChange(of: editedName) { checkForChanges() }
-            .onChange(of: editedEmail) { checkForChanges() }
-            .onChange(of: editedStudentId) { checkForChanges() }
-            .onChange(of: editedProgram) { checkForChanges() }
-            .onChange(of: editedYear) { checkForChanges() }
-            .onChange(of: editedPhone) { checkForChanges() }
-            .onChange(of: editedBio) { checkForChanges() }
+            .onChange(of: editedName) { _ in checkForChanges() }
+            .onChange(of: editedEmail) { _ in checkForChanges() }
+            .onChange(of: editedStudentId) { _ in checkForChanges() }
+            .onChange(of: editedProgram) { _ in checkForChanges() }
+            .onChange(of: editedYear) { _ in checkForChanges() }
+            .onChange(of: editedPhone) { _ in checkForChanges() }
+            .onChange(of: editedBio) { _ in checkForChanges() }
         }
     }
 
     // MARK: - 头像区域
     private var avatarSection: some View {
         VStack(spacing: 16) {
-            Text("头像设置").font(.system(size: 18, weight: .bold)).frame(maxWidth: .infinity, alignment: .leading)
+            Text(loc.tr("settings_avatar")).font(.system(size: 18, weight: .bold)).frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(spacing: 20) {
                 ZStack {
@@ -129,8 +129,8 @@ struct StudentSettingsView: View {
                         HStack {
                             Spacer()
                             Menu {
-                                Button("选择图标") { showingAvatarPicker = true }
-                                Button("相册上传") { showingImagePicker = true }
+                                Button(loc.tr("settings_select_icon")) { showingAvatarPicker = true }
+                                Button(loc.tr("settings_upload_photo")) { showingImagePicker = true }
                             } label: {
                                 ZStack {
                                     Circle().fill(Color.white).frame(width: 36, height: 36)
@@ -147,14 +147,14 @@ struct StudentSettingsView: View {
                     Button {
                         showingAvatarPicker = true
                     } label: {
-                        HStack { Image(systemName:"paintbrush.pointed.fill"); Text("选择图标").fontWeight(.semibold) }
+                        HStack { Image(systemName:"paintbrush.pointed.fill"); Text(loc.tr("settings_select_icon")).fontWeight(.semibold) }
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity).padding(.vertical, 12)
                             .background(Color(hex:"6366F1")).clipShape(RoundedRectangle(cornerRadius: 10))
                     }
 
                     Button { showingImagePicker = true } label: {
-                        HStack { Image(systemName:"photo.fill"); Text("相册上传").fontWeight(.semibold) }
+                        HStack { Image(systemName:"photo.fill"); Text(loc.tr("settings_camera")).fontWeight(.semibold) }
                             .foregroundColor(Color(hex:"6366F1"))
                             .frame(maxWidth: .infinity).padding(.vertical, 12)
                             .background(Color(hex:"6366F1").opacity(0.1)).clipShape(RoundedRectangle(cornerRadius: 10))
@@ -171,11 +171,11 @@ struct StudentSettingsView: View {
     // MARK: - 个人信息
     private var personalInfoSection: some View {
         VStack(spacing: 16) {
-            SectionTitle("个人信息")
+            SectionTitle(loc.tr("settings_personal_info"))
             VStack(spacing: 12) {
-                SettingsTextField(icon:"person.fill", title:"姓名", placeholder:"请输入姓名", text: $editedName)
-                SettingsTextField(icon:"envelope.fill", title:"邮箱", placeholder:"请输入邮箱", text: $editedEmail, keyboardType: .emailAddress)
-                SettingsTextField(icon:"number", title:"学号", placeholder:"请输入学号", text: $editedStudentId)
+                SettingsTextField(icon:"person.fill", title:loc.tr("settings_name"), placeholder:loc.tr("settings_placeholder_name"), text: $editedName)
+                SettingsTextField(icon:"envelope.fill", title:loc.tr("settings_email"), placeholder:loc.tr("settings_placeholder_email"), text: $editedEmail, keyboardType: .emailAddress)
+                SettingsTextField(icon:"number", title:loc.tr("settings_student_id"), placeholder:loc.tr("settings_placeholder_student_id"), text: $editedStudentId)
             }
             .padding(16)
             .background(Color.white.opacity(0.85))
@@ -187,10 +187,10 @@ struct StudentSettingsView: View {
     // MARK: - 学业信息
     private var academicInfoSection: some View {
         VStack(spacing: 16) {
-            SectionTitle("学业信息")
+            SectionTitle(loc.tr("settings_academic_info"))
             VStack(spacing: 12) {
-                SettingsTextField(icon:"graduationcap.fill", title:"专业", placeholder:"请输入专业", text: $editedProgram)
-                SettingsTextField(icon:"calendar", title:"年级", placeholder:"例如：Year 1", text: $editedYear)
+                SettingsTextField(icon:"graduationcap.fill", title:loc.tr("settings_program"), placeholder:loc.tr("settings_placeholder_program"), text: $editedProgram)
+                SettingsTextField(icon:"calendar", title:loc.tr("settings_year"), placeholder:loc.tr("settings_placeholder_year"), text: $editedYear)
             }
             .padding(16)
             .background(Color.white.opacity(0.85))
@@ -202,9 +202,9 @@ struct StudentSettingsView: View {
     // MARK: - 联系方式
     private var contactSection: some View {
         VStack(spacing: 16) {
-            SectionTitle("联系方式")
+            SectionTitle(loc.tr("settings_contact"))
             VStack(spacing: 12) {
-                SettingsTextField(icon:"phone.fill", title:"手机号", placeholder:"请输入手机号", text: $editedPhone, keyboardType: .phonePad)
+                SettingsTextField(icon:"phone.fill", title:loc.tr("settings_phone"), placeholder:loc.tr("settings_placeholder_phone"), text: $editedPhone, keyboardType: .phonePad)
             }
             .padding(16)
             .background(Color.white.opacity(0.85))
@@ -216,16 +216,62 @@ struct StudentSettingsView: View {
     // MARK: - 简介
     private var aboutSection: some View {
         VStack(spacing: 16) {
-            SectionTitle("个人简介")
+            SectionTitle(loc.tr("settings_about"))
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
                     Image(systemName:"doc.text.fill").font(.system(size: 14)).foregroundColor(Color(hex:"6366F1"))
-                    Text("简介").font(.system(size: 14, weight: .medium)).foregroundColor(.secondary)
+                    Text(loc.tr("settings_bio")).font(.system(size: 14, weight: .medium)).foregroundColor(.secondary)
                 }
                 TextEditor(text: $editedBio)
                     .font(.system(size: 15)).frame(height: 100)
                     .padding(8).background(Color.gray.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .padding(16)
+            .background(Color.white.opacity(0.85))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        }
+    }
+
+    // MARK: - 语言设置
+    private var languageSection: some View {
+        VStack(spacing: 16) {
+            SectionTitle(loc.tr("settings_language_section"))
+
+            VStack(spacing: 16) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(hex:"6366F1").opacity(0.12))
+                            .frame(width: 48, height: 48)
+
+                        Image(systemName: "globe")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(Color(hex:"6366F1"))
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(loc.tr("settings_language_title"))
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
+
+                        Text(loc.tr("settings_language_subtitle"))
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+                }
+
+                // 语言选择器
+                Picker("", selection: $loc.language) {
+                    ForEach(LocalizationService.Language.allCases) { lang in
+                        Text(lang.rawValue).tag(lang)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.top, 8)
             }
             .padding(16)
             .background(Color.white.opacity(0.85))
@@ -323,4 +369,3 @@ struct ImagePicker: UIViewControllerRepresentable {
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) { parent.dismiss() }
     }
 }
-
