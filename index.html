@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>uniapp · 智能校园体验</title>
+    <meta name="description" content="uniapp —— 基于 SwiftUI 的智能校园体验，集中展示学生与家长双端功能。">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <style>
+        :root {
+            color-scheme: light dark;
+            --bg: #f8fafc;
+            --text: #0f172a;
+            --accent: #6366f1;
+            --secondary: #475569;
+            --card: rgba(255, 255, 255, 0.85);
+            --radius: 16px;
+            --shadow: 0 20px 40px rgba(15, 23, 42, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "SF Pro Display", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text);
+            background: linear-gradient(180deg, #eef2ff 0%, #f8fafc 100%);
+        }
+
+        header {
+            padding: 64px 24px 48px;
+            text-align: center;
+            background: radial-gradient(circle at top, rgba(99, 102, 241, 0.1), transparent 60%);
+        }
+
+        header h1 {
+            margin: 0 auto 16px;
+            max-width: 680px;
+            font-size: clamp(32px, 5vw, 56px);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        header p {
+            margin: 0 auto 32px;
+            max-width: 640px;
+            font-size: 18px;
+            color: var(--secondary);
+            line-height: 1.7;
+        }
+
+        .cta-group {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .cta-group a {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 24px;
+            border-radius: 999px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .cta-group a.primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            box-shadow: 0 18px 30px rgba(99, 102, 241, 0.25);
+        }
+
+        .cta-group a.secondary {
+            background: var(--card);
+            color: var(--accent);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        section {
+            padding: 72px 24px;
+        }
+
+        .container {
+            max-width: 1040px;
+            margin: 0 auto;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            padding: 28px;
+            border-radius: var(--radius);
+            background: var(--card);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(18px);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 20px;
+        }
+
+        .card p {
+            margin-bottom: 0;
+            color: var(--secondary);
+            line-height: 1.6;
+        }
+
+        .code-showcase {
+            background: rgba(15, 23, 42, 0.88);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: var(--shadow);
+            color: #e2e8f0;
+        }
+
+        .code-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .code-tabs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .code-tab {
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: rgba(15, 23, 42, 0.6);
+            color: #e2e8f0;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s ease;
+        }
+
+        .code-tab.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.8), rgba(139, 92, 246, 0.8));
+            border-color: transparent;
+        }
+
+        pre {
+            border-radius: 16px;
+            padding: 24px;
+            overflow-x: auto;
+            background: rgba(15, 23, 42, 0.9);
+            margin: 0;
+        }
+
+        footer {
+            padding: 40px 24px 60px;
+            text-align: center;
+            color: var(--secondary);
+            font-size: 14px;
+        }
+
+        @media (max-width: 640px) {
+            header {
+                padding-top: 48px;
+            }
+
+            section {
+                padding: 48px 20px;
+            }
+
+            .code-showcase {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>uniapp · 为学生与家长打造的智能校园助手</h1>
+        <p>基于 SwiftUI 的多角色校园管理体验，融合学习任务、日程提醒、数据可视化与 AI 助手能力。此页面提供一站式概览与核心代码片段，便于在 GitHub Pages / Vercel 等平台快速展示。</p>
+        <div class="cta-group">
+            <a class="primary" href="https://github.com/azusa-dom/uniapp_v2" target="_blank" rel="noopener">
+                <span>前往 GitHub 仓库</span>
+                <span aria-hidden="true">↗</span>
+            </a>
+            <a class="secondary" href="#code" rel="noopener">
+                <span>查看核心 SwiftUI 代码</span>
+            </a>
+        </div>
+    </header>
+
+    <section>
+        <div class="container">
+            <h2>项目亮点</h2>
+            <div class="card-grid">
+                <article class="card">
+                    <h3>学生与家长双端体验</h3>
+                    <p>学生端聚焦课程与待办，家长端掌握数据共享与学习进度，所有视图在 SwiftUI 中共享 Design System。</p>
+                </article>
+                <article class="card">
+                    <h3>可复用组件库</h3>
+                    <p>通过 `CommonComponents.swift` 构建统一卡片、Glassmorphism 风格与可重用空状态视图，方便扩展新模块。</p>
+                </article>
+                <article class="card">
+                    <h3>智能任务与活动助手</h3>
+                    <p>集成 AI 助手、日程热力图、作业进度等模块，让学业安排更直观。</p>
+                </article>
+                <article class="card">
+                    <h3>易于部署展示</h3>
+                    <p>纯静态页面 → 可直接托管到 GitHub Pages / Vercel / Netlify，亦可嵌入 FlutterFlow、Framer 的 HTML Section。</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section id="code">
+        <div class="container">
+            <div class="code-showcase">
+                <div class="code-header">
+                    <div>
+                        <h2 style="margin: 0; font-size: 22px;">核心 SwiftUI 片段</h2>
+                        <p style="margin: 6px 0 0; color: rgba(226, 232, 240, 0.7); font-size: 14px;">点击切换不同文件，实时加载高亮。</p>
+                    </div>
+                    <div class="code-tabs" role="tablist" aria-label="代码文件选择">
+                        <button class="code-tab active" data-target="student-dashboard" role="tab" aria-selected="true">StudentDashboardView.swift</button>
+                        <button class="code-tab" data-target="api-config" role="tab" aria-selected="false">APIConfig.swift</button>
+                    </div>
+                </div>
+
+                <pre><code id="student-dashboard" class="language-swift" role="tabpanel" aria-hidden="false"></code></pre>
+                <pre style="display: none;"><code id="api-config" class="language-swift" role="tabpanel" aria-hidden="true"></code></pre>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <h2>如何运行原生 App</h2>
+            <div class="card-grid">
+                <article class="card">
+                    <h3>本地体验</h3>
+                    <p>使用 Xcode 15+ 打开 `uniapp.xcodeproj`，选择模拟器或真机即可运行。建议开启 `AppState` 和 `LocalizationService` 的测试数据。</p>
+                </article>
+                <article class="card">
+                    <h3>对外展示</h3>
+                    <p>通过 TestFlight 发布或在网页中嵌入演示视频、截图；当前页面的代码片段可作为技术亮点演示。</p>
+                </article>
+                <article class="card">
+                    <h3>继续扩展</h3>
+                    <p>可在 `assets/` 中补充产品截图，也可以新增更多 Swift 文件到 `code/` 目录，自动被网页读取并高亮。</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        © 2025 uniapp · Crafted with SwiftUI & GitHub Pages · <a href="https://github.com/azusa-dom/uniapp_v2" style="color: inherit;">项目仓库</a>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/swift.min.js"></script>
+    <script>
+        const files = {
+            'student-dashboard': 'code/StudentDashboardView.swift',
+            'api-config': 'code/APIConfig.swift'
+        };
+
+        function loadCode(targetId) {
+            const source = files[targetId];
+            const codeElement = document.getElementById(targetId);
+            if (!codeElement || !source) return;
+
+            if (codeElement.dataset.loaded === 'true') {
+                hljs.highlightElement(codeElement);
+                return;
+            }
+
+            fetch(source)
+                .then(response => response.text())
+                .then(text => {
+                    codeElement.textContent = text.trim();
+                    hljs.highlightElement(codeElement);
+                    codeElement.dataset.loaded = 'true';
+                })
+                .catch(() => {
+                    codeElement.textContent = '// ⚠️ 无法加载代码，请检查文件路径或网络。';
+                });
+        }
+
+        function setActiveTab(tabButton) {
+            document.querySelectorAll('.code-tab').forEach(btn => {
+                const targetId = btn.dataset.target;
+                const panel = document.getElementById(targetId);
+                const active = btn === tabButton;
+
+                btn.classList.toggle('active', active);
+                btn.setAttribute('aria-selected', active ? 'true' : 'false');
+
+                if (panel) {
+                    panel.parentElement.style.display = active ? 'block' : 'none';
+                    panel.setAttribute('aria-hidden', active ? 'false' : 'true');
+                }
+            });
+        }
+
+        document.querySelectorAll('.code-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                setActiveTab(tab);
+                loadCode(tab.dataset.target);
+            });
+        });
+
+        // 默认加载第一个代码块
+        loadCode('student-dashboard');
+    </script>
+</body>
+</html>
+
