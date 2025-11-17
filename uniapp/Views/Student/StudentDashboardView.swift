@@ -149,7 +149,7 @@ struct StudentDashboardView: View {
                         Button {
                             activeModal = .settings
                         } label: {
-                            Label("设置", systemImage: "gearshape.fill")
+                            Label(loc.tr("tab_settings"), systemImage: "gearshape.fill")
                         }
 
                         Divider()
@@ -228,7 +228,7 @@ struct StudentDashboardView: View {
                 .font(.system(size: 28, weight: .bold))
                 .foregroundColor(.primary)
 
-            Text("MSc Health Data Science · Year 1")
+            Text(loc.tr("student_program"))
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.secondary)
         }
@@ -274,7 +274,7 @@ struct StudentDashboardView: View {
                     Button(action: {
                         selectedTab = 1
                     }) {
-                        Text("查看全部")
+                        Text(loc.tr("view_all"))
                             .font(.system(size: 14))
                             .foregroundColor(Color(hex: "6366F1"))
                     }
@@ -284,7 +284,7 @@ struct StudentDashboardView: View {
             if todayClasses.isEmpty {
                 StudentEmptyStateCard(
                     icon: "checkmark.circle.fill",
-                    message: "今天没有课程，好好利用这段时间！",
+                    message: loc.tr("no_classes_today"),
                     color: "10B981"
                 )
             } else {
@@ -316,18 +316,18 @@ struct StudentDashboardView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 14))
-                        Text("添加")
+                        Text(loc.tr("add"))
                             .font(.system(size: 14, weight: .semibold))
                     }
                     .foregroundColor(Color(hex: "6366F1"))
                 }
-                
+
                 if !appState.todoManager.upcomingDeadlines.isEmpty {
                     Button(action: {
                         // 打开所有待办事项视图
                         activeModal = .allTodos
                     }) {
-                        Text("查看全部")
+                        Text(loc.tr("view_all"))
                             .font(.system(size: 14))
                             .foregroundColor(Color(hex: "6366F1"))
                     }
@@ -338,18 +338,18 @@ struct StudentDashboardView: View {
                 VStack(spacing: 16) {
                     StudentEmptyStateCard(
                         icon: "checkmark.circle.fill",
-                        message: "暂无待办事项，所有任务都已完成！",
+                        message: loc.tr("no_tasks"),
                         color: "10B981"
                     )
-                    
+
                     Button {
                         activeModal = .addTodo
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 16))
-                            
-                            Text("快速添加待办")
+
+                            Text(loc.tr("quick_add_todo"))
                                 .font(.system(size: 15, weight: .semibold))
                         }
                         .foregroundColor(.white)
@@ -387,19 +387,19 @@ struct StudentDashboardView: View {
                     Image(systemName: "sparkles")
                         .font(.system(size: 18))
                         .foregroundColor(Color(hex: "F59E0B"))
-                    
-                    Text("为你推荐")
+
+                    Text(loc.tr("recommended_for_you"))
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.primary)
                 }
-                
+
                 Spacer()
-                
+
                 if !recommendedEvents.isEmpty {
                     Button(action: {
                         selectedTab = 5 // 跳转到活动
                     }) {
-                        Text("查看全部")
+                        Text(loc.tr("view_all"))
                             .font(.system(size: 14))
                             .foregroundColor(Color(hex: "6366F1"))
                     }
@@ -409,7 +409,7 @@ struct StudentDashboardView: View {
             if recommendedEvents.isEmpty {
                 StudentEmptyStateCard(
                     icon: "star.fill",
-                    message: "正在为你寻找合适的活动...",
+                    message: loc.tr("finding_activities"),
                     color: "F59E0B"
                 )
             } else {
@@ -428,8 +428,8 @@ struct StudentDashboardView: View {
                 Image(systemName: "info.circle")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
-                
-                Text("根据你的专业（健康数据科学）智能推荐")
+
+                Text(loc.tr("recommendation_hint"))
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }
@@ -805,12 +805,22 @@ struct StudentAllTodosView: View {
     @State private var selectedTodo: TodoItem?
     
     enum TodoFilter: String, CaseIterable {
-        case all = "全部"
-        case upcoming = "即将截止"
-        case today = "今天"
-        case week = "本周"
-        case completed = "已完成"
-        
+        case all
+        case upcoming
+        case today
+        case week
+        case completed
+
+        func localizedTitle(_ loc: LocalizationService) -> String {
+            switch self {
+            case .all: return loc.language == .chinese ? "全部" : "All"
+            case .upcoming: return loc.tr("upcoming_deadlines")
+            case .today: return loc.language == .chinese ? "今天" : "Today"
+            case .week: return loc.language == .chinese ? "本周" : "This Week"
+            case .completed: return loc.tr("completed")
+            }
+        }
+
         var systemImage: String {
             switch self {
             case .all: return "list.bullet"
@@ -869,21 +879,24 @@ struct StudentAllTodosView: View {
                     if filteredTodos.isEmpty {
                         VStack(spacing: 20) {
                             Spacer()
-                            
+
                             Image(systemName: selectedFilter == .completed ? "checkmark.circle.fill" : "tray")
                                 .font(.system(size: 60))
                                 .foregroundColor(Color(hex: "6366F1").opacity(0.3))
-                            
-                            Text(selectedFilter == .completed ? "暂无已完成的任务" : "暂无待办事项")
+
+                            Text(selectedFilter == .completed ?
+                                (loc.language == .chinese ? "暂无已完成的任务" : "No completed tasks") :
+                                (loc.language == .chinese ? "暂无待办事项" : "No pending tasks")
+                            )
                                 .font(.system(size: 18, weight: .semibold))
                                 .foregroundColor(.secondary)
-                            
+
                             Button {
                                 showingAddTodo = true
                             } label: {
                                 HStack(spacing: 8) {
                                     Image(systemName: "plus.circle.fill")
-                                    Text("添加新待办")
+                                    Text(loc.language == .chinese ? "添加新待办" : "Add New Todo")
                                 }
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.white)
@@ -892,7 +905,7 @@ struct StudentAllTodosView: View {
                                 .background(Color(hex: "6366F1"))
                                 .cornerRadius(12)
                             }
-                            
+
                             Spacer()
                         }
                     } else {
@@ -911,17 +924,17 @@ struct StudentAllTodosView: View {
                     }
                 }
             }
-            .navigationTitle("待办事项")
+            .navigationTitle(loc.tr("todo_title"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("关闭") {
+                    Button(loc.tr("close")) {
                         dismiss()
                     }
                 }
-                
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         showingAddTodo = true
@@ -954,7 +967,7 @@ struct StudentAllTodosView: View {
     
     private func makeFilterChip(for filter: TodoFilter) -> some View {
         FilterChip(
-            title: filter.rawValue,
+            title: filter.localizedTitle(loc),
             icon: filter.systemImage,
             isSelected: selectedFilter == filter,
             count: countForFilter(filter)
@@ -1142,8 +1155,9 @@ struct TodoRowCard: View {
 
 // MARK: - 推荐活动卡片
 struct RecommendedEventCard: View {
+    @EnvironmentObject var loc: LocalizationService
     let event: UCLAPIViewModel.UCLAPIEvent
-    
+
     var formattedDate: String {
         let dateFormatter = DateFormatter()
         dateFormatter.locale = Locale(identifier: "zh_CN")
@@ -1258,8 +1272,9 @@ struct RecommendedEventCard: View {
                 Image(systemName: "sparkles")
                     .font(.system(size: 14))
                     .foregroundColor(Color(hex: "F59E0B"))
-                
-                Text("推荐")
+
+
+                Text(loc.language == .chinese ? "推荐" : "Rec.")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(Color(hex: "F59E0B"))
             }
