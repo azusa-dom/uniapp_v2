@@ -52,7 +52,7 @@ struct StudentTabView: View {
             // 2. 活动与日历（合并）
             StudentCalendarView()
                 .tabItem {
-                    Label("活动日历", systemImage: "calendar")
+                    Label(loc.tr("tab_activity_calendar"), systemImage: "calendar")
                 }
                 .tag(1)
             
@@ -74,7 +74,7 @@ struct StudentTabView: View {
             // 5. 健康
             StudentHealthView()
                 .tabItem {
-                    Label("健康", systemImage: "heart.text.square")
+                    Label(loc.tr("tab_health"), systemImage: "heart.text.square")
                 }
                 .tag(4)
             
@@ -107,14 +107,14 @@ struct ParentTabView: View {
             // 2. 活动与日历（合并）
             ParentCalendarView()
                 .tabItem {
-                    Label("活动日历", systemImage: "calendar")
+                    Label(loc.tr("tab_activity_calendar"), systemImage: "calendar")
                 }
                 .tag(1)
             
             // 3. 学业
             ParentTodoView()
                 .tabItem {
-                    Label("学业", systemImage: "graduationcap.fill")
+                    Label(loc.tr("tab_academics"), systemImage: "graduationcap.fill")
                 }
                 .tag(2)
             
@@ -128,7 +128,7 @@ struct ParentTabView: View {
             // 5. 健康
             ParentHealthView()
                 .tabItem {
-                    Label("健康", systemImage: "heart.text.square")
+                    Label(loc.tr("tab_health"), systemImage: "heart.text.square")
                 }
                 .tag(5)
             

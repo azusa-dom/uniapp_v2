@@ -136,7 +136,7 @@ struct StudentDashboardView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Text("首页")
+                    Text(loc.tr("tab_home"))
                         .font(.system(size: 32, weight: .bold))
                         .foregroundColor(.primary)
                 }
@@ -279,11 +279,11 @@ struct StudentDashboardView: View {
                 // 问候语
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("今天也是元气满满的一天呢, Zoya 👋")
+                        Text("\(loc.tr("home_greeting")) \(appState.studentName) 👋")
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.white)
-                        
-                        Text("MSc Health Data Science")
+
+                        Text(appState.studentProgram)
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.white.opacity(0.85))
                     }
@@ -328,18 +328,18 @@ struct StudentDashboardView: View {
             HStack(spacing: 10) {
                 PremiumQuickActionCard(
                     icon: "sparkles",
-                    title: "AI助手",
-                    subtitle: "智能学习助理",
+                    title: loc.tr("dashboard_ai_assistant"),
+                    subtitle: loc.tr("dashboard_ai_subtitle"),
                     gradient: [DashboardPalette.deep, DashboardPalette.medium],
                     iconColor: .white
                 ) {
                     selectedTab = 3  // AI 助手 tab
                 }
-                
+
                 PremiumQuickActionCard(
                     icon: "envelope.fill",
-                    title: "邮箱",
-                    subtitle: "查看最新邮件",
+                    title: loc.tr("dashboard_mailbox"),
+                    subtitle: loc.tr("dashboard_email_subtitle"),
                     gradient: [DashboardPalette.medium, DashboardPalette.bright],
                     iconColor: .white
                 ) {
@@ -351,8 +351,8 @@ struct StudentDashboardView: View {
             HStack(spacing: 10) {
                 PremiumQuickActionCard(
                     icon: "heart.text.square.fill",
-                    title: "健康",
-                    subtitle: "预约GP问诊",
+                    title: loc.tr("dashboard_health"),
+                    subtitle: loc.tr("dashboard_health_subtitle"),
                     gradient: [DashboardPalette.bright, DashboardPalette.soft],
                     iconColor: .white
                 ) {
@@ -360,11 +360,11 @@ struct StudentDashboardView: View {
                         selectedTab = 4  // 健康 tab
                     }
                 }
-                
+
                 PremiumQuickActionCard(
                     icon: "calendar.badge.plus",
-                    title: "活动",
-                    subtitle: "发现精彩活动",
+                    title: loc.tr("dashboard_activities"),
+                    subtitle: loc.tr("dashboard_activities_subtitle"),
                     gradient: [DashboardPalette.soft, DashboardPalette.pastel],
                     iconColor: .white
                 ) {
@@ -383,8 +383,8 @@ struct StudentDashboardView: View {
                     Image(systemName: "book.fill")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(Color(hex: "6366F1"))
-                    
-                    Text("今日课程")
+
+                    Text(loc.tr("home_today_classes"))
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.primary)
                 }
@@ -396,7 +396,7 @@ struct StudentDashboardView: View {
                         HStack(spacing: 5) {
                             Image(systemName: "calendar.badge.plus")
                                 .font(.system(size: 14, weight: .semibold))
-                            Text("导入日历")
+                            Text(loc.tr("calendar_import"))
                                 .font(.system(size: 13, weight: .semibold))
                         }
                         .foregroundColor(Color(hex: "6366F1"))
@@ -404,7 +404,7 @@ struct StudentDashboardView: View {
                     Button {
                         selectedTab = 1  // 切换到日历标签页
                     } label: {
-                        Text("查看全部")
+                        Text(loc.tr("dashboard_view_all"))
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(Color(hex: "6366F1"))
                     }
@@ -414,7 +414,7 @@ struct StudentDashboardView: View {
             if todayClasses.isEmpty {
                 StudentEmptyStateCard(
                     icon: "checkmark.circle.fill",
-                    message: "今天没有课程，好好利用这段时间！",
+                    message: loc.tr("dashboard_no_classes"),
                     color: DashboardPaletteHex.soft
                 )
             } else {
@@ -440,8 +440,8 @@ struct StudentDashboardView: View {
                     Image(systemName: "clock.fill")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(DashboardPalette.bright)
-                    
-                    Text("即将截止")
+
+                    Text(loc.tr("home_deadlines"))
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.primary)
                 }
@@ -454,7 +454,7 @@ struct StudentDashboardView: View {
                     HStack(spacing: 5) {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 14, weight: .semibold))
-                        Text("添加")
+                        Text(loc.tr("dashboard_add"))
                             .font(.system(size: 13, weight: .semibold))
                     }
                     .foregroundColor(.white)
@@ -475,7 +475,7 @@ struct StudentDashboardView: View {
             if highlightedTodos.isEmpty {
                 StudentEmptyStateCard(
                     icon: "checkmark.circle.fill",
-                    message: "暂无待办事项，所有任务都已完成！",
+                    message: loc.tr("dashboard_no_todos"),
                     color: DashboardPaletteHex.soft
                 )
             } else {
@@ -499,8 +499,8 @@ struct StudentDashboardView: View {
                     Image(systemName: "star.fill")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(DashboardPalette.bright)
-                    
-                    Text("推荐活动")
+
+                    Text(loc.tr("home_recommendations"))
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.primary)
                 }
@@ -512,7 +512,7 @@ struct StudentDashboardView: View {
                         CampusActivitiesView()
                             .environmentObject(loc)
                     } label: {
-                        Text("查看全部")
+                        Text(loc.tr("dashboard_view_all"))
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(Color(hex: "6366F1"))
                     }
@@ -526,7 +526,7 @@ struct StudentDashboardView: View {
             } else if pinnedActivities.isEmpty {
                 StudentEmptyStateCard(
                     icon: "sparkles",
-                    message: "暂无活动，稍后再来看看吧",
+                    message: loc.tr("dashboard_no_activities"),
                     color: "9F7AEA"
                 )
             } else {
@@ -676,19 +676,22 @@ private struct PremiumDeadlineCard: View {
     let todo: TodoItem
     
     private var timeRemaining: String {
-        guard let dueDate = todo.dueDate else { return "无截止" }
-        
+        guard let dueDate = todo.dueDate else {
+            return LocalizationService().tr("dashboard_no_deadline")
+        }
+
         let now = Date()
         let interval = dueDate.timeIntervalSince(now)
-        
+        let loc = LocalizationService()
+
         if interval < 0 {
-            return "已逾期"
+            return loc.tr("dashboard_overdue")
         } else if interval < 3600 {
-            return "\(Int(interval / 60))分钟后"
+            return "\(Int(interval / 60))\(loc.tr("dashboard_minutes_left"))"
         } else if interval < 86400 {
-            return "\(Int(interval / 3600))小时后"
+            return "\(Int(interval / 3600))\(loc.tr("dashboard_hours_left"))"
         } else {
-            return "\(Int(interval / 86400))天后"
+            return "\(Int(interval / 86400))\(loc.tr("dashboard_days_left"))"
         }
     }
     
@@ -850,7 +853,7 @@ private struct PremiumActivityCard: View {
             return timeString
         }
         
-        return "时间待定"
+        return loc.language == .chinese ? "时间待定" : "Time TBD"
     }
     
     private func getTypeIcon(_ type: String) -> String {
@@ -970,9 +973,9 @@ private struct StudentTodoListSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("未完成") {
+                Section(LocalizationService().tr("todo_incomplete")) {
                     if activeTodos.isEmpty {
-                        Text("暂无未完成任务")
+                        Text(LocalizationService().tr("todo_no_incomplete"))
                             .foregroundColor(.secondary)
                     } else {
                         ForEach(activeTodos) { todo in
@@ -984,9 +987,9 @@ private struct StudentTodoListSheet: View {
                         }
                     }
                 }
-                
+
                 if !completedTodos.isEmpty {
-                    Section("已完成") {
+                    Section(LocalizationService().tr("todo_completed")) {
                         ForEach(completedTodos) { todo in
                             TodoListRow(
                                 todo: todo,
@@ -998,10 +1001,10 @@ private struct StudentTodoListSheet: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle("待办事项")
+            .navigationTitle(LocalizationService().tr("todo_list_title"))
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { dismiss() }
+                    Button(LocalizationService().tr("done")) { dismiss() }
                 }
             }
         }
@@ -1054,7 +1057,7 @@ private struct TodoListRow: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             } else {
-                Text("无截止")
+                Text(LocalizationService().tr("dashboard_no_deadline"))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -1063,7 +1066,7 @@ private struct TodoListRow: View {
             Button(role: .destructive) {
                 delete(todo)
             } label: {
-                Label("删除", systemImage: "trash")
+                Label(LocalizationService().tr("todo_delete"), systemImage: "trash")
             }
         }
     }
