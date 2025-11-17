@@ -1,5 +1,5 @@
 //
-//  共享视图.swift
+//  CommonComponents.swift
 //  uniapp
 //
 //  Created by 748 on 12/11/2025.

@@ -53,7 +53,7 @@ def main():
         'Parent/ParentCalendarView.swift',
         'Parent/ParentDashboardView.swift',
         'Parent/ParentHealthView.swift',
-        'Parent/ParentEmail.swift',
+        'Parent/ParentEmailView.swift',
         'Parent/ParentTodoView.swift',
         'Parent/ParentAIAssistantView.swift',
         'Shared/UCLActivitiesView.swift',
