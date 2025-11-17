@@ -110,7 +110,7 @@ struct TodoDetailView: View {
     }
 
     var formattedDueDate: String {
-        guard let dueDate = todo.dueDate else { return "无截止时间" }
+        guard let dueDate = todo.dueDate else { return loc.tr("no_due_date") }
 
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: loc.language == .chinese ? "zh_CN" : "en_US")
@@ -130,23 +130,23 @@ struct TodoDetailView: View {
             let overdueTime = abs(timeInterval)
             if overdueTime < 3600 {
                 let minutes = Int(overdueTime / 60)
-                return "已过期 \(minutes) 分钟"
+                return loc.language == .chinese ? "已过期 \(minutes) 分钟" : "Overdue by \(minutes) minutes"
             } else if overdueTime < 86400 {
                 let hours = Int(overdueTime / 3600)
-                return "已过期 \(hours) 小时"
+                return loc.language == .chinese ? "已过期 \(hours) 小时" : "Overdue by \(hours) hours"
             } else {
                 let days = Int(overdueTime / 86400)
-                return "已过期 \(days) 天"
+                return loc.language == .chinese ? "已过期 \(days) 天" : "Overdue by \(days) days"
             }
         } else if timeInterval < 3600 {
             let minutes = Int(timeInterval / 60)
-            return "\(minutes) 分钟后截止"
+            return loc.language == .chinese ? "\(minutes) 分钟后截止" : "Due in \(minutes) minutes"
         } else if timeInterval < 86400 {
             let hours = Int(timeInterval / 3600)
-            return "\(hours) 小时后截止"
+            return loc.language == .chinese ? "\(hours) 小时后截止" : "Due in \(hours) hours"
         } else {
             let days = Int(timeInterval / 86400)
-            return "\(days) 天后截止"
+            return loc.language == .chinese ? "\(days) 天后截止" : "Due in \(days) days"
         }
     }
 
@@ -197,7 +197,7 @@ struct TodoDetailView: View {
                                 .clipShape(Capsule())
 
                             if todo.isCompleted {
-                                Label("已完成", systemImage: "checkmark.circle.fill")
+                                Label(loc.tr("completed"), systemImage: "checkmark.circle.fill")
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(Color(hex: "10B981"))
                                     .padding(.horizontal, 12)
@@ -259,7 +259,7 @@ struct TodoDetailView: View {
 
                     // 创建时间
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("创建时间")
+                        Text(loc.tr("created_time"))
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.primary)
 
@@ -281,13 +281,13 @@ struct TodoDetailView: View {
                 .padding()
             }
             .background(DesignSystem.backgroundGradient.ignoresSafeArea())
-            .navigationTitle("待办详情")
+            .navigationTitle(loc.tr("todo_detail"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar(content: {
                 ToolbarItem(placement: .automatic) {
-                    Button("取消") {
+                    Button(loc.tr("cancel")) {
                         isPresented = false
                     }
                     .foregroundColor(Color(hex: "6366F1"))
@@ -300,14 +300,14 @@ struct TodoDetailView: View {
                                 appState.todoManager.toggleCompletion(todo)
                                 isPresented = false
                             }) {
-                                Label("标记为完成", systemImage: "checkmark.circle")
+                                Label(loc.tr("mark_as_complete"), systemImage: "checkmark.circle")
                             }
                         }
 
                         Button(role: .destructive, action: {
                             showingDeleteAlert = true
                         }) {
-                            Label("删除任务", systemImage: "trash")
+                            Label(loc.tr("delete_task"), systemImage: "trash")
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -315,15 +315,15 @@ struct TodoDetailView: View {
                             .font(.system(size: 20))
                     }
                 }
-            })  // ✅ 添加右括号
-            .alert("确认删除", isPresented: $showingDeleteAlert) {
-                Button("删除", role: .destructive) {
+            })
+            .alert(loc.tr("confirm_delete"), isPresented: $showingDeleteAlert) {
+                Button(loc.tr("delete"), role: .destructive) {
                     appState.todoManager.deleteTodo(todo)
                     isPresented = false
                 }
-                Button("取消", role: .cancel) {}
+                Button(loc.tr("cancel"), role: .cancel) {}
             } message: {
-                Text("确定要删除这个待办事项吗？此操作无法撤销。")
+                Text(loc.tr("confirm_delete_message"))
             }
         }  // ✅ NavigationView 结束
         #if os(iOS)
@@ -336,16 +336,17 @@ struct TodoDetailView: View {
 
 struct UpcomingDeadlinesCard: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var loc: LocalizationService
     let onTodoTap: (TodoItem) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("📅 即将截止")
+            Text("📅 " + loc.tr("upcoming_deadlines"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.primary)
 
             if appState.todoManager.upcomingDeadlines.isEmpty {
-                Text("暂无即将截止的任务")
+                Text(loc.tr("no_upcoming_deadlines"))
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
             } else {
@@ -395,13 +396,15 @@ struct UpcomingDeadlinesCard: View {
 }
 
 struct PlaceholderWeeklySummaryCard: View {
+    @EnvironmentObject var loc: LocalizationService
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("📊 本周总结")
+            Text("📊 " + loc.tr("weekly_summary"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.primary)
 
-            Text("3门课程，2次作业，95%出勤率")
+            Text(loc.tr("weekly_summary_desc"))
                 .font(.system(size: 14))
                 .foregroundColor(.secondary)
         }
@@ -415,13 +418,15 @@ struct PlaceholderWeeklySummaryCard: View {
 }
 
 struct PlaceholderAttendanceHeatmapCard: View {
+    @EnvironmentObject var loc: LocalizationService
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("📈 出勤热力图")
+            Text("📈 " + loc.tr("attendance_heatmap"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.primary)
 
-            Text("本月出勤率: 95%")
+            Text(loc.tr("monthly_attendance"))
                 .font(.system(size: 14))
                 .foregroundColor(.secondary)
         }
@@ -435,13 +440,15 @@ struct PlaceholderAttendanceHeatmapCard: View {
 }
 
 struct AttendanceReportCard: View {
+    @EnvironmentObject var loc: LocalizationService
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("✅ 出勤报告")
+            Text("✅ " + loc.tr("attendance_report"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.primary)
 
-            Text("总出勤: 28/30 (93.3%)")
+            Text(loc.tr("total_attendance"))
                 .font(.system(size: 14))
                 .foregroundColor(.secondary)
         }
@@ -455,13 +462,15 @@ struct AttendanceReportCard: View {
 }
 
 struct PlaceholderAssignmentProgressCard: View {
+    @EnvironmentObject var loc: LocalizationService
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("📝 作业进度")
+            Text("📝 " + loc.tr("assignment_progress"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.primary)
 
-            Text("已完成: 12/15")
+            Text(loc.tr("assignment_completed"))
                 .font(.system(size: 14))
                 .foregroundColor(.secondary)
         }
@@ -475,13 +484,15 @@ struct PlaceholderAssignmentProgressCard: View {
 }
 
 struct PlaceholderActivityParticipationCard: View {
+    @EnvironmentObject var loc: LocalizationService
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("🎯 活动参与")
+            Text("🎯 " + loc.tr("activity_participation"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.primary)
 
-            Text("本月参与: 5次活动")
+            Text(loc.tr("monthly_participation"))
                 .font(.system(size: 14))
                 .foregroundColor(.secondary)
         }
@@ -495,6 +506,7 @@ struct PlaceholderActivityParticipationCard: View {
 }
 
 struct PlaceholderDataNotSharedView: View {
+    @EnvironmentObject var loc: LocalizationService
     let dataType: String
 
     var body: some View {
@@ -503,11 +515,11 @@ struct PlaceholderDataNotSharedView: View {
                 .font(.system(size: 32))
                 .foregroundColor(Color(hex: "F59E0B"))
 
-            Text("\(dataType)未共享")
+            Text(loc.language == .chinese ? "\(dataType)未共享" : "\(dataType) Not Shared")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.primary)
 
-            Text("学生尚未开启此数据共享")
+            Text(loc.tr("data_not_shared_desc"))
                 .font(.system(size: 14))
                 .foregroundColor(.secondary)
         }

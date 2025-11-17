@@ -193,8 +193,62 @@ class LocalizationService: ObservableObject {
             "parent_daily_summary": [.chinese: "每日摘要", .english: "Daily Summary"],
             "parent_data_sharing_status": [.chinese: "数据共享状态", .english: "Data Sharing Status"],
             "parent_data_sharing_controlled": [.chinese: "由学生控制共享设置", .english: "Controlled by student"],
+
+            // 通用文本 - 扩展
+            "tab_health": [.chinese: "健康", .english: "Health"],
+            "tab_calendar_activities": [.chinese: "活动日历", .english: "Calendar & Activities"],
+            "tab_settings": [.chinese: "设置", .english: "Settings"],
+            "view_all": [.chinese: "查看全部", .english: "View All"],
+            "close": [.chinese: "关闭", .english: "Close"],
+            "completed": [.chinese: "已完成", .english: "Completed"],
+            "created_time": [.chinese: "创建时间", .english: "Created"],
+            "mark_as_complete": [.chinese: "标记为完成", .english: "Mark as Complete"],
+            "delete_task": [.chinese: "删除任务", .english: "Delete Task"],
+            "confirm_delete": [.chinese: "确认删除", .english: "Confirm Delete"],
+            "confirm_delete_message": [.chinese: "确定要删除这个待办事项吗？此操作无法撤销。", .english: "Are you sure you want to delete this task? This action cannot be undone."],
+            "quick_add_todo": [.chinese: "快速添加待办", .english: "Quick Add Todo"],
+            "recommended_for_you": [.chinese: "为你推荐", .english: "Recommended for You"],
+            "recommendation": [.chinese: "推荐", .english: "Recommendation"],
+            "recommendation_hint": [.chinese: "根据你的专业（健康数据科学）智能推荐", .english: "Smart recommendations based on your major (Health Data Science)"],
+            "finding_activities": [.chinese: "正在为你寻找合适的活动...", .english: "Finding suitable activities for you..."],
+            "no_classes_today": [.chinese: "今天没有课程，好好利用这段时间！", .english: "No classes today, make good use of your time!"],
+            "no_tasks": [.chinese: "暂无待办事项，所有任务都已完成！", .english: "No pending tasks, all done!"],
+
+            // 时间相关
+            "minutes_ago": [.chinese: "分钟前", .english: "minutes ago"],
+            "hours_ago": [.chinese: "小时前", .english: "hours ago"],
+            "days_ago": [.chinese: "天前", .english: "days ago"],
+            "in_minutes": [.chinese: "分钟后", .english: "in minutes"],
+            "in_hours": [.chinese: "小时后", .english: "in hours"],
+            "in_days": [.chinese: "天后", .english: "in days"],
+            "overdue_minutes": [.chinese: "已过期 %@ 分钟", .english: "Overdue by %@ minutes"],
+            "overdue_hours": [.chinese: "已过期 %@ 小时", .english: "Overdue by %@ hours"],
+            "overdue_days": [.chinese: "已过期 %@ 天", .english: "Overdue by %@ days"],
+            "due_in_minutes": [.chinese: "%@ 分钟后截止", .english: "Due in %@ minutes"],
+            "due_in_hours": [.chinese: "%@ 小时后截止", .english: "Due in %@ hours"],
+            "due_in_days": [.chinese: "%@ 天后截止", .english: "Due in %@ days"],
+            "no_due_date": [.chinese: "无截止时间", .english: "No due date"],
+
+            // 家长端卡片
+            "upcoming_deadlines": [.chinese: "即将截止", .english: "Upcoming Deadlines"],
+            "no_upcoming_deadlines": [.chinese: "暂无即将截止的任务", .english: "No upcoming deadlines"],
+            "weekly_summary": [.chinese: "本周总结", .english: "Weekly Summary"],
+            "weekly_summary_desc": [.chinese: "3门课程，2次作业，95%出勤率", .english: "3 courses, 2 assignments, 95% attendance"],
+            "attendance_heatmap": [.chinese: "出勤热力图", .english: "Attendance Heatmap"],
+            "monthly_attendance": [.chinese: "本月出勤率: 95%", .english: "Monthly Attendance: 95%"],
+            "attendance_report": [.chinese: "出勤报告", .english: "Attendance Report"],
+            "total_attendance": [.chinese: "总出勤: 28/30 (93.3%)", .english: "Total Attendance: 28/30 (93.3%)"],
+            "assignment_progress": [.chinese: "作业进度", .english: "Assignment Progress"],
+            "assignment_completed": [.chinese: "已完成: 12/15", .english: "Completed: 12/15"],
+            "activity_participation": [.chinese: "活动参与", .english: "Activity Participation"],
+            "monthly_participation": [.chinese: "本月参与: 5次活动", .english: "This month: 5 activities"],
+            "data_not_shared": [.chinese: "%@未共享", .english: "%@ Not Shared"],
+            "data_not_shared_desc": [.chinese: "学生尚未开启此数据共享", .english: "Student hasn't enabled data sharing"],
+
+            // StudentDashboardView 专用
+            "student_program": [.chinese: "MSc Health Data Science · Year 1", .english: "MSc Health Data Science · Year 1"],
         ]
-        
+
         return translations[key]?[language] ?? key
     }
 }

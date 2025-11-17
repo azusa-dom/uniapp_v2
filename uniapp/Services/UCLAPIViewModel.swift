@@ -60,9 +60,8 @@ final class UCLAPIViewModel: ObservableObject {
     func fetchEvents() {
         guard events.isEmpty else { return }
         
-        let calendar = Calendar.current
         let today = Date()
-        
+
         // 生成本周的课程表（周一到周五）- 真实 HDS 课程
         var weekEvents: [UCLAPIEvent] = []
         
